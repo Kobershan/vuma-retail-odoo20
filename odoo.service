@@ -1,0 +1,27 @@
+[Unit]
+Description=Odoo 20.0 (vuma-retail)
+Documentation=https://www.odoo.com/documentation/20.0
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kob
+Group=kob
+WorkingDirectory=/home/kob/Documents/vuma-retail/odoo
+
+ExecStart=/home/kob/Documents/vuma-retail/venv/bin/python /home/kob/Documents/vuma-retail/odoo/odoo-bin \
+    -c /home/kob/Documents/vuma-retail/odoo.conf
+
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+Restart=always
+RestartSec=5
+TimeoutStopSec=120
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=odoo-vuma-retail
+
+[Install]
+WantedBy=multi-user.target

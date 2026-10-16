@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <template id="dashboard_page" name="Vuma Admin Dashboard">
+        <t t-call="web.frontend_layout">
+            <div class="vuma-dashboard" data-csrf-token="">
+                <div class="vd-topband">
+                    <div class="vd-brand">
+                        <img t-att-src="'/cognify_admin_dashboard/static/img/vuma-mark.png'" alt="" class="vd-mark" onerror="this.style.display='none'"/>
+                        <span class="vd-word">VUMA ADMIN</span>
+                    </div>
+                    <div class="vd-topright">
+                        <span class="vd-user">
+                            <t t-out="user.name"/>
+                            <span class="vd-company" t-out="company.name"/>
+                        </span>
+                        <form t-att-action="'/web/session/logout'" method="post" style="display:inline">
+                            <input type="hidden" name="csrf_token" t-att-value="request and request.csrf_token()" />
+                            <button type="submit" class="vd-logout">Log out</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="vd-hero">
+                    <div>
+                        <div class="vd-kicker">Console</div>
+                        <h1>Run the shop from one desk</h1>
+                        <p>Sales targets, stock health, people and cash — every signal from every aisle, on a single screen.</p>
+                    </div>
+                    <div class="vd-searchbox">
+                        <input type="search" id="vdSearch" placeholder="Search apps and pages…" autocomplete="off"/>
+                    </div>
+                </div>
+
+                <div class="vd-grid" id="vdGrid">
+                    <t t-foreach="tiles" t-as="tile" t-key="tile.id">
+                        <a class="vd-tile"
+                           t-att-href="tile['href']"
+                           t-att-data-name="(tile['name'] or '').lower()">
+                            <div class="vd-tile-icon">
+                                <img t-att-src="tile['icon_url']" alt="" onerror="this.onerror=null;this.src='/web/static/img/default_icon_app.png'" draggable="false"/>
+                            </div>
+                            <div class="vd-tile-name" t-out="tile['name']"/>
+                            <div class="vd-tile-xmlid" t-out="tile['xmlid']"/>
+                        </a>
+                    </t>
+                </div>
+
+                <div class="vd-foot">
+                    <span>Cognify Retail Platform · <t t-out="company.name"/></span>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

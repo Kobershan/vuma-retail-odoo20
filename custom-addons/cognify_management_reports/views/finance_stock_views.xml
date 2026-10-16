@@ -1,0 +1,560 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Views for the finance, stock, expense, utilisation and target reports.
+    Every one is a pivot first: these are the questions a manager asks by
+    slicing one way and another, not tables they read top to bottom.
+-->
+<odoo>
+
+    <!-- ================================================================ -->
+    <!-- Debtor ageing                                                     -->
+    <!-- ================================================================ -->
+
+    <record id="view_customer_ageing_graph" model="ir.ui.view">
+        <field name="name">cognify.customer.ageing.graph</field>
+        <field name="model">cognify.customer.ageing</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Debt by Ageing Band" type="bar" stacked="1">
+                <field name="age_band"/>
+                <field name="outstanding" type="measure"/>
+                <field name="overdue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_customer_ageing_pivot" model="ir.ui.view">
+        <field name="name">cognify.customer.ageing.pivot</field>
+        <field name="model">cognify.customer.ageing</field>
+        <field name="arch" type="xml">
+            <pivot string="Debt Ageing" sample="1">
+                <field name="partner_id" type="row"/>
+                <field name="age_band" type="row"/>
+                <field name="user_id" type="row"/>
+                <field name="bucket_current" type="measure"/>
+                <field name="bucket_30" type="measure"/>
+                <field name="bucket_60" type="measure"/>
+                <field name="bucket_90" type="measure"/>
+                <field name="bucket_90_plus" type="measure"/>
+                <field name="overdue" type="measure"/>
+                <field name="overdue_percent" type="measure"/>
+                <field name="overdue_days" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_customer_ageing_list" model="ir.ui.view">
+        <field name="name">cognify.customer.ageing.list</field>
+        <field name="model">cognify.customer.ageing</field>
+        <field name="arch" type="xml">
+            <list string="Debt Ageing" default_order="overdue desc" decoration-danger="at_risk == True">
+                <field name="partner_id"/>
+                <field name="user_id" optional="show"/>
+                <field name="age_band" widget="badge" decoration-info="age_band == 'current'" decoration-warning="age_band == '1_30' or age_band == '31_60'" decoration-danger="age_band == '61_90' or age_band == '90_plus'"/>
+                <field name="bucket_current" sum="Total"/>
+                <field name="bucket_30" sum="Total"/>
+                <field name="bucket_60" sum="Total"/>
+                <field name="bucket_90" sum="Total"/>
+                <field name="bucket_90_plus" sum="Total"/>
+                <field name="outstanding" sum="Total"/>
+                <field name="overdue" sum="Total"/>
+                <field name="overdue_percent" widget="percentage" optional="show"/>
+                <field name="overdue_days" widget="remaining_days" optional="show"/>
+                <field name="invoice_count" sum="Total" optional="hide"/>
+                <field name="oldest_due" optional="hide"/>
+                <field name="at_risk" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_customer_ageing" model="ir.actions.act_window">
+        <field name="name">Debt Ageing</field>
+        <field name="res_model">cognify.customer.ageing</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_customer_ageing_graph"/>
+        <field name="context">{'pivot_measures': ['bucket_30', 'bucket_60', 'bucket_90', 'bucket_90_plus']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No customer owes you money.</p>
+            <p>Debt is split by how far past its due date each invoice is, which
+               is what decides who to chase and how hard.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Cash and bank                                                     -->
+    <!-- ================================================================ -->
+
+    <record id="view_cash_position_graph" model="ir.ui.view">
+        <field name="name">cognify.cash.position.graph</field>
+        <field name="model">cognify.cash.position</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Cash Movement by Month" type="line">
+                <field name="month" interval="month"/>
+                <field name="receipts" type="measure"/>
+                <field name="payments" type="measure"/>
+                <field name="net" type="measure"/>
+                <field name="closing" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_cash_position_pivot" model="ir.ui.view">
+        <field name="name">cognify.cash.position.pivot</field>
+        <field name="model">cognify.cash.position</field>
+        <field name="arch" type="xml">
+            <pivot string="Cash and Bank" sample="1">
+                <field name="month" type="col"/>
+                <field name="journal_name" type="row"/>
+                <field name="receipts" type="measure"/>
+                <field name="payments" type="measure"/>
+                <field name="net" type="measure"/>
+                <field name="closing" type="measure"/>
+                <field name="unreconciled" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_cash_position_list" model="ir.ui.view">
+        <field name="name">cognify.cash.position.list</field>
+        <field name="model">cognify.cash.position</field>
+        <field name="arch" type="xml">
+            <list string="Cash and Bank" default_order="month desc, journal_name">
+                <field name="month"/>
+                <field name="journal_name"/>
+                <field name="journal_type"/>
+                <field name="receipts" sum="Total"/>
+                <field name="payments" sum="Total"/>
+                <field name="net" sum="Total"/>
+                <field name="closing"/>
+                <field name="unreconciled" optional="show"
+                       decoration-warning="unreconciled != 0"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_cash_position" model="ir.actions.act_window">
+        <field name="name">Cash and Bank Position</field>
+        <field name="res_model">cognify.cash.position</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_cash_position_graph"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No bank or cash journals yet.</p>
+            <p>What actually moved through the bank and the tills, which is the
+               figure the sales reports cannot tell you.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Stock health                                                     -->
+    <!-- ================================================================ -->
+
+    <record id="view_stock_health_graph" model="ir.ui.view">
+        <field name="name">cognify.stock.health.graph</field>
+        <field name="model">cognify.stock.health</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Stock Value by Status" type="bar" stacked="1">
+                <field name="stock_status"/>
+                <field name="value_cost" type="measure"/>
+                <field name="value_retail" type="measure"/>
+                <field name="margin_value" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_stock_health_pivot" model="ir.ui.view">
+        <field name="name">cognify.stock.health.pivot</field>
+        <field name="model">cognify.stock.health</field>
+        <field name="arch" type="xml">
+            <pivot string="Stock Health" sample="1">
+                <field name="categ_id" type="row"/>
+                <field name="product_id" type="row"/>
+                <field name="qty_on_hand" type="measure"/>
+                <field name="qty_available" type="measure"/>
+                <field name="unit_cost" type="measure"/>
+                <field name="value_cost" type="measure"/>
+                <field name="value_retail" type="measure"/>
+                <field name="margin_value" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="qty_sold_90" type="measure"/>
+                <field name="qty_sold_365" type="measure"/>
+                <field name="stock_status" type="row"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_stock_health_list" model="ir.ui.view">
+        <field name="name">cognify.stock.health.list</field>
+        <field name="model">cognify.stock.health</field>
+        <field name="arch" type="xml">
+            <list string="Stock Health" default_order="value_retail desc"
+                  decoration-danger="is_dead == True or is_out == True"
+                  decoration-warning="is_low == True or is_slow == True">
+                <field name="product_id"/>
+                <field name="default_code" optional="show"/>
+                <field name="categ_id" optional="show"/>
+                <field name="stock_status" widget="badge"
+                       decoration-success="stock_status == 'ok'"
+                       decoration-info="stock_status == 'slow'"
+                       decoration-warning="stock_status == 'low'"
+                       decoration-danger="stock_status in ('dead', 'out')"/>
+                <field name="qty_on_hand" sum="Total"/>
+                <field name="qty_reserved" sum="Total" optional="hide"/>
+                <field name="qty_available" sum="Total"/>
+                <field name="unit_cost" optional="show"/>
+                <field name="list_price" optional="hide"/>
+                <field name="value_cost" sum="Total"/>
+                <field name="value_retail" sum="Total"/>
+                <field name="margin_value" sum="Total"/>
+                <field name="margin_percent" widget="percentage" optional="show"/>
+                <field name="qty_sold_30" sum="Total" optional="hide"/>
+                <field name="qty_sold_90" sum="Total" optional="hide"/>
+                <field name="qty_sold_365" sum="Total" optional="hide"/>
+                <field name="revenue_365" sum="Total" optional="hide"/>
+                <field name="never_sold" widget="boolean_toggle" optional="show"/>
+                <field name="last_sold" optional="hide"/>
+                <field name="days_since_sale" optional="hide"/>
+                <field name="weeks_cover" optional="show"/>
+                <field name="days_out_of_stock" optional="hide"/>
+                <field name="uom_id" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_stock_health" model="ir.actions.act_window">
+        <field name="name">Stock Health and Dead Stock</field>
+        <field name="res_model">cognify.stock.health</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_stock_health_graph"/>
+        <field name="context">{'pivot_measures': ['value_cost', 'value_retail', 'qty_available']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No storable products.</p>
+            <p>What the stock is worth at cost and at retail, what is not
+               moving, and what is about to run out.</p>
+        </field>
+    </record>
+
+    <record id="action_stock_dead" model="ir.actions.act_window">
+        <field name="name">Dead and Slow Moving Stock</field>
+        <field name="res_model">cognify.stock.health</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_stock_health_graph"/>
+        <field name="domain">[('is_dead', '=', True)]</field>
+        <field name="context">{'search_default_Group By': 1, 'create': False}</field>
+    </record>
+
+    <record id="action_stock_low" model="ir.actions.act_window">
+        <field name="name">Low and Out of Stock</field>
+        <field name="res_model">cognify.stock.health</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_stock_health_graph"/>
+        <field name="domain">['|', ('is_low', '=', True), ('is_out', '=', True)]</field>
+        <field name="context">{'search_default_Group By': 1, 'create': False}</field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Rep achievement against target                                    -->
+    <!-- ================================================================ -->
+
+    <record id="view_rep_achievement_graph" model="ir.ui.view">
+        <field name="name">cognify.rep.achievement.graph</field>
+        <field name="model">cognify.rep.achievement</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Revenue Against Target" type="bar">
+                <field name="month" interval="month"/>
+                <field name="revenue" type="measure"/>
+                <field name="target_revenue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_rep_achievement_pivot" model="ir.ui.view">
+        <field name="name">cognify.rep.achievement.pivot</field>
+        <field name="model">cognify.rep.achievement</field>
+        <field name="arch" type="xml">
+            <pivot string="Achievement Against Target" sample="1">
+                <field name="user_id" type="row"/>
+                <field name="team_id" type="row"/>
+                <field name="month" type="col"/>
+                <field name="revenue" type="measure"/>
+                <field name="target_revenue" type="measure"/>
+                <field name="attainment" type="measure"/>
+                <field name="units" type="measure"/>
+                <field name="target_units" type="measure"/>
+                <field name="units_attainment" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="order_count" type="measure"/>
+                <field name="avg_order" type="measure"/>
+                <field name="gap" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_rep_achievement_list" model="ir.ui.view">
+        <field name="name">cognify.rep.achievement.list</field>
+        <field name="model">cognify.rep.achievement</field>
+        <field name="arch" type="xml">
+            <list string="Achievement Against Target" default_order="month desc, attainment desc"
+                  decoration-success="on_target == True"
+                  decoration-warning="has_target == True and on_target == False">
+                <field name="month"/>
+                <field name="user_id"/>
+                <field name="team_id" optional="show"/>
+                <field name="revenue" sum="Total"/>
+                <field name="target_revenue" sum="Total"/>
+                <field name="attainment" widget="percentage" optional="show"/>
+                <field name="gap" optional="show"/>
+                <field name="units" sum="Total" optional="hide"/>
+                <field name="target_units" sum="Total" optional="hide"/>
+                <field name="units_attainment" widget="percentage" optional="hide"/>
+                <field name="margin" sum="Total" optional="show"/>
+                <field name="margin_percent" widget="percentage" optional="show"/>
+                <field name="order_count" sum="Total" optional="hide"/>
+                <field name="customer_count" sum="Total" optional="hide"/>
+                <field name="avg_order" optional="hide"/>
+                <field name="has_target" optional="hide"/>
+                <field name="on_target" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_rep_achievement" model="ir.actions.act_window">
+        <field name="name">Achievement Against Target</field>
+        <field name="res_model">cognify.rep.achievement</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_rep_achievement_graph"/>
+        <field name="context">{'pivot_measures': ['revenue', 'target_revenue', 'attainment']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing to measure yet.</p>
+            <p>Sales against the targets set on Sales Targets. A month with no
+               target set shows the actual and leaves attainment blank.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Sales targets                                                     -->
+    <!-- ================================================================ -->
+
+    <record id="view_sales_target_list" model="ir.ui.view">
+        <field name="name">cognify.sales.target.list</field>
+        <field name="model">cognify.sales.target</field>
+        <field name="arch" type="xml">
+            <list string="Sales Targets" editable="bottom">
+                <field name="date"/>
+                <field name="user_id"/>
+                <field name="team_id" optional="show"/>
+                <field name="target_revenue" sum="Total"/>
+                <field name="target_units" sum="Total" optional="hide"/>
+                <field name="target_margin" sum="Total" optional="hide"/>
+                <field name="name" optional="hide"/>
+                <field name="note" optional="hide"/>
+                <button name="action_roll_forward" type="object" string="Copy to Next Month"
+                        icon="fa-arrow-right" groups="base.group_user"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sales_target_form" model="ir.ui.view">
+        <field name="name">cognify.sales.target.form</field>
+        <field name="model">cognify.sales.target</field>
+        <field name="arch" type="xml">
+            <form string="Sales Target">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="user_id"/>
+                            <field name="team_id"/>
+                        </group>
+                        <group>
+                            <field name="target_revenue"/>
+                            <field name="target_units"/>
+                            <field name="target_margin"/>
+                        </group>
+                    </group>
+                    <field name="note" placeholder="Anything about this target that is not the number"/>
+                    <field name="name" invisible="1"/>
+                    <field name="company_id" groups="base.group_multi_company" invisible="1"/>
+                </sheet>
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_roll_forward" type="object" class="oe_highlight" string="Copy to Next Month">
+                        <i class="fa fa-arrow-right me-1"/>
+                        Copy to Next Month
+                    </button>
+                    <button name="action_view_achievement" type="object" class="btn btn-secondary" string="See Achievement">
+                        <i class="fa fa-bar-chart me-1"/>
+                        See Achievement
+                    </button>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_sales_target" model="ir.actions.act_window">
+        <field name="name">Sales Targets</field>
+        <field name="res_model">cognify.sales.target</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No targets set.</p>
+            <p>Set a revenue, volume or margin target per salesperson per month,
+               then read Achievement Against Target to see how they are doing.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Expenses                                                          -->
+    <!-- ================================================================ -->
+
+    <record id="view_expense_report_graph" model="ir.ui.view">
+        <field name="name">cognify.expense.report.graph</field>
+        <field name="model">cognify.expense.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Expense Spend Against Revenue" type="line">
+                <field name="month" interval="month"/>
+                <field name="expense_total" type="measure"/>
+                <field name="revenue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_expense_report_pivot" model="ir.ui.view">
+        <field name="name">cognify.expense.report.pivot</field>
+        <field name="model">cognify.expense.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Expense Spend" sample="1">
+                <field name="month" type="col"/>
+                <field name="department_id" type="row"/>
+                <field name="employee_id" type="row"/>
+                <field name="expense_total" type="measure"/>
+                <field name="travel" type="measure"/>
+                <field name="accommodation" type="measure"/>
+                <field name="meals" type="measure"/>
+                <field name="communication" type="measure"/>
+                <field name="gifts" type="measure"/>
+                <field name="other" type="measure"/>
+                <field name="expense_count" type="measure"/>
+                <field name="avg_claim" type="measure"/>
+                <field name="expense_ratio" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_expense_report_list" model="ir.ui.view">
+        <field name="name">cognify.expense.report.list</field>
+        <field name="model">cognify.expense.report</field>
+        <field name="arch" type="xml">
+            <list string="Expense Spend" default_order="month desc, expense_total desc">
+                <field name="month"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="expense_total" sum="Total"/>
+                <field name="expense_ratio" widget="percentage" optional="show"/>
+                <field name="expense_count" sum="Total" optional="show"/>
+                <field name="avg_claim" optional="hide"/>
+                <field name="largest_claim" optional="hide"/>
+                <field name="travel" sum="Total" optional="show"/>
+                <field name="accommodation" sum="Total" optional="hide"/>
+                <field name="meals" sum="Total" optional="hide"/>
+                <field name="communication" sum="Total" optional="hide"/>
+                <field name="gifts" sum="Total" optional="hide"/>
+                <field name="other" sum="Total" optional="hide"/>
+                <field name="revenue" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_expense_report" model="ir.actions.act_window">
+        <field name="name">Expense Spend</field>
+        <field name="res_model">cognify.expense.report</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_expense_report_graph"/>
+        <field name="context">{'pivot_measures': ['expense_total', 'expense_ratio', 'expense_count']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No approved expenses.</p>
+            <p>Approved claims per person per month, as a share of the revenue
+               they were earned against.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================ -->
+    <!-- Utilisation                                                       -->
+    <!-- ================================================================ -->
+
+    <record id="view_utilisation_report_graph" model="ir.ui.view">
+        <field name="name">cognify.utilisation.report.graph</field>
+        <field name="model">cognify.utilisation.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Billable Hours by Month" type="line">
+                <field name="month" interval="month"/>
+                <field name="hours" type="measure"/>
+                <field name="billable_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="view_utilisation_report_pivot" model="ir.ui.view">
+        <field name="name">cognify.utilisation.report.pivot</field>
+        <field name="model">cognify.utilisation.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Timesheet Utilisation" sample="1">
+                <field name="month" type="col"/>
+                <field name="department_id" type="row"/>
+                <field name="employee_id" type="row"/>
+                <field name="hours" type="measure"/>
+                <field name="billable_hours" type="measure"/>
+                <field name="billable_percent" type="measure"/>
+                <field name="timesheet_coverage" type="measure"/>
+                <field name="cost" type="measure"/>
+                <field name="revenue" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="effective_rate" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_utilisation_report_list" model="ir.ui.view">
+        <field name="name">cognify.utilisation.report.list</field>
+        <field name="model">cognify.utilisation.report</field>
+        <field name="arch" type="xml">
+            <list string="Timesheet Utilisation" default_order="month desc, hours desc"
+                  decoration-danger="timesheet_coverage &lt; 70"
+                  decoration-warning="billable_percent &lt; 40">
+                <field name="month"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="show"/>
+                <field name="hours" sum="Total"/>
+                <field name="billable_hours" sum="Total"/>
+                <field name="billable_percent" widget="percentage" optional="show"/>
+                <field name="non_billable_hours" sum="Total" optional="hide"/>
+                <field name="days_recorded" sum="Total" optional="show"/>
+                <field name="expected_days" optional="show"/>
+                <field name="timesheet_coverage" widget="percentage" optional="show"/>
+                <field name="cost" sum="Total"/>
+                <field name="revenue" sum="Total" optional="show"/>
+                <field name="margin" sum="Total" optional="hide"/>
+                <field name="margin_percent" widget="percentage" optional="hide"/>
+                <field name="effective_rate" optional="show"/>
+                <field name="revenue_per_hour" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_utilisation_report" model="ir.actions.act_window">
+        <field name="name">Timesheet Utilisation</field>
+        <field name="res_model">cognify.utilisation.report</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_id" ref="view_utilisation_report_graph"/>
+        <field name="context">{'pivot_measures': ['hours', 'billable_percent', 'cost', 'revenue']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No timesheets yet.</p>
+            <p>Hours recorded per person per month, how much of it was billable,
+               and what it cost against what was invoiced.</p>
+        </field>
+    </record>
+
+</odoo>

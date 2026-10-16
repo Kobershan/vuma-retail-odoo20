@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The picking slip.
+
+        `product_expiry` already prints an "Expiration Date" column, but only when
+        lot/serial numbers are also printed and the user holds
+        `group_expiry_date_on_delivery_slip`. This module does not duplicate that
+        column. It adds a "Days Left" column next to it so the person at the
+        counter can see urgency without doing date arithmetic, and flags anything
+        already expired in red.
+
+        Two subtleties drive the shape of this file:
+
+        1. The header must NOT reuse product_expiry's `has_expiry_date`
+           variable. Where an inherited view's nodes land in the merged document
+           is decided by view priority, and if this block is evaluated before
+           product_expiry assigns that variable the column would silently
+           disappear. Computing the flag here instead makes the two columns
+           independent of each other and of the merge order.
+
+        2. Values are read with `t-field` / `t-out` rather than `t-esc`. In this
+           Odoo version `t-esc` returns nothing for a dotted path that walks a
+           recordset, which renders as a blank cell.
+    -->
+
+    <!-- Header cell: added to the outer document template. -->
+    <template id="stock_report_delivery_document_inherit_cognify_expiry"
+              inherit_id="stock.report_delivery_document">
+        <xpath expr="//th[@name='lot_serial']" position="after">
+            <t t-set="cognify_has_expiry" t-value="False"/>
+            <t t-set="cognify_has_expiry"
+               t-value="o.move_line_ids.filtered(lambda ml: ml.lot_id.expiration_date)"
+               groups="product_expiry.group_expiry_date_on_delivery_slip"/>
+            <t name="cognify_expiry_days_header" t-if="cognify_has_expiry">
+                <th>Days Left</th>
+            </t>
+        </xpath>
+    </template>
+
+    <!--
+        Body cell. `move_line_lot` lives in the per-move-line template that the
+        document template calls, so the header and the row have to be extended in
+        two separate inheritance records.
+    -->
+    <template id="stock_report_delivery_has_serial_move_line_inherit_cognify_expiry"
+              inherit_id="stock.stock_report_delivery_has_serial_move_line">
+        <xpath expr="//t[@name='move_line_lot']" position="after">
+            <t name="cognify_expiry_days_cell" t-if="has_expiry_date">
+                <td name="cognify_days_left">
+                    <span t-field="move_line.lot_id.expiry_days_left"/>
+                    <span t-if="move_line.lot_id.expiry_days_left &lt; 0"
+                          class="text-danger fw-bold">(expired)</span>
+                    <span t-elif="move_line.lot_id.expiry_days_left == 0"
+                          class="text-warning fw-bold">(today)</span>
+                </td>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

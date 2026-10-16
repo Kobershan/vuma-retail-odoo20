@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================== Customer balances and credit ==================== -->
+
+    <record id="view_customer_credit_list" model="ir.ui.view">
+        <field name="name">cognify.customer.credit.list</field>
+        <field name="model">cognify.customer.credit</field>
+        <field name="arch" type="xml">
+            <list string="Customer Balances" default_order="outstanding desc">
+                <field name="partner_name" string="Customer"/>
+                <field name="user_id" optional="hide"/>
+                <field name="invoice_count" string="Invoices" optional="hide"/>
+                <field name="billed" sum="Total Invoiced" optional="show"/>
+                <field name="paid" sum="Total Paid" optional="hide"/>
+                <field name="outstanding" sum="Total Outstanding"/>
+                <field name="overdue" sum="Total Overdue"
+                       decoration-danger="overdue &gt; 0"
+                       decoration-bf="overdue &gt; 0"/>
+                <field name="overdue_days" string="Days Late" optional="hide"
+                       decoration-danger="overdue_days &gt; 30"/>
+                <field name="oldest_due" optional="hide"/>
+                <field name="use_credit_limit" string="On Credit Limit" optional="show"/>
+                <field name="credit_limit" sum="Limits"
+                       decoration-muted="not use_credit_limit" optional="show"/>
+                <field name="credit_available" sum="Available"
+                       decoration-danger="credit_available &lt; 0"
+                       decoration-warning="credit_available &gt;= 0 and credit_available &lt; 0"/>
+                <field name="over_limit" string="Over Limit"
+                       decoration-danger="over_limit == True"
+                       optional="hide"/>
+                <field name="country_id" optional="hide"/>
+                <field name="partner_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_customer_credit_pivot" model="ir.ui.view">
+        <field name="name">cognify.customer.credit.pivot</field>
+        <field name="model">cognify.customer.credit</field>
+        <field name="arch" type="xml">
+            <pivot string="Balances by Team" sample="1">
+                <field name="team_id" type="row"/>
+                <field name="outstanding" type="measure"/>
+                <field name="overdue" type="measure"/>
+                <field name="credit_available" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_customer_credit_graph" model="ir.ui.view">
+        <field name="name">cognify.customer.credit.graph</field>
+        <field name="model">cognify.customer.credit</field>
+        <field name="arch" type="xml">
+            <graph string="Balances" type="bar">
+                <field name="outstanding" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_customer_credit" model="ir.actions.act_window">
+        <field name="name">Customer Balances</field>
+        <field name="res_model">cognify.customer.credit</field>
+        <field name="view_mode">list,pivot,graph</field>
+        <field name="context">{'search_default_filter_owing': 1}</field>
+    </record>
+
+    <record id="action_customer_credit_all" model="ir.actions.act_window">
+        <field name="name">All Customers</field>
+        <field name="res_model">cognify.customer.credit</field>
+        <field name="view_mode">list,pivot,graph</field>
+    </record>
+
+    <record id="view_customer_credit_search" model="ir.ui.view">
+        <field name="name">cognify.customer.credit.search</field>
+        <field name="model">cognify.customer.credit</field>
+        <field name="arch" type="xml">
+            <search string="Customer Balances">
+                <field name="partner_name" string="Customer"/>
+                <field name="user_id"/>
+                <field name="country_id"/>
+                <field name="overdue_days" string="Days Overdue"/>
+                <filter name="filter_owing" string="Owing money"
+                        domain="[('outstanding', '&gt;', 0)]"/>
+                <filter name="filter_overdue" string="Overdue"
+                        domain="[('overdue', '&gt;', 0)]"/>
+                <filter name="filter_over_limit" string="Over credit limit"
+                        domain="[('over_limit', '=', True)]"/>
+                <filter name="filter_credit_managed" string="On a credit limit"
+                        domain="[('use_credit_limit', '=', True)]"/>
+                <separator/>
+                <filter name="group_team" string="Sales Team" context="{'group_by': 'team_id'}"/>
+                <filter name="group_user" string="Salesperson" context="{'group_by': 'user_id'}"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>

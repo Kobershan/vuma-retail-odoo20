@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================================================== Add invoice lines -->
+    <record id="action_customer_goods_pickup_add_lines" model="ir.actions.act_window">
+        <field name="name">Add Invoice Lines</field>
+        <field name="res_model">customer.goods.pickup.add.lines</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_customer_goods_pickup"/>
+    </record>
+
+    <record id="view_customer_goods_pickup_add_lines_form" model="ir.ui.view">
+        <field name="name">customer.goods.pickup.add.lines.form</field>
+        <field name="model">customer.goods.pickup.add.lines</field>
+        <field name="arch" type="xml">
+            <form string="Add Invoice Lines">
+                <group>
+                    <group>
+                        <field name="pickup_id" invisible="1"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="invoice_number"/>
+                        <field name="picked_count"/>
+                        <field name="picked_qty"/>
+                    </group>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom" create="false" delete="false">
+                        <field name="sequence" widget="handle"/>
+                        <field name="selected"/>
+                        <field name="already_added" column_invisible="1"/>
+                        <field name="product_id" readonly="1"
+                               options="{'no_create': True}"/>
+                        <field name="name"/>
+                        <field name="product_uom_id" readonly="1"/>
+                        <field name="invoiced_qty" readonly="1"/>
+                        <field name="credited_qty" readonly="1"/>
+                        <field name="reserved_qty" readonly="1"/>
+                        <field name="eligible_qty" readonly="1"/>
+                        <field name="qty_collected"
+                               readonly="already_added or not selected"/>
+                        <field name="price_unit" readonly="1" optional="hide"/>
+                        <field name="discount" readonly="1" optional="hide"/>
+                        <field name="return_reason" optional="show"
+                               readonly="already_added or not selected"/>
+                        <field name="invoice_line_id" column_invisible="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_add_lines" type="object" string="Add"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================== Store receiving -->
+    <record id="action_customer_goods_receipt_receive" model="ir.actions.act_window">
+        <field name="name">Store Receiving</field>
+        <field name="res_model">customer.goods.receipt.receive</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_customer_goods_receipt_receive_form" model="ir.ui.view">
+        <field name="name">customer.goods.receipt.receive.form</field>
+        <field name="model">customer.goods.receipt.receive</field>
+        <field name="arch" type="xml">
+            <form string="Store Receiving">
+                <div class="alert alert-info" role="alert" invisible="not invoice_number">
+                    Goods collected against original invoice
+                    <strong><field name="invoice_number" readonly="1"/></strong>
+                    for <strong><field name="partner_id" readonly="1"/></strong>.
+                    Count what actually turned up and decide how much to accept.
+                </div>
+                <group>
+                    <group>
+                        <field name="pickup_id" invisible="1"/>
+                        <field name="invoice_id" invisible="1"/>
+                        <field name="sales_rep_id"/>
+                        <field name="collection_date"/>
+                    </group>
+                    <group>
+                        <field name="warehouse_id"/>
+                        <field name="dest_location_id"
+                               options="{'no_create': True}"/>
+                        <field name="received_by_id" options="{'no_create': True}"/>
+                        <field name="receipt_date"/>
+                    </group>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom" create="false" delete="false">
+                        <field name="sequence" widget="handle"/>
+                        <field name="product_id" readonly="1"
+                               options="{'no_create': True}"/>
+                        <field name="name"/>
+                        <field name="product_uom_id" readonly="1"/>
+                        <field name="qty_collected" readonly="1"/>
+                        <field name="qty_outstanding" readonly="1"/>
+                        <field name="barcode" placeholder="Scan or type"/>
+                        <field name="qty_received"/>
+                        <field name="qty_accepted"/>
+                        <field name="condition"/>
+                        <field name="rejection_reason"
+                               required="qty_received > qty_accepted"/>
+                        <field name="inspection_notes" optional="hide"/>
+                        <field name="pickup_line_id" column_invisible="1"/>
+                        <field name="invoice_line_id" column_invisible="1"/>
+                    </list>
+                </field>
+                <group class="oe_subtotal_footer">
+                    <field name="total_received"/>
+                    <field name="total_accepted"/>
+                    <field name="total_rejected"/>
+                </group>
+                <field name="inspection_notes"
+                       placeholder="Packaging, paperwork, anything odd about the delivery…"/>
+                <footer>
+                    <button name="action_confirm_receiving" type="object"
+                            string="Create Receiving Document" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================= Reject receipt -->
+    <record id="action_customer_goods_reject_receipt" model="ir.actions.act_window">
+        <field name="name">Reject Delivery</field>
+        <field name="res_model">customer.goods.receipt.reject</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_customer_goods_receipt_reject_form" model="ir.ui.view">
+        <field name="name">customer.goods.receipt.reject.form</field>
+        <field name="model">customer.goods.receipt.reject</field>
+        <field name="arch" type="xml">
+            <form string="Reject Delivery">
+                <div class="alert alert-warning" role="alert">
+                    Rejecting the goods puts nothing into stock and raises no
+                    credit. The accepted quantity, if any, is untouched.
+                </div>
+                <group>
+                    <group>
+                        <field name="receipt_id" invisible="1"/>
+                        <field name="invoice_number"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="keep_some"/>
+                        <field name="rejected_disposition"/>
+                        <field name="rejected_disposition_notes"
+                               invisible="rejected_disposition != 'return_to_customer'"/>
+                    </group>
+                </group>
+                <field name="line_ids" invisible="not keep_some"/>
+                <group>
+                    <field name="rejection_reason" placeholder="Damaged, wrong product, does not qualify for return…"/>
+                    <field name="inspection_notes"/>
+                    <field name="photo_ids" widget="image" nolabel="1"/>
+                </group>
+                <footer>
+                    <button name="action_reject" type="object" string="Reject Delivery"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== Cancel pickup -->
+    <record id="action_customer_goods_cancel_pickup" model="ir.actions.act_window">
+        <field name="name">Cancel Pickup</field>
+        <field name="res_model">customer.goods.pickup.cancel</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_customer_goods_pickup_cancel_form" model="ir.ui.view">
+        <field name="name">customer.goods.pickup.cancel.form</field>
+        <field name="model">customer.goods.pickup.cancel</field>
+        <field name="arch" type="xml">
+            <form string="Cancel Pickup">
+                <div class="alert alert-warning" role="alert">
+                    A confirmed pickup is never deleted. Cancelling keeps the
+                    record and its history; goods already accepted into stock
+                    have to be reversed first.
+                </div>
+                <group>
+                    <group>
+                        <field name="pickup_id" invisible="1"/>
+                        <field name="invoice_number"/>
+                        <field name="partner_id"/>
+                    </group>
+                    <group>
+                        <field name="goods_disposition"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="cancel_reason" placeholder="Customer changed their mind, trip was cancelled…"/>
+                    <field name="notes"/>
+                </group>
+                <footer>
+                    <button name="action_cancel_pickup" type="object" string="Cancel Pickup"
+                            class="btn-primary"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

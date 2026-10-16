@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  NOTE (Odoo 20 / OWL3): every reference to a member of this component MUST be
+  prefixed with `this.`.
+
+  A bare name such as `scopeLabel` is compiled against the *rendering context*,
+  and inside <Dropdown>'s slots that context is not this component. The value
+  silently came back undefined (empty icon, empty label, empty menu) and a bare
+  *method call* like `scopeIcon(activeScope)` threw
+  `TypeError: ctx.scopeIcon is not a function` while the systray was rendering,
+  which aborted the web client's boot and left a blank page after login.
+-->
+<templates xml:space="preserve">
+    <t t-name="vuma_multi_tenant.VumaCompanySwitch">
+        <Dropdown position="'bottom-end'" menuClass="'o_vuma_company_switch_menu'">
+            <button
+                class="btn btn-outline-secondary o_vuma_company_switch_button"
+                title="Trade Rite / Siyaya DC / both — drives every dashboard and list."
+                aria-label="Vuma company switcher">
+                <i t-att-class="this.scopeIconClass"/>
+                <span class="d-none d-lg-inline ms-2" t-out="this.scopeLabel"/>
+            </button>
+            <t t-set-slot="content">
+                <t t-if="this.hasBothCompanies">
+                    <DropdownItem onSelected="() => this.selectScope('both')">
+                        <i class="fa fa-th-large me-2"/>
+                        <span>Both Companies (Trade Rite + Siyaya DC)</span>
+                    </DropdownItem>
+                    <DropdownItem onSelected="() => this.selectScope('tr')">
+                        <i class="fa fa-building me-2"/>
+                        <span t-out="this.tradeCompany.name"/>
+                    </DropdownItem>
+                    <DropdownItem onSelected="() => this.selectScope('sy')">
+                        <i class="fa fa-truck me-2"/>
+                        <span t-out="this.siyayaCompany.name"/>
+                    </DropdownItem>
+                </t>
+                <t t-else="">
+                    <div class="o_vuma_company_switch_empty px-3 py-2 text-muted small">
+                        Trade Rite and Siyaya DC are not both available to your user yet.
+                    </div>
+                </t>
+            </t>
+        </Dropdown>
+    </t>
+</templates>

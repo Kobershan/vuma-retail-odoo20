@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================================================== Quarantine list -->
+    <record id="view_customer_goods_quarantine_list" model="ir.ui.view">
+        <field name="name">customer.goods.quarantine.list</field>
+        <field name="model">customer.goods.quarantine</field>
+        <field name="arch" type="xml">
+            <list string="Quarantined Customer Returns"
+                  decoration-muted="state in ('returned', 'scrapped', 'written_off')"
+                  decoration-warning="state == 'quarantine'"
+                  decoration-info="state == 'awaiting_customer'"
+                  decoration-success="state == 'released'">
+                <field name="name"/>
+                <field name="receipt_id"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="product_uom_id"/>
+                <field name="qty" sum="Refused"/>
+                <field name="qty_pending" sum="Still Held"/>
+                <field name="qty_released" sum="Re-inspected"/>
+                <field name="location_id"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'quarantine'"
+                       decoration-info="state == 'awaiting_customer'"
+                       decoration-success="state == 'released'"/>
+                <field name="disposition"/>
+                <field name="quarantine_date"/>
+                <field name="quarantine_by_id"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==================================================== Quarantine search -->
+    <record id="view_customer_goods_quarantine_search" model="ir.ui.view">
+        <field name="name">customer.goods.quarantine.search</field>
+        <field name="model">customer.goods.quarantine</field>
+        <field name="arch" type="xml">
+            <search string="Search Quarantine">
+                <field name="name"/>
+                <field name="receipt_id"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="product_id"/>
+                <field name="location_id"/>
+                <filter name="filter_held" string="Still Held"
+                        domain="[('state', 'in', ('quarantine', 'awaiting_customer'))]"/>
+                <separator/>
+                <filter name="filter_awaiting_decision" string="Awaiting A Decision"
+                        domain="[('state', '=', 'quarantine')]"/>
+                <filter name="filter_awaiting_customer" string="Awaiting Customer Collection"
+                        domain="[('state', '=', 'awaiting_customer')]"/>
+                <filter name="filter_reinspect" string="Quarantined Goods Awaiting Re-inspection"
+                        domain="[('state', '=', 'quarantine')]"/>
+                <separator/>
+                <filter name="filter_released" string="Re-inspected And Accepted"
+                        domain="[('state', '=', 'released')]"/>
+                <filter name="filter_returned" string="Returned To Customer"
+                        domain="[('state', '=', 'returned')]"/>
+                <filter name="filter_scrapped" string="Scrapped / Disposed"
+                        domain="[('state', '=', 'scrapped')]"/>
+                <group>
+                    <filter name="group_state" string="Custody Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_location" string="Location"
+                            context="{'group_by': 'location_id'}"/>
+                    <filter name="group_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_receipt_month" string="Quarantine Month"
+                            context="{'group_by': 'quarantine_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ====================================================== Quarantine form -->
+    <record id="view_customer_goods_quarantine_form" model="ir.ui.view">
+        <field name="name">customer.goods.quarantine.form</field>
+        <field name="model">customer.goods.quarantine</field>
+        <field name="arch" type="xml">
+            <form string="Quarantined Customer Return">
+                <header>
+                    <button name="action_stage_for_customer" type="object"
+                            string="Stage For Collection"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state != 'quarantine'"/>
+                    <button name="action_return_to_customer" type="object"
+                            string="Hand Back To Customer"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state not in ('quarantine', 'awaiting_customer')"/>
+                    <button name="action_reinspect_accept" type="object"
+                            string="Accept After Re-inspection"
+                            class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="state not in ('quarantine', 'awaiting_customer')"/>
+                    <button name="action_scrap" type="object"
+                            string="Scrap / Dispose"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="state not in ('quarantine', 'awaiting_customer')"/>
+                    <button name="action_record_other_disposition" type="object"
+                            string="Record Another Outcome"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="state not in ('quarantine', 'awaiting_customer')"/>
+                    <button name="action_view_picking" type="object"
+                            string="Stock Transfer"
+                            invisible="not last_picking_id and not picking_id"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="quarantine,awaiting_customer,released"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_receipt" type="object"
+                                class="oe_stat_button" icon="fa-truck">
+                            <field name="receipt_id" widget="statinfo"
+                                   string="Store Receipt"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state not in ('quarantine', 'awaiting_customer')">
+                        These goods are physically held in the returns area. They
+                        are real stock with a real value, but the location sits
+                        outside every warehouse, so they can never be sold or
+                        reserved. Being here does not entitle the customer to a
+                        credit: only accepted and released goods are creditable.
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="receipt_id"/>
+                            <field name="pickup_id"/>
+                            <field name="invoice_id"/>
+                            <field name="invoice_number"/>
+                            <field name="partner_id"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="product_uom_id"/>
+                            <field name="lot_id"/>
+                            <field name="location_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Quantities">
+                        <group>
+                            <field name="qty"/>
+                            <field name="qty_disposed"/>
+                            <field name="qty_pending"/>
+                            <field name="qty_released"/>
+                            <field name="value"/>
+                        </group>
+                        <group>
+                            <field name="quarantine_date"/>
+                            <field name="quarantine_by_id"/>
+                            <field name="rejection_reason"/>
+                            <field name="price_unit"/>
+                            <field name="description" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Decision">
+                        <group>
+                            <field name="disposition"/>
+                            <field name="disposition_reason"/>
+                            <field name="disposition_by_id"/>
+                            <field name="disposition_date"/>
+                            <field name="approved_by_id"/>
+                            <field name="approved_on"/>
+                        </group>
+                        <group>
+                            <field name="handover_to"/>
+                            <field name="handover_reference"/>
+                            <field name="handover_date"/>
+                            <field name="picking_id"/>
+                            <field name="stock_move_id"/>
+                            <field name="last_picking_id"/>
+                            <field name="last_move_id"/>
+                        </group>
+                    </group>
+
+                    <field name="split_line_ids" invisible="1"/>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================== Actions -->
+    <record id="action_customer_goods_quarantine_all" model="ir.actions.act_window">
+        <field name="name">Quarantine</field>
+        <field name="res_model">customer.goods.quarantine</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_quarantine_search"/>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing is in quarantine</p>
+            <p>Goods the store physically refused land here, with a real stock
+               move behind them. Decide what happens to each of them: hand them
+               back to the customer, inspect them again and put the good ones
+               back into stock, or scrap them.</p>
+        </field>
+    </record>
+
+    <record id="action_customer_goods_quarantine_held" model="ir.actions.act_window">
+        <field name="name">Goods In The Returns Area</field>
+        <field name="res_model">customer.goods.quarantine</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_quarantine_search"/>
+        <field name="domain">[('state', 'in', ('quarantine', 'awaiting_customer'))]</field>
+        <field name="context">{'search_default_filter_held': 1, 'create': False}</field>
+    </record>
+
+    <record id="action_customer_goods_quarantine_unverified" model="ir.actions.act_window">
+        <field name="name">Legacy Rejections To Verify</field>
+        <field name="res_model">customer.goods.receipt</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_receipt_search"/>
+        <field name="domain">[('needs_quarantine_verification', '=', True)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing to verify</p>
+            <p>These receipts refused goods before quarantine was real stock, so
+               nobody has confirmed where the goods physically are. The module
+               will not invent a stock movement for them: walk the returns area
+               and check.</p>
+        </field>
+    </record>
+
+</odoo>

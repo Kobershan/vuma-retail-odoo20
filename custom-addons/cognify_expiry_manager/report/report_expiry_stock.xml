@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        A printable list of everything in stock that is inside its alert window or
+        already expired, sorted by expiry date so the first line is always the most
+        urgent thing to deal with.
+
+        The matching Expiry Alerts list view already offers Odoo's built-in
+        "Download xlsx" export, so there is no separate spreadsheet report here.
+    -->
+    <template id="report_expiry_stock">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Expiring Stock</h2>
+                        <p class="text-muted">
+                            Only lots with stock on hand are listed, most urgent first.
+                        </p>
+
+                        <table class="table table-sm table-hover o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th class="text-end">Days Left</th>
+                                    <th>Product</th>
+                                    <th>Lot / Serial</th>
+                                    <th class="text-end">On Hand</th>
+                                    <th>Location</th>
+                                    <th>Expires On</th>
+                                    <th>Alert Window</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.sorted('expiration_date')" t-as="lot">
+                                    <td>
+                                        <span t-if="lot.expiry_status == 'expired'" class="badge text-bg-danger">Expired</span>
+                                        <span t-elif="lot.expiry_status == 'expiring'" class="badge text-bg-warning">Expiring Soon</span>
+                                        <span t-else="" class="badge text-bg-success">OK</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-esc="lot.expiry_days_left"/>
+                                    </td>
+                                    <td><span t-field="lot.product_id"/></td>
+                                    <td><span t-field="lot.name"/></td>
+                                    <td class="text-end">
+                                        <span t-field="lot.product_qty"/>
+                                        <span t-field="lot.uom_id"/>
+                                    </td>
+                                    <td><span t-field="lot.location_id" t-options="{'widget': 'text'}"/></td>
+                                    <td><span t-field="lot.expiration_date" t-options="{'widget': 'date'}"/></td>
+                                    <td><span t-field="lot.expiry_alert_window"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_expiry_stock" model="ir.actions.report">
+        <field name="name">Expiring Stock</field>
+        <field name="model">stock.lot</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cognify_expiry_manager.report_expiry_stock</field>
+        <field name="print_report_name">'Expiring Stock'</field>
+        <!--
+            No hard-coded domain: printing from the Expiry Alerts list passes the
+            list's own filtered records, and printing from the plain Lots list
+            passes whatever the user has selected. A fixed domain here would be
+            evaluated once at install time and silently go stale.
+        -->
+        <field name="group_ids" eval="[(4, ref('cognify_expiry_manager.group_expiry_user'))]"/>
+    </record>
+
+</odoo>

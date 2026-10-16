@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#f0f2f5" stroke="#e0e3e8" stroke-width="2"/>
+  
+  <!-- Trade Rite building (blue) -->
+  <path d="M18 42 L18 22 L22 22 L22 26 L26 26 L26 22 L30 22 L30 42 Z" fill="#1f77b4"/>
+  <rect x="20" y="28" width="4" height="6" fill="white" opacity="0.8"/>
+  <rect x="26" y="28" width="4" height="6" fill="white" opacity="0.8"/>
+  <rect x="20" y="36" width="4" height="4" fill="white" opacity="0.8"/>
+  <rect x="26" y="36" width="4" height="4" fill="white" opacity="0.8"/>
+  
+  <!-- Siyaya DC truck (orange) -->
+  <path d="M38 38 L38 34 L48 34 L48 30 L50 30 L50 26 L42 26 L42 22 L50 22 L50 18 L38 18 L38 38 Z" fill="#ff7f0e"/>
+  <circle cx="41" cy="38" r="3" fill="#333"/>
+  <circle cx="48" cy="38" r="3" fill="#333"/>
+  <rect x="43" y="22" width="5" height="4" fill="white" opacity="0.8"/>
+  
+  <!-- Connecting arrow -->
+  <path d="M32 22 L32 18" stroke="#666" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+    </marker>
+  </defs>
+  
+  <!-- Basket icon in center -->
+  <path d="M28 30 Q32 26 36 30" stroke="#666" stroke-width="2" fill="none"/>
+  <path d="M28 30 L29 38 L35 38 L36 30" stroke="#666" stroke-width="1.5" fill="#fafafa"/>
+</svg>

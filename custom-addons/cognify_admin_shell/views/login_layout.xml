@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <template id="vuma_login_layout" inherit_id="web.login_layout" priority="99">
+    <xpath expr="t[@t-call]" position="replace">
+      <t t-call="web.frontend_layout" html_data="{'style': 'height: 100%;'}" body_classname.f="'o_web_login_vuma'" no_header="True" no_footer="True">
+        <div class="o_web_login_vuma">
+          <aside class="vuma-side">
+            <div class="logo-plate">
+              <img t-att-src="'/cognify_admin_shell/static/img/vuma-logo.png'" alt="Vuma Retail"/>
+            </div>
+            <div>
+              <p class="tagline">Vuma Retail · Admin</p>
+              <h2 class="hero">Run the shop<br/>from one desk.</h2>
+              <p class="hero-sub">Sales targets, stock health, people and cash — every signal from every aisle, on a single console. Built for the floor, not the boardroom.</p>
+            </div>
+            <p class="foot">© Vuma Retail · vuma_retail database</p>
+          </aside>
+          <main class="vuma-form">
+            <div class="card-plate">
+              <h1>Sign in</h1>
+              <p class="subtitle">Use your staff credentials to continue.</p>
+              <t t-out="0"/>
+            </div>
+          </main>
+        </div>
+      </t>
+    </xpath>
+  </template>
+</odoo>

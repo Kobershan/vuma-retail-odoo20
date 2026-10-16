@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ Pickup list -->
+    <record id="view_customer_goods_pickup_list" model="ir.ui.view">
+        <field name="name">customer.goods.pickup.list</field>
+        <field name="model">customer.goods.pickup</field>
+        <field name="arch" type="xml">
+            <list string="Customer Goods Pickups"
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state in ('received',)"
+                  decoration-warning="state == 'partially_rejected'"
+                  decoration-danger="state == 'rejected'"
+                  decoration-info="state in ('awaiting_receipt', 'partially_received')">
+                <field name="name"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="sales_rep_id"/>
+                <field name="collection_date"/>
+                <field name="warehouse_id"/>
+                <field name="total_collected_qty" sum="Collected"/>
+                <field name="total_accepted_qty" sum="Accepted"/>
+                <field name="total_rejected_qty" sum="Rejected"/>
+                <field name="total_credited_qty" sum="Credited" optional="hide"/>
+                <field name="receipt_count" string="Receipts" optional="hide"/>
+                <field name="credit_note_count" string="Credits" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'received'"
+                       decoration-info="state in ('draft', 'collected', 'in_transit', 'awaiting_receipt', 'partially_received')"
+                       decoration-warning="state == 'partially_rejected'"
+                       decoration-danger="state == 'rejected'"
+                       decoration-muted="state == 'cancel'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================================================== Pickup search -->
+    <record id="view_customer_goods_pickup_search" model="ir.ui.view">
+        <field name="name">customer.goods.pickup.search</field>
+        <field name="model">customer.goods.pickup</field>
+        <field name="arch" type="xml">
+            <search string="Search Goods Pickups">
+                <field name="name"/>
+                <field name="invoice_id"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="sales_rep_id"/>
+                <field name="warehouse_id"/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_collected" string="Collected"
+                        domain="[('state', '=', 'collected')]"/>
+                <filter name="filter_in_transit" string="Goods In Transit"
+                        domain="[('state', '=', 'in_transit')]"/>
+                <filter name="filter_awaiting_receipt" string="Awaiting Store Receipt"
+                        domain="[('state', '=', 'awaiting_receipt')]"/>
+                <filter name="filter_partially_received" string="Partially Received"
+                        domain="[('state', '=', 'partially_received')]"/>
+                <separator/>
+                <filter name="filter_rejected" string="Rejected"
+                        domain="[('state', 'in', ('rejected', 'partially_rejected'))]"/>
+                <filter name="filter_received" string="Completed"
+                        domain="[('state', '=', 'received')]"/>
+                <filter name="filter_cancelled" string="Cancelled"
+                        domain="[('state', '=', 'cancel')]"/>
+                <filter name="filter_not_cancelled" string="Open"
+                        domain="[('state', '!=', 'cancel')]"/>
+                <separator/>
+                <filter name="filter_awaiting_credit" string="Accepted Goods Awaiting Credit"
+                        domain="[('state', 'in', ('received', 'partially_rejected', 'partially_received')), ('total_accepted_qty', '>', 0), ('total_credited_qty', '&lt;', 1)]"/>
+                <filter name="filter_mine" string="My Pickups"
+                        domain="[('sales_rep_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_sales_rep" string="Sales Representative"
+                            context="{'group_by': 'sales_rep_id'}"/>
+                    <filter name="group_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_warehouse" string="Warehouse"
+                            context="{'group_by': 'warehouse_id'}"/>
+                    <filter name="group_collection_month" string="Collection Month"
+                            context="{'group_by': 'collection_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================ Pickup form -->
+    <record id="view_customer_goods_pickup_form" model="ir.ui.view">
+        <field name="name">customer.goods.pickup.form</field>
+        <field name="model">customer.goods.pickup</field>
+        <field name="arch" type="xml">
+            <form string="Customer Goods Pickup">
+
+                <header>
+                    <button name="action_confirm_collection" type="object"
+                            string="Confirm Collection" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+                            invisible="state != 'draft'"/>
+                    <button name="action_start_transit" type="object"
+                            string="Start Transit" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+                            invisible="state != 'collected'"/>
+                    <button name="action_start_receiving" type="object"
+                            string="Start Store Receiving" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state not in ('collected', 'in_transit', 'partially_received')"/>
+                    <button name="%(action_customer_goods_reject_receipt)d" type="action"
+                            string="Reject Delivery"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state not in ('awaiting_receipt', 'partially_received')"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="Back To Draft"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="state not in ('collected', 'in_transit', 'awaiting_receipt')"/>
+                    <button name="action_cancel_draft" type="object"
+                            string="Discard Draft"
+                            groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+                            invisible="state != 'draft'"/>
+                    <button name="%(action_customer_goods_cancel_pickup)d" type="action"
+                            string="Cancel Pickup"
+                            invisible="state in ('cancel',)"/>
+                    <button name="action_view_credit_notes" type="object"
+                            string="Credit Notes" invisible="not credit_note_ids"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,collected,in_transit,awaiting_receipt,partially_received,received"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoice" type="object"
+                                class="oe_stat_button" icon="fa-pencil-square-o">
+                            <field name="invoice_number" widget="statinfo"
+                                   string="Original Invoice"/>
+                        </button>
+                        <button name="action_view_receipts" type="object"
+                                class="oe_stat_button" icon="fa-truck"
+                                invisible="receipt_count == 0">
+                            <field name="receipt_count" widget="statinfo"
+                                   string="Store Receipts"/>
+                        </button>
+                        <button name="action_view_credit_notes" type="object"
+                                class="oe_stat_button" icon="fa-credit-card"
+                                invisible="credit_note_count == 0">
+                            <field name="credit_note_count" widget="statinfo"
+                                   string="Credit Notes"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <widget name="web_ribbon" title="Cancelled"
+                            bg_color="text-bg-danger" invisible="state != 'cancel'"/>
+                    <widget name="web_ribbon" title="Rejected"
+                            bg_color="text-bg-warning"
+                            invisible="state not in ('rejected', 'partially_rejected')"/>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="sales_rep_id"
+                                   readonly="state not in ('draft',)"/>
+                            <field name="user_id" groups="base.group_system"/>
+                            <field name="invoice_id"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"
+                                   domain="[('move_type', '=', 'out_invoice'), ('state', '=', 'posted'), ('partner_id', 'child_of', partner_id)]"/>
+                            <field name="invoice_number" invisible="not invoice_id"/>
+                            <field name="invoice_date" invisible="not invoice_id"/>
+                            <field name="invoice_amount_total"
+                                   invisible="not invoice_id"/>
+                        </group>
+                        <group>
+                            <field name="collection_date"
+                                   readonly="state != 'draft'"/>
+                            <field name="pickup_reason"
+                                   readonly="state != 'draft'"/>
+                            <field name="pickup_reason_notes"
+                                   invisible="pickup_reason != 'other'"
+                                   readonly="state != 'draft'"/>
+                            <field name="collection_notes"
+                                   readonly="state not in ('draft', 'collected')"/>
+                            <field name="warehouse_id"
+                                   readonly="state not in ('draft', 'collected')"
+                                   options="{'no_create': True}"/>
+                            <field name="dest_location_id"
+                                   readonly="state not in ('draft', 'collected', 'in_transit')"
+                                   options="{'no_create': True}"/>
+                            <field name="source_location_id" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="invoice_currency_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Goods Collected" name="lines">
+                            <button name="action_reload_invoice_lines"
+                                    type="object" string="Reload Invoice Lines"
+                                    icon="fa-refresh" class="btn-secondary"
+                                    groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+                                    invisible="not invoice_id or state != 'draft'"/>
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list editable="bottom" create="false">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="invoice_line_id" readonly="1"
+                                           options="{'no_create': True}"/>
+                                    <field name="product_id" readonly="1"
+                                           options="{'no_create': True}"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="product_uom_id" readonly="1"/>
+                                    <field name="invoiced_qty" readonly="1"/>
+                                    <field name="credited_qty" readonly="1"
+                                           string="Credited"/>
+                                    <field name="outstanding_pickup_qty" readonly="1"
+                                           string="On Other Pickups"/>
+                                    <field name="eligible_qty" readonly="1"
+                                           string="Still Collectable"/>
+                                    <field name="qty_collected"/>
+                                    <field name="price_unit" readonly="1"/>
+                                    <field name="discount" readonly="1"
+                                           optional="hide"/>
+                                    <field name="tax_label" readonly="1"
+                                           optional="show"/>
+                                    <field name="return_reason" optional="show"/>
+                                    <field name="condition_reported" optional="show"/>
+                                    <field name="notes" optional="hide"/>
+                                    <field name="qty_received_total" readonly="1"
+                                           string="Received"/>
+                                    <field name="qty_accepted_total" readonly="1"
+                                           string="Accepted"/>
+                                    <field name="qty_rejected_total" readonly="1"
+                                           string="Rejected"/>
+                                    <field name="qty_credited_total" readonly="1"
+                                           string="Credited" optional="hide"/>
+                                    <field name="qty_to_receive" readonly="1"
+                                           string="To Receive"/>
+                                    <field name="invoice_id" column_invisible="1"/>
+                                    <field name="invoice_number" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                    <field name="tax_ids" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Store Receipts" name="receipts">
+                            <field name="receipt_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="receipt_date"/>
+                                    <field name="received_by_id"/>
+                                    <field name="total_received_qty" sum="Received"/>
+                                    <field name="total_accepted_qty" sum="Accepted"/>
+                                    <field name="total_rejected_qty" sum="Rejected"/>
+                                    <field name="total_credited_qty" sum="Credited"/>
+                                    <field name="credit_state"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Notes" name="notes">
+                            <field name="notes"
+                                   placeholder="Anything the store should know before it receives these goods…"
+                                   readonly="state not in ('draft', 'collected', 'in_transit')"/>
+                        </page>
+
+                        <page string="Cancellation" name="cancellation"
+                              invisible="state != 'cancel'">
+                            <group>
+                                <field name="cancel_date"/>
+                                <field name="cancel_reason"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================== Actions -->
+    <record id="action_customer_goods_pickup_all" model="ir.actions.act_window">
+        <field name="name">Goods Pickups</field>
+        <field name="res_model">customer.goods.pickup</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_pickup_search"/>
+        <field name="domain">[('state', '!=', 'cancel')]</field>
+        <field name="context">{'search_default_filter_not_cancelled': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No customer goods pickups yet</p>
+            <p>A pickup is one trip's worth of goods collected from a customer against a posted invoice. Collecting them does not change stock or the customer's account.</p>
+        </field>
+    </record>
+
+    <record id="action_customer_goods_pickup_draft" model="ir.actions.act_window">
+        <field name="name">Draft Pickups</field>
+        <field name="res_model">customer.goods.pickup</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_pickup_search"/>
+        <field name="domain">[('state', '=', 'draft')]</field>
+        <field name="context">{'search_default_filter_draft': 1, 'default_sales_rep_id': uid}</field>
+    </record>
+
+    <record id="action_customer_goods_pickup_mine" model="ir.actions.act_window">
+        <field name="name">My Goods Pickups</field>
+        <field name="res_model">customer.goods.pickup</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_pickup_search"/>
+        <field name="domain">[('sales_rep_id', '=', uid)]</field>
+        <field name="context">{'search_default_filter_mine': 1, 'default_sales_rep_id': uid}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">You have not raised any goods pickups yet</p>
+            <p>Raise a pickup against a posted customer invoice, tick the lines the customer handed back, and confirm the collection.</p>
+        </field>
+    </record>
+
+    <record id="action_customer_goods_pickup_outstanding" model="ir.actions.act_window">
+        <field name="name">Outstanding By Sales Representative</field>
+        <field name="res_model">customer.goods.pickup</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="search_view_id" ref="view_customer_goods_pickup_search"/>
+        <field name="domain">[('state', 'in', ('collected', 'in_transit', 'awaiting_receipt', 'partially_received'))]</field>
+        <field name="context">{'search_default_group_sales_rep': 1}</field>
+    </record>
+
+    <record id="action_customer_goods_pickup_invoice" model="ir.actions.act_window">
+        <field name="name">Returns By Customer And Invoice</field>
+        <field name="res_model">customer.goods.pickup</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="search_view_id" ref="view_customer_goods_pickup_search"/>
+        <field name="domain">[('state', '!=', 'draft')]</field>
+        <field name="context">{'search_default_group_partner': 1}</field>
+    </record>
+
+</odoo>

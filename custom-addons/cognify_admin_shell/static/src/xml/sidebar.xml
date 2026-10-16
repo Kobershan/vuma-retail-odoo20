@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="vuma.Sidebar">
+  <aside class="vuma-sidebar" t-ref="root"
+         t-att-class="{ 'is-open': this.state.mobileOpen }"
+         t-on-mouseleave="this.closeFlyout">
+
+    <div class="vuma-topstripe"/>
+
+    <!-- Header -->
+    <div class="vuma-head">
+      <div class="vuma-logo-row">
+        <img t-if="this.state.collapsed" class="vuma-mark" t-att-src="'/cognify_admin_shell/static/img/vuma-mark.png'" alt="Vuma"/>
+        <img t-else="" class="vuma-mark" t-att-src="'/cognify_admin_shell/static/img/vuma-mark.png'" alt="Vuma"/>
+        <img t-if="!this.state.collapsed" class="vuma-wordmark" t-att-src="'/cognify_admin_shell/static/img/vuma-logo.png'" alt="Vuma Retail"/>
+        <span t-if="!this.state.collapsed" class="vuma-appname">VUMA ADMIN</span>
+      </div>
+      <button class="vuma-rail-toggle" t-on-click="this.toggleCollapse" title="Collapse sidebar" aria-label="Collapse sidebar">
+        <i class="oi" data-icon="panel_left"/>
+      </button>
+      <button class="vuma-mobile-close vuma-rail-toggle" t-on-click="this.closeMobile" title="Close" aria-label="Close menu">
+        <i class="oi" data-icon="close_small"/>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="vuma-search">
+      <i class="oi" data-icon="search"/>
+      <input type="search" placeholder="Search apps and menus…" autocomplete="off"
+             t-att-value="this.state.search"
+             t-on-input="this.onSearchInput"
+             t-on-keydown="this.onSearchKeydown"/>
+      <div t-if="this.state.collapsed" class="vuma-rail-search-btn" t-on-click="this.focusSearchInput" title="Search">
+        <i class="oi" data-icon="search"/>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="vuma-body">
+
+      <t t-if="this.state.search.trim() !== ''">
+        <!-- Search results -->
+        <div class="vuma-results">
+          <t t-if="this.searchResults().length === 0">
+            <div class="vuma-empty">Nothing matches "<span t-out="this.state.search"/></div>
+          </t>
+          <t t-foreach="this.searchResults()" t-as="r" t-key="r_index">
+            <button class="vuma-result" t-on-click="() => { this.closeMobile(); if (r.menu) { this.menuService.selectMenu(r.menu.id); } else { this.menuService.selectMenu(r.app.id); } }">
+              <span class="vuma-result-icon">
+                <img t-if="r.app.webIconData" t-att-src="r.app.webIconData" alt=""/>
+                <span t-else="" t-out="this.iconLetter(r.app)"/>
+              </span>
+              <span t-if="r.type === 'app'" class="vuma-result-app" t-out="r.app.name"/>
+              <span t-else="" t-out="r.menu.name"/>
+              <span t-if="r.path" class="vuma-result-path" t-out="r.path"/>
+            </button>
+          </t>
+        </div>
+      </t>
+
+      <t t-else="">
+        <!-- Loading skeleton -->
+        <t t-if="this.allApps.length === 0">
+          <div class="vuma-skeleton"></div>
+          <div class="vuma-skeleton"></div>
+          <div class="vuma-skeleton"></div>
+        </t>
+
+        <t t-foreach="this.groupedApps()" t-as="grp" t-key="grp.group.key">
+          <div class="vuma-group-label" t-out="grp.group.label"/>
+          <t t-foreach="grp.items" t-as="app" t-key="app.id">
+            <div class="vuma-app-wrapper">
+              <div class="vuma-app vuma-flyouthost"
+                   t-att-class="{
+                       'is-active': this.isCurrentApp(app),
+                       'is-expanded': (!this.state.collapsed) &amp;&amp; this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length,
+                   }"
+                   t-on-click="() => this.selectApp(app)"
+                   t-on-mouseenter="() => this.openFlyoutFor(app)">
+
+                <span class="vuma-app-icon">
+                  <img t-if="this.appIconSrc(app)" t-att-src="this.appIconSrc(app)" alt=""/>
+                  <img t-elif="app.webIcon" t-att-src="app.webIcon.split(',')[0]" alt="" style="padding: 6px;"/>
+                  <span t-else="" class="vuma-app-letter" t-out="this.iconLetter(app)"/>
+                  <t t-if="app.webIcon &amp;&amp; app.webIcon.split(',')[1]">
+                    <span style="position:absolute;inset:0" t-att-style="'background:' + app.webIcon.split(',')[1] + ';mix-blend-mode:screen;opacity:0'"/>
+                  </t>
+                </span>
+
+                <span class="vuma-app-name" t-out="app.name"/>
+                <i t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length"
+                   class="oi vuma-app-chevron" data-icon="chevron_right"/>
+              </div>
+
+              <!-- Inline folders only for the active app when expanded -->
+              <t t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length &amp;&amp; !this.state.collapsed">
+                <div class="vuma-folders">
+                  <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
+                    <t t-call="vuma.SidebarSection" item="section" activeId="this.activeMenuId()" level="0"/>
+                  </t>
+                </div>
+              </t>
+
+              <!-- Flyout shown in collapsed rail mode -->
+              <t t-if="this.state.openFlyout === app.id &amp;&amp; this.state.collapsed &amp;&amp; !this.isSmall">
+                <div class="vuma-flyout" t-on-click.stop="" t-on-mouseleave="this.closeFlyout">
+                  <div class="vuma-flyout-title" t-out="app.name"/>
+                  <div class="vuma-flyout-path">Application</div>
+                  <t t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length">
+                    <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
+                      <div class="vuma-sub" t-on-click="() => this.selectMenu(section)">
+                        <span class="vuma-sub-label" t-out="section.name"/>
+                      </div>
+                    </t>
+                  </t>
+                  <t t-else="">
+                    <div class="vuma-sub" t-on-click="() => this.selectApp(app)">Open</div>
+                  </t>
+                </div>
+              </t>
+            </div>
+          </t>
+        </t>
+
+        <!-- Pinned app entries -->
+        <t t-if="this.pinnedApps().length">
+          <div class="vuma-group-label">System</div>
+          <t t-foreach="this.pinnedApps()" t-as="pa" t-key="pa.app.id">
+            <div class="vuma-app"
+                 t-att-class="{ 'is-active': this.isCurrentApp(pa.app) }"
+                 t-on-click="() => this.selectApp(pa.app)">
+              <span class="vuma-app-icon">
+                <img t-if="this.appIconSrc(pa.app)" t-att-src="this.appIconSrc(pa.app)" alt=""/>
+                <span t-else="" class="vuma-app-letter" t-out="this.iconLetter(pa.app)"/>
+              </span>
+              <span class="vuma-app-name" t-out="pa.label"/>
+            </div>
+          </t>
+        </t>
+      </t>
+    </div>
+
+    <!-- Footer -->
+    <div class="vuma-foot">
+      <img class="vuma-avatar" t-att-src="this.imageUrlForUser()" alt=""/>
+      <div class="vuma-foot-meta">
+        <div class="vuma-foot-name" t-out="this.user.name"/>
+        <div class="vuma-foot-company" t-out="this.companyName()"/>
+      </div>
+    </div>
+
+    <div t-if="this.isSmall &amp;&amp; this.state.mobileOpen" class="vuma-mobile-backdrop" t-on-click="this.closeMobile"/>
+  </aside>
+</t>
+
+<!-- Recursive folder renderer -->
+<t t-name="vuma.SidebarSection">
+  <t t-set="open" t-value="this.isFolderOpen(item.id)"/>
+  <t t-set="hasKids" t-value="item.childrenTree &amp;&amp; item.childrenTree.length"/>
+
+  <t t-if="!hasKids">
+    <div class="vuma-submenu">
+      <button class="vuma-sub t-on" t-att-class="{ 'is-active': this.isMenuActive(item) }"
+              t-on-click="() => this.selectMenu(item)">
+        <span class="vuma-sub-label" t-out="item.name"/>
+      </button>
+    </div>
+  </t>
+
+  <t t-else="">
+    <div class="vuma-folder" t-att-class="{ 'is-open': open }">
+      <button class="vuma-sub" t-on-click="() => { this.toggleFolder(item.id); if (item.actionID) { this.selectMenu(item); } }">
+        <span class="vuma-sub-label" t-out="item.name"/>
+      </button>
+      <t t-if="open">
+        <div class="vuma-folder-children">
+          <t t-foreach="item.childrenTree" t-as="child" t-key="child.id">
+            <t t-call="vuma.SidebarSection" item="child" activeId="activeId" level="level + 1"/>
+          </t>
+        </div>
+      </t>
+    </div>
+  </t>
+</t>
+
+</templates>

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============================================================
+             Invoice Crediting Wizard (both companies in one view)
+             ============================================================ -->
+        <record id="vuma_partner_credit_wizard_form" model="ir.ui.view">
+            <field name="name">vuma.partner.credit.wizard.form</field>
+            <field name="model">vuma.partner.credit.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Credit Invoices — Both Companies">
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   options="{'no_quick_create': True}"/>
+                        </group>
+                        <group>
+                            <field name="full_credit"/>
+                            <field name="amount_limit" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="full_credit"/>
+                            <field name="count_selected"/>
+                            <field name="total_selected_due" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Open Invoices (Trade Rite + Siyaya DC)">
+                            <label for="invoice_ids" string="Invoices found across BOTH companies — deselect any you don't want to credit"/>
+                            <field name="invoice_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"/>
+                        </page>
+                    </notebook>
+                    <group>
+                        <field name="reason" placeholder="Reason shown on every credit note..."/>
+                    </group>
+                    <footer>
+                        <button name="action_create_credit_notes" type="object"
+                                string="Create Credit Notes (one per company)" class="btn-primary"/>
+                        <button string="Cancel" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_vuma_partner_credit_wizard" model="ir.actions.act_window">
+            <field name="name">Credit Customer Invoices (Both Companies)</field>
+            <field name="res_model">vuma.partner.credit.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- ============================================================
+             Cash Collection Session (cross-company)
+             ============================================================ -->
+        <record id="vuma_payment_session_form" model="ir.ui.view">
+            <field name="name">vuma.payment.session.form</field>
+            <field name="model">vuma.payment.session</field>
+            <field name="arch" type="xml">
+                <form string="Cash Collection — Both Companies">
+                    <header>
+                        <button name="action_post" type="object" string="Post Collection (both companies)"
+                                class="btn-primary" invisible="state != 'draft'"/>
+                        <button name="action_cancel" type="object" string="Cancel"
+                                invisible="state != 'draft'"/>
+                        <field name="state" widget="statusbar"
+                               statusbar_visible="draft,posted"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_payments" type="object" icon="fa-money"
+                                    string="Payments" invisible="state != 'posted'"/>
+                            <button name="action_open_credit_wizard" type="object" icon="fa-crop"
+                                    string="Credit Invoices"/>
+                        </div>
+                        <div class="oe_title">
+                            <h2><field name="name"/></h2>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="partner_id"/>
+                                <field name="date"/>
+                                <field name="user_id" options="{'no_quick_create': True}"/>
+                            </group>
+                            <group>
+                                <field name="amount_total" widget="monetary"/>
+                                <field name="currency_tr_id" invisible="1"/>
+                                <field name="note"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Amounts per Company">
+                                <field name="line_ids">
+                                    <list editable="bottom">
+                                        <field name="company_id"
+                                               widget="badge"
+                                               decoration-info="company_id.name == 'Trade Rite'"
+                                               decoration-warning="company_id.name == 'Siyaya DC'"/>
+                                        <field name="journal_id"
+                                               options="{'no_quick_create': True}"/>
+                                        <field name="amount"/>
+                                        <field name="invoice_ids" widget="many2many_tags"
+                                               options="{'no_create': True}"
+                                               context="{'vuma_mixed_basket': True}"/>
+                                        <field name="invoices_amount_residual" readonly="1"/>
+                                        <field name="currency_id" column_invisible="1"/>
+                                        <field name="company_currency_id" column_invisible="1"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="vuma_payment_session_tree" model="ir.ui.view">
+            <field name="name">vuma.payment.session.tree</field>
+            <field name="model">vuma.payment.session</field>
+            <field name="arch" type="xml">
+                <list string="Collections" create="true">
+                    <field name="name"/>
+                    <field name="partner_id"/>
+                    <field name="date"/>
+                    <field name="user_id" optional="hide"/>
+                    <field name="amount_total" sum="Total"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_vuma_payment_session" model="ir.actions.act_window">
+            <field name="name">Cash Collections (Both Companies)</field>
+            <field name="res_model">vuma.payment.session</field>
+            <field name="view_mode">list,form</field>
+            <field name="context">{'search_default_group_company': 0}</field>
+        </record>
+
+    <!-- ============================================================
+             Stock / Company Traceability Audit
+             ============================================================ -->
+        <record id="vuma_stock_trace_line_list" model="ir.ui.view">
+            <field name="name">vuma.stock.trace.line.list</field>
+            <field name="model">vuma.stock.trace.line</field>
+            <field name="arch" type="xml">
+                <list string="Stock Traceability Results" create="false">
+                    <field name="traceable" widget="boolean_toggle" readonly="1"/>
+                    <field name="product_id"/>
+                    <field name="product_company_id" string="Product Owner"/>
+                    <field name="quant_company_id" string="Stock Owner"/>
+                    <field name="company_name"/>
+                    <field name="location_id"/>
+                    <field name="quantity" sum="Total On Hand"/>
+                    <field name="available_quantity" sum="Total Available"/>
+                    <field name="reference"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="vuma_stock_trace_form" model="ir.ui.view">
+            <field name="name">vuma.stock.trace.form</field>
+            <field name="model">vuma.stock.trace</field>
+            <field name="arch" type="xml">
+                <form string="Stock / Company Traceability Audit">
+                    <header>
+                        <button name="action_run_audit" type="object" string="Run Audit"
+                                class="btn-primary"/>
+                        <button name="action_backfill_order_lines" type="object"
+                                string="Backfill Order Lines"/>
+                        <button name="action_repair_stock_company" type="object"
+                                string="Repair Stock Into Company"
+                                invisible="state != 'orphan'"/>
+                    </header>
+                    <sheet>
+                        <div class="alert alert-info" role="alert">
+                            Every sale order line must state which company's stock it
+                            uses. Shared products are stocked in both warehouses, so
+                            the line -- not the product -- carries the company, and the
+                            stock location is recorded so the line can be traced down
+                            to the exact quant.
+                        </div>
+                        <group>
+                            <group>
+                                <field name="state"/>
+                                <field name="repair_company_id"
+                                       invisible="state != 'orphan'"/>
+                            </group>
+                            <group>
+                                <field name="traceable_count"/>
+                                <field name="untraceable_count"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Results" name="results">
+                                <field name="line_ids" readonly="1">
+                                    <list editable="bottom">
+                                        <field name="traceable"/>
+                                        <field name="product_id"/>
+                                        <field name="product_company_id"/>
+                                        <field name="quant_company_id"/>
+                                        <field name="company_name"/>
+                                        <field name="location_id"/>
+                                        <field name="quantity" sum="Total"/>
+                                        <field name="reference"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_vuma_stock_trace" model="ir.actions.act_window">
+            <field name="name">Stock / Company Traceability</field>
+            <field name="res_model">vuma.stock.trace</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="view_id" ref="vuma_stock_trace_form"/>
+        </record>
+
+    </data>
+</odoo>

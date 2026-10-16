@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ====================================================== Receipt list view -->
+    <record id="view_customer_goods_receipt_list" model="ir.ui.view">
+        <field name="name">customer.goods.receipt.list</field>
+        <field name="model">customer.goods.receipt</field>
+        <field name="arch" type="xml">
+            <list string="Customer Goods Store Receipts"
+                  decoration-muted="state == 'cancel'"
+                  decoration-success="state == 'done' and not has_rejection"
+                  decoration-warning="state == 'done' and has_rejection">
+                <field name="name"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="pickup_id"/>
+                <field name="sales_rep_id"/>
+                <field name="receipt_date"/>
+                <field name="received_by_id"/>
+                <field name="warehouse_id"/>
+                <field name="total_received_qty" sum="Received"/>
+                <field name="total_accepted_qty" sum="Accepted"/>
+                <field name="total_rejected_qty" sum="Rejected"/>
+                <field name="quarantine_qty" sum="Still In Quarantine"
+                       optional="show"/>
+                <field name="quarantine_released_qty" sum="Re-inspected"
+                       optional="hide"/>
+                <field name="pending_credit_qty" sum="Awaiting Credit"/>
+                <field name="credit_state" widget="badge"
+                       decoration-success="credit_state == 'posted'"
+                       decoration-info="credit_state in ('awaiting_approval', 'approved', 'draft_note')"
+                       decoration-danger="credit_state == 'declined'"
+                       decoration-muted="credit_state == 'not_eligible'"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'done'"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+
+            </list>
+        </field>
+    </record>
+
+    <!-- ==================================================== Receipt search view -->
+    <record id="view_customer_goods_receipt_search" model="ir.ui.view">
+        <field name="name">customer.goods.receipt.search</field>
+        <field name="model">customer.goods.receipt</field>
+        <field name="arch" type="xml">
+            <search string="Search Store Receipts">
+                <field name="name"/>
+                <field name="pickup_id"/>
+                <field name="invoice_number"/>
+                <field name="partner_id"/>
+                <field name="received_by_id"/>
+                <field name="sales_rep_id"/>
+                <filter name="filter_pending" string="Being Received"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_done" string="Received"
+                        domain="[('state', '=', 'done')]"/>
+                <filter name="filter_rejected" string="Has Rejections"
+                        domain="[('has_rejection', '=', True)]"/>
+                <filter name="filter_in_quarantine" string="Goods In The Returns Area"
+                        domain="[('quarantine_qty', '&gt;', 0)]"/>
+                <filter name="filter_quarantine_unverified"
+                        string="Quarantine Custody Unverified"
+                        domain="[('needs_quarantine_verification', '=', True)]"/>
+                <separator/>
+                <filter name="filter_awaiting_credit" string="Awaiting Credit Approval"
+                        domain="[('credit_state', '=', 'awaiting_approval')]"/>
+                <filter name="filter_approved" string="Approved For Credit"
+                        domain="[('credit_state', '=', 'approved')]"/>
+                <filter name="filter_draft_note" string="Draft Credit Note"
+                        domain="[('credit_state', '=', 'draft_note')]"/>
+                <filter name="filter_credited" string="Credit Note Posted"
+                        domain="[('credit_state', '=', 'posted')]"/>
+                <filter name="filter_declined" string="Credit Declined"
+                        domain="[('credit_state', '=', 'declined')]"/>
+                <separator/>
+                <filter name="filter_reversed" string="Stock Reversed"
+                        domain="[('is_stock_reversed', '=', True)]"/>
+                <group>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_credit_state" string="Credit Status"
+                            context="{'group_by': 'credit_state'}"/>
+                    <filter name="group_partner" string="Customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_received_by" string="Received By"
+                            context="{'group_by': 'received_by_id'}"/>
+                    <filter name="group_invoice" string="Original Invoice"
+                            context="{'group_by': 'invoice_id'}"/>
+                    <filter name="group_receipt_month" string="Receipt Month"
+                            context="{'group_by': 'receipt_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ======================================================== Receipt form -->
+    <record id="view_customer_goods_receipt_form" model="ir.ui.view">
+        <field name="name">customer.goods.receipt.form</field>
+        <field name="model">customer.goods.receipt</field>
+        <field name="arch" type="xml">
+            <form string="Customer Goods Store Receipt">
+
+                <header>
+                    <button name="action_validate_receipt" type="object"
+                            string="Confirm Receipt" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state != 'draft'"/>
+                    <button name="%(action_customer_goods_reject_receipt)d" type="action"
+                            string="Reject Delivery"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="state != 'draft'"/>
+                    <button name="action_record_rejected_disposition" type="object"
+                            string="Record Where Goods Go"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="not has_rejection"/>
+                    <button name="action_view_quarantine" type="object"
+                            string="Quarantine Custody"
+                            groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+                            invisible="not has_rejection"/>
+                    <button name="action_approve_credit" type="object"
+                            string="Approve Credit" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_accountant"
+                            invisible="credit_state != 'awaiting_approval'"/>
+                    <button name="action_create_credit_note" type="object"
+                            string="Create Credit Note" class="btn-primary"
+                            groups="customer_goods_pickup.group_goods_pickup_accountant"
+                            invisible="credit_state != 'approved'"/>
+                    <button name="action_view_credit_note" type="object"
+                            string="Credit Note"
+                            groups="customer_goods_pickup.group_goods_pickup_accountant"
+                            invisible="not move_id"/>
+                    <button name="action_decline_credit" type="object"
+                            string="Decline Credit"
+                            groups="customer_goods_pickup.group_goods_pickup_accountant"
+                            invisible="credit_state not in ('awaiting_approval', 'approved')"/>
+                    <button name="action_reset_credit_approval" type="object"
+                            string="Reopen Credit Decision"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="credit_state not in ('approved', 'declined', 'draft_note')"/>
+                    <button name="action_reverse_stock_receipt" type="object"
+                            string="Reverse Stock Receipt"
+                            groups="customer_goods_pickup.group_goods_pickup_manager"
+                            invisible="not picking_id or is_stock_reversed"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                    <field name="credit_state" widget="statusbar"
+                           statusbar_visible="awaiting_approval,approved,draft_note,posted"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_pickup" type="object"
+                                class="oe_stat_button" icon="fa-reply">
+                            <field name="pickup_id" widget="statinfo"
+                                   string="Customer Goods Pickup"/>
+                        </button>
+                        <button name="action_view_picking" type="object"
+                                class="oe_stat_button" icon="fa-truck"
+                                invisible="not picking_id">
+                            <field name="picking_id" widget="statinfo"
+                                   string="Stock Receipt"/>
+                        </button>
+                        <button name="action_view_quarantine_picking" type="object"
+                                class="oe_stat_button" icon="fa-shield"
+                                invisible="not quarantine_picking_id">
+                            <field name="quarantine_picking_id" widget="statinfo"
+                                   string="Quarantine Receipt"/>
+                        </button>
+                        <button name="action_view_reverse_picking" type="object"
+                                class="oe_stat_button" icon="fa-mail-reply"
+                                invisible="not reverse_picking_id">
+                            <field name="reverse_picking_id" widget="statinfo"
+                                   string="Reversal"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <widget name="web_ribbon" title="Being Received"
+                            bg_color="text-bg-info" invisible="state != 'draft'"/>
+                    <widget name="web_ribbon" title="Rejected Goods"
+                            bg_color="text-bg-warning" invisible="not has_rejection"/>
+                    <widget name="web_ribbon" title="Stock Reversed"
+                            bg_color="text-bg-danger" invisible="not is_stock_reversed"/>
+
+                    <div class="alert alert-info" role="alert" invisible="not invoice_number">
+                        Goods received against original invoice
+                        <strong><field name="invoice_number" readonly="1"/></strong>
+                        for <strong><field name="partner_id" readonly="1"/></strong>,
+                        picked up under
+                        <strong><field name="pickup_id" readonly="1"/></strong>.
+                    </div>
+
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="sales_rep_id"/>
+                            <field name="pickup_id" context="{'active_id': id}"/>
+                            <field name="receipt_date" readonly="state == 'done'"/>
+                            <field name="received_by_id"/>
+                            <field name="warehouse_id"/>
+                        </group>
+                        <group>
+                            <field name="source_location_id"/>
+                            <field name="dest_location_id"
+                                   readonly="state == 'done'"
+                                   options="{'no_create': True}"/>
+                            <field name="invoice_id" invisible="1"/>
+                            <field name="user_id" groups="base.group_system"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Goods Received" name="lines">
+                            <field name="line_ids" readonly="state == 'done'">
+                                <list editable="bottom"
+                                      decoration-danger="qty_rejected &gt; 0"
+                                      decoration-muted="qty_received == 0">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id" readonly="1"
+                                           options="{'no_create': True}"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="product_uom_id" readonly="1"/>
+                                    <field name="invoiced_qty" readonly="1"
+                                           string="Invoiced"/>
+                                    <field name="credited_qty" readonly="1"
+                                           string="Credited"/>
+                                    <field name="qty_collected" readonly="1"
+                                           string="Collected"/>
+                                    <field name="qty_previously_received" readonly="1"
+                                           string="Received Before"/>
+                                    <field name="qty_outstanding" readonly="1"
+                                           string="Outstanding"/>
+                                    <field name="barcode" placeholder="Scan or type"
+                                           readonly="parent.state == 'done'"/>
+                                    <field name="qty_received"
+                                           readonly="parent.state == 'done'"/>
+                                    <field name="qty_accepted"
+                                           readonly="parent.state == 'done'"/>
+                                    <field name="qty_rejected" readonly="1"/>
+                                    <field name="qty_in_quarantine" readonly="1"
+                                           string="Still Held"/>
+                                    <field name="qty_reinspected_accepted"
+                                           readonly="1" string="Re-inspected"/>
+                                    <field name="quarantine_move_id"
+                                           column_invisible="1"/>
+                                    <field name="condition"
+                                           readonly="parent.state == 'done'"/>
+                                    <field name="rejection_reason" required="qty_rejected &gt; 0"
+                                           readonly="parent.state == 'done'"/>
+                                    <field name="inspection_notes"
+                                           readonly="parent.state == 'done'" optional="hide"/>
+                                    <field name="qty_credited" readonly="1"/>
+                                    <field name="qty_credit_pending" readonly="1"
+                                           string="Credit In Draft"
+                                           groups="customer_goods_pickup.group_goods_pickup_accountant"/>
+                                    <field name="qty_to_credit" readonly="1"
+                                           string="Eligible For Credit"
+                                           groups="customer_goods_pickup.group_goods_pickup_accountant"/>
+                                    <field name="lot_id"
+                                           groups="stock.group_tracking_lot"
+                                           readonly="parent.state == 'done'"
+                                           options="{'no_create': True}"/>
+                                    <field name="stock_move_id" column_invisible="1"/>
+                                    <field name="pickup_line_id" column_invisible="1"/>
+                                    <field name="invoice_line_id" column_invisible="1"/>
+                                    <field name="invoice_id" column_invisible="1"/>
+                                    <field name="invoice_number" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="total_received_qty"/>
+                                <field name="total_accepted_qty"/>
+                                <field name="total_rejected_qty"/>
+                                <field name="total_credited_qty"/>
+                            </group>
+                        </page>
+
+                        <page string="Rejections" name="rejections"
+                              invisible="not has_rejection">
+                            <group>
+                                <group>
+                                    <field name="rejection_reason"/>
+                                    <field name="inspection_notes"/>
+                                </group>
+                                <group>
+                                    <field name="rejected_location_id"/>
+                                    <field name="rejected_disposition"/>
+                                    <field name="rejected_disposition_notes"/>
+                                    <field name="rejected_disposition_date"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not needs_quarantine_verification">
+                                This receipt refused goods but has no quarantine
+                                custody record, so it predates real quarantine
+                                stock. Nobody has confirmed where those goods
+                                physically are, and the module will not invent a
+                                stock movement to pretend otherwise. Walk the
+                                returns area and check.
+                            </div>
+                            <p class="text-muted">
+                                Refused goods are moved into quarantine by a real
+                                validated stock transfer, so they hold a genuine
+                                quant and a genuine value. The quarantine location
+                                sits outside every warehouse, so the quantity
+                                counts towards neither the shop floor on-hand,
+                                nor anything that can be reserved or
+                                replenished.
+                            </p>
+                            <field name="quarantine_ids" context="{'create': False}">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="product_id"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="lot_id"/>
+                                    <field name="qty"/>
+                                    <field name="qty_pending"/>
+                                    <field name="qty_released"/>
+                                    <field name="location_id"/>
+                                    <field name="state"/>
+                                    <field name="disposition"/>
+                                    <field name="quarantine_date"/>
+                                    <field name="receipt_line_id" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="quarantine_qty"/>
+                                <field name="quarantine_released_qty"/>
+                            </group>
+                        </page>
+
+                        <page string="Stock Movement" name="stock"
+                              invisible="not picking_id and not quarantine_picking_id">
+                            <group>
+                                <group>
+                                    <field name="picking_id"/>
+                                    <field name="picking_state"/>
+                                    <field name="quarantine_picking_id"
+                                           invisible="not quarantine_picking_id"/>
+                                    <field name="quarantine_picking_state"
+                                           invisible="not quarantine_picking_id"/>
+                                </group>
+                                <group>
+                                    <field name="reverse_picking_id"
+                                           invisible="not reverse_picking_id"/>
+                                    <field name="is_stock_reversed"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="Credit Note" name="credit"
+                              groups="customer_goods_pickup.group_goods_pickup_accountant">
+                            <group>
+                                <group>
+                                    <field name="credit_approval_state"/>
+                                    <field name="credit_approval_by_id"/>
+                                    <field name="credit_approval_date"/>
+                                </group>
+                                <group>
+                                    <field name="move_id"/>
+                                    <field name="move_state"/>
+                                    <field name="move_amount_total"/>
+                                    <field name="pending_credit_qty"/>
+                                </group>
+                            </group>
+                            <field name="credit_approval_notes"
+                                   placeholder="Why the credit is approved or declined…"/>
+                            <field name="move_ids" context="{'create': False}">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="move_type"/>
+                                    <field name="state"/>
+                                    <field name="invoice_date"/>
+                                    <field name="amount_total"/>
+                                    <field name="reversed_entry_id"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================== Actions -->
+    <record id="action_customer_goods_receipt_all" model="ir.actions.act_window">
+        <field name="name">Store Receipts</field>
+        <field name="res_model">customer.goods.receipt</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_receipt_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No customer goods have been received yet</p>
+            <p>Pickups that a sales representative has collected and confirmed appear here. Count what turns up, accept what is fit to sell, and record a reason for anything you turn down.</p>
+        </field>
+    </record>
+
+    <record id="action_customer_goods_receipt_pending" model="ir.actions.act_window">
+        <field name="name">Pending Store Receipts</field>
+        <field name="res_model">customer.goods.receipt</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_receipt_search"/>
+        <field name="domain">[('state', '=', 'draft')]</field>
+        <field name="context">{'search_default_filter_pending': 1}</field>
+    </record>
+
+    <record id="action_customer_goods_receipt_awaiting_credit" model="ir.actions.act_window">
+        <field name="name">Accepted Goods Awaiting Credit</field>
+        <field name="res_model">customer.goods.receipt</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_customer_goods_receipt_search"/>
+        <field name="domain">[('total_accepted_qty', '&gt;', 0), ('total_credited_qty', '=', 0), ('state', '=', 'done')]</field>
+        <field name="context">{'search_default_filter_awaiting_credit': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing is waiting for a credit note</p>
+            <p>Goods the store has accepted are listed here until an accountant reviews them and raises the customer credit note.</p>
+        </field>
+    </record>
+
+</odoo>

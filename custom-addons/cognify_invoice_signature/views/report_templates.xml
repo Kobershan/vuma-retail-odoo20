@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Print the captured signature on the invoice PDF. Anchored on the
+        fiscal-position note paragraph, which sits just below the totals and
+        above the footer, so the block lands in a sensible place on the page.
+    -->
+    <template id="report_invoice_document_signature"
+              name="Invoice Customer Signature"
+              inherit_id="account.report_invoice_document">
+
+        <xpath expr="//p[@name='note']" position="before">
+            <div t-if="o.signature" class="mt-3 mb-3" name="customer_signature_block">
+                <strong>Customer Signature</strong>
+                <div>
+                    <img t-att-src="image_data_uri(o.signature)"
+                         style="max-height: 2.2cm; max-width: 8cm;"/>
+                </div>
+                <div>
+                    Signed by
+                    <span t-field="o.signed_by"/>
+                    on
+                    <span t-field="o.signed_on" t-options="{'widget': 'datetime'}"/>
+                </div>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>

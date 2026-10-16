@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Purchase order: type the expiry date printed by the supplier. It is
+        anchored after `date_planned` so the column lines up with the arrival
+        date it refers to.
+    -->
+    <record id="purchase_order_form_inherit_cognify_expiry" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.cognify.expiry</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='date_planned']" position="after">
+                <field name="use_expiration_date" column_invisible="True"/>
+                <field name="supplier_expiration_date"
+                       string="Supplier Expiry"
+                       widget="date"
+                       optional="show"
+                       invisible="display_type or not use_expiration_date"
+                       readonly="state in ('purchase', 'to approve', 'cancel')"/>
+                <field name="expiry_alert_window"
+                       string="Alert Window"
+                       optional="hide"/>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/form//field[@name='date_planned']" position="after">
+                <field name="supplier_expiration_date" widget="date"
+                       invisible="not use_expiration_date"
+                       readonly="state in ('purchase', 'to approve', 'cancel')"/>
+                <field name="expiry_alert_window" invisible="not use_expiration_date"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        Receipt / Detailed Operations: show the date each new lot is about to get,
+        and allow a one-off correction when the printed label disagrees.
+        Note this is the same screen as outgoing pickings, so the outgoing side
+        gets the expiry column for free — it just hides the write-only override.
+
+        These columns are gated with `optional`, not `column_invisible`.
+        `column_invisible` is evaluated once for the whole list against the
+        list's eval context, which carries the context, the user and the parent
+        record but none of the row's own fields — so an expression like
+        `not use_expiration_date` raises a NameError in the browser and takes
+        the whole form with it. Which lines need an expiry is a per-row fact and
+        `optional` is the only control that can express "not by default".
+    -->
+    <record id="stock_move_line_operation_tree_inherit_cognify_expiry" model="ir.ui.view">
+        <field name="name">stock.move.line.operations.inherit.cognify.expiry</field>
+        <field name="model">stock.move.line</field>
+        <field name="inherit_id" ref="stock.view_stock_move_line_operation_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='lot_name']" position="after">
+                <field name="use_expiration_date" column_invisible="True"/>
+                <field name="cognify_incoming_expiration_date"
+                       string="Expiry Date"
+                       widget="datetime"
+                       readonly="1"
+                       optional="show"/>
+                <field name="cognify_expiration_override"
+                       string="Override Expiry"
+                       widget="datetime"
+                       optional="hide"
+                       force_save="1"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,166 @@
+.vuma-dashboard {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #0d0f14 0%, #14161a 40%, #0a0c10 100%);
+    color: #e9ecf2;
+    padding: 0;
+    font-family: "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+}
+.vd-topband {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(0,0,0,0.25);
+}
+.vd-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.vd-mark {
+    width: 34px;
+    height: auto;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 9px;
+    padding: 3px;
+}
+.vd-word {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    font-size: 1rem;
+    color: #ffffff;
+}
+.vd-topright {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 0.85rem;
+}
+.vd-user {
+    color: #cfd3de;
+}
+.vd-company {
+    display: block;
+    font-size: 0.72rem;
+    color: #8a90a0;
+    text-align: right;
+}
+.vd-logout {
+    color: #ffe500;
+    text-decoration: none;
+    border: 1px solid rgba(255,229,0,0.4);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+.vd-logout:hover { color: #14161a; background: #ffe500; }
+.vd-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 48px 40px 20px;
+    flex-wrap: wrap;
+}
+.vd-kicker {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ffe500;
+    margin-bottom: 8px;
+}
+.vd-hero h1 {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 800;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+.vd-hero p {
+    color: #a0a6b8;
+    max-width: 520px;
+    margin: 0;
+    line-height: 1.5;
+}
+.vd-searchbox input {
+    width: 300px;
+    max-width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 9px;
+    background: rgba(255,255,255,0.05);
+    color: #e6e9f2;
+    font-size: 0.88rem;
+    outline: none;
+}
+.vd-searchbox input:focus { border-color: #ffe500; }
+.vd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+    padding: 10px 40px 40px;
+}
+.vd-tile {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 22px 16px;
+    text-align: center;
+    text-decoration: none;
+    color: #e6e9f2;
+    transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.vd-tile:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,229,0,0.4);
+    color: #ffffff;
+}
+.vd-tile-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.vd-tile-icon img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+}
+.vd-tile-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+.vd-tile-xmlid {
+    font-size: 0.66rem;
+    color: #8a90a0;
+    word-break: break-word;
+    max-height: 1.5em;
+    overflow: hidden;
+}
+.vd-foot {
+    padding: 20px 40px;
+    font-size: 0.75rem;
+    color: #8a90a0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+.vd-tile.vd-hidden { display: none; }
+@media (max-width: 700px) {
+    .vd-topband { padding: 14px 18px; }
+    .vd-hero { padding: 28px 18px 16px; }
+    .vd-grid { padding: 8px 18px 30px; }
+}

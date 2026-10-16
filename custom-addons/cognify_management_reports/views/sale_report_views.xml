@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Sales reports are pivots on sale.report, which Odoo already maintains
+        as a view of every sale order line with revenue, cost and margin on it.
+        Nothing here re-computes anything: the report is the same numbers the
+        Sales list view shows, arranged the way a manager asks for them.
+
+        Money comes from confirmed orders, so the default domain leaves out
+        quotations. Actions that are about the pipeline filter for them instead.
+    -->
+
+    <record id="sale_report_view_pivot_month" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.month</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales by Month" sample="1">
+                <field name="date" interval="month" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_day" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.day</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales by Day" sample="1">
+                <field name="date" interval="day" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_channel" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.channel</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales by Channel" sample="1">
+                <field name="team_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_category" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.category</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales by Category" sample="1">
+                <field name="categ_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_salesperson" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.salesperson</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Salesperson by Month" sample="1">
+                <field name="user_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_product" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.product</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Product Turnover" sample="1">
+                <field name="product_id" type="row"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="product_uom_qty" type="measure"/>
+                <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_pivot_customer" model="ir.ui.view">
+        <field name="name">cognify.sale.report.pivot.customer</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <pivot string="Sales by Customer" sample="1">
+                <field name="partner_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="price_subtotal" type="measure"/>
+                <field name="margin_percent" type="measure"/>
+                <field name="name" type="row" invisible="True"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="sale_report_view_graph_month" model="ir.ui.view">
+        <field name="name">cognify.sale.report.graph.month</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Sales Trend" type="line">
+                <field name="price_subtotal" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="sale_report_view_graph_category" model="ir.ui.view">
+        <field name="name">cognify.sale.report.graph.category</field>
+        <field name="model">sale.report</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <graph string="Sales by Category" type="pie">
+                <field name="price_subtotal" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Saved searches shared by the actions below. -->
+    <record id="sale_report_filter_confirmed" model="ir.filters">
+        <field name="name">Confirmed only</field>
+        <field name="model_id" ref="sale.model_sale_report"/>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'group_by': []}</field>
+    </record>
+
+    <!-- ============================== Actions ============================== -->
+
+    <record id="action_sales_overview" model="ir.actions.act_window">
+        <field name="name">Sales Overview</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'search_default_sale_report_filter_confirmed': 1,
+                               'pivot_measures': ['price_subtotal', 'margin', 'margin_percent'],
+                               'pivot_row_group_by': ['date:month'],
+                               'pivot_column_group_by': []}</field>
+        <field name="views" eval="[(5, 0, 0)]"/>
+    </record>
+
+    <record id="action_sales_by_day" model="ir.actions.act_window">
+        <field name="name">Sales by Day</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'product_uom_qty'],
+                               'pivot_row_group_by': ['date:day'],
+                               'pivot_column_group_by': [],
+                               'graph_measure': 'price_subtotal'}</field>
+    </record>
+
+    <record id="action_sales_by_month" model="ir.actions.act_window">
+        <field name="name">Sales by Month</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'margin', 'margin_percent', 'product_uom_qty'],
+                               'pivot_row_group_by': ['date:month'],
+                               'pivot_column_group_by': [],
+                               'graph_measure': 'price_subtotal'}</field>
+    </record>
+
+    <record id="action_sales_by_channel" model="ir.actions.act_window">
+        <field name="name">Sales by Channel</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'margin', 'margin_percent'],
+                               'pivot_row_group_by': ['team_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+    </record>
+
+    <record id="action_sales_by_category" model="ir.actions.act_window">
+        <field name="name">Sales by Category</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'product_uom_qty', 'margin_percent'],
+                               'pivot_row_group_by': ['categ_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+    </record>
+
+    <record id="action_cost_of_sales" model="ir.actions.act_window">
+        <field name="name">Cost of Sales and Margin</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'purchase_price', 'margin', 'margin_percent'],
+                               'pivot_row_group_by': ['categ_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing to cost yet</p>
+            <p>Cost of sales comes from each product's cost price as it was when
+               the order was confirmed. Set a cost on a product, or use
+               <em>Inventory → Products → Cost</em> and landed costs, and the
+               margin fills in.</p>
+        </field>
+    </record>
+
+    <record id="action_salesperson_performance" model="ir.actions.act_window">
+        <field name="name">Salesperson by Month</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'margin', 'margin_percent'],
+                               'pivot_row_group_by': ['user_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+    </record>
+
+    <record id="action_product_turnover" model="ir.actions.act_window">
+        <field name="name">Product Turnover</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'product_uom_qty', 'margin', 'margin_percent'],
+                               'pivot_row_group_by': ['product_id'],
+                               'pivot_column_group_by': [],
+                               'sale_report_order': 'price_subtotal desc'}</field>
+    </record>
+
+    <record id="action_product_turnover_lowest" model="ir.actions.act_window">
+        <field name="name">Slowest Moving Products</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'product_uom_qty', 'margin'],
+                               'pivot_row_group_by': ['product_id'],
+                               'pivot_column_group_by': [],
+                               'sale_report_order': 'price_subtotal asc'}</field>
+    </record>
+
+    <record id="action_sales_by_customer" model="ir.actions.act_window">
+        <field name="name">Sales by Customer</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('state', 'not in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'margin_percent'],
+                               'pivot_row_group_by': ['partner_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+    </record>
+
+    <record id="action_sales_pipeline" model="ir.actions.act_window">
+        <field name="name">Pipeline (Quotations)</field>
+        <field name="res_model">sale.report</field>
+        <field name="view_mode">pivot,list,graph</field>
+        <field name="domain">[('state', 'in', ['draft', 'sent'])]</field>
+        <field name="context">{'pivot_measures': ['price_subtotal', 'product_uom_qty'],
+                               'pivot_row_group_by': ['user_id'],
+                               'pivot_column_group_by': ['date:month']}</field>
+    </record>
+
+    <!-- ============================== Menus ============================== -->
+
+    <menuitem id="menu_cognify_management"
+              name="Management"
+              action="spreadsheet_dashboard.ir_actions_dashboard_action"
+              web_icon="cognify_management_reports,static/description/icon.png"
+              sequence="1"/>
+
+    <menuitem id="menu_cognify_management_sales"
+              name="Sales"
+              parent="menu_cognify_management"
+              sequence="10"/>
+
+    <menuitem id="menu_cognify_sales_overview"
+              name="Sales Overview"
+              parent="menu_cognify_management_sales"
+              action="action_sales_overview"
+              sequence="5"/>
+    <menuitem id="menu_cognify_sales_day"
+              name="Sales by Day"
+              parent="menu_cognify_management_sales"
+              action="action_sales_by_day"
+              sequence="10"/>
+    <menuitem id="menu_cognify_sales_month"
+              name="Sales by Month"
+              parent="menu_cognify_management_sales"
+              action="action_sales_by_month"
+              sequence="15"/>
+    <menuitem id="menu_cognify_sales_channel"
+              name="Sales by Channel"
+              parent="menu_cognify_management_sales"
+              action="action_sales_by_channel"
+              sequence="20"/>
+    <menuitem id="menu_cognify_sales_category"
+              name="Sales by Category"
+              parent="menu_cognify_management_sales"
+              action="action_sales_by_category"
+              sequence="25"/>
+    <menuitem id="menu_cognify_cost_of_sales"
+              name="Cost of Sales"
+              parent="menu_cognify_management_sales"
+              action="action_cost_of_sales"
+              sequence="30"/>
+    <menuitem id="menu_cognify_sales_pipeline"
+              name="Pipeline (Quotations)"
+              parent="menu_cognify_management_sales"
+              action="action_sales_pipeline"
+              sequence="35"/>
+
+    <menuitem id="menu_cognify_management_products"
+              name="Products"
+              parent="menu_cognify_management"
+              sequence="20"/>
+    <menuitem id="menu_cognify_turnover"
+              name="Product Turnover"
+              parent="menu_cognify_management_products"
+              action="action_product_turnover"
+              sequence="5"/>
+    <menuitem id="menu_cognify_turnover_lowest"
+              name="Slowest Moving"
+              parent="menu_cognify_management_products"
+              action="action_product_turnover_lowest"
+              sequence="10"/>
+
+    <menuitem id="menu_cognify_management_customers"
+              name="Customers"
+              parent="menu_cognify_management"
+              sequence="30"/>
+    <menuitem id="menu_cognify_customer_balances"
+              name="Outstanding Balances"
+              parent="menu_cognify_management_customers"
+              action="action_customer_credit"
+              sequence="5"/>
+    <menuitem id="menu_cognify_credit_available"
+              name="Credit Available"
+              parent="menu_cognify_management_customers"
+              action="action_customer_credit_all"
+              sequence="10"/>
+    <menuitem id="menu_cognify_sales_by_customer"
+              name="Sales by Customer"
+              parent="menu_cognify_management_customers"
+              action="action_sales_by_customer"
+              sequence="15"/>
+
+    <menuitem id="menu_cognify_management_team"
+              name="Salespeople"
+              parent="menu_cognify_management"
+              sequence="40"/>
+    <menuitem id="menu_cognify_salesperson"
+              name="Salesperson by Month"
+              parent="menu_cognify_management_team"
+              action="action_salesperson_performance"
+              sequence="5"/>
+
+    <menuitem id="menu_cognify_management_workforce"
+              name="Staff"
+              parent="menu_cognify_management"
+              sequence="50"
+              groups="hr.group_hr_user"/>
+    <menuitem id="menu_cognify_staff_hours"
+              name="Hours Worked"
+              parent="menu_cognify_management_workforce"
+              action="action_staff_hours"
+              sequence="5"/>
+    <menuitem id="menu_cognify_staff_leave"
+              name="Leave Taken and Available"
+              parent="menu_cognify_management_workforce"
+              action="action_staff_leave"
+              sequence="10"/>
+
+    <!-- ================================================================ -->
+    <!-- Finance                                                           -->
+    <!-- ================================================================ -->
+    <menuitem id="menu_cognify_management_finance"
+              name="Finance"
+              parent="menu_cognify_management"
+              sequence="60"
+              groups="account.group_account_invoice"/>
+
+    <menuitem id="menu_cognify_cash"
+              name="Cash and Bank Position"
+              parent="menu_cognify_management_finance"
+              action="action_cash_position"
+              sequence="5"/>
+    <menuitem id="menu_cognify_ageing"
+              name="Debt Ageing"
+              parent="menu_cognify_management_finance"
+              action="action_customer_ageing"
+              sequence="10"/>
+
+    <!-- ================================================================ -->
+    <!-- Stock                                                             -->
+    <!-- ================================================================ -->
+    <menuitem id="menu_cognify_management_stock"
+              name="Stock"
+              parent="menu_cognify_management"
+              sequence="70"/>
+
+    <menuitem id="menu_cognify_stock_health"
+              name="Stock Health and Value"
+              parent="menu_cognify_management_stock"
+              action="action_stock_health"
+              sequence="5"/>
+    <menuitem id="menu_cognify_stock_dead"
+              name="Dead and Slow Moving Stock"
+              parent="menu_cognify_management_stock"
+              action="action_stock_dead"
+              sequence="10"/>
+    <menuitem id="menu_cognify_stock_low"
+              name="Low and Out of Stock"
+              parent="menu_cognify_management_stock"
+              action="action_stock_low"
+              sequence="15"/>
+
+    <!-- ================================================================ -->
+    <!-- Targets                                                           -->
+    <!-- ================================================================ -->
+    <menuitem id="menu_cognify_sales_targets"
+              name="Sales Targets"
+              parent="menu_cognify_management_team"
+              action="action_sales_target"
+              sequence="10"/>
+    <menuitem id="menu_cognify_rep_achievement"
+              name="Achievement Against Target"
+              parent="menu_cognify_management_team"
+              action="action_rep_achievement"
+              sequence="15"/>
+
+    <!-- ================================================================ -->
+    <!-- Expenses and utilisation                                          -->
+    <!-- ================================================================ -->
+    <menuitem id="menu_cognify_expenses"
+              name="Expenses"
+              parent="menu_cognify_management_workforce"
+              action="action_expense_report"
+              sequence="15"
+              groups="hr.group_hr_user"/>
+    <menuitem id="menu_cognify_utilisation"
+              name="Timesheet Utilisation"
+              parent="menu_cognify_management_workforce"
+              action="action_utilisation_report"
+              sequence="20"
+              groups="hr.group_hr_user"/>
+
+</odoo>

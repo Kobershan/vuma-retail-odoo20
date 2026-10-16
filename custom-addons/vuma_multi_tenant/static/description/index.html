@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Vuma Multi-Tenant Retail</title>
+</head>
+<body>
+    <div class="oe_module_description">
+        <h1>Vuma Multi-Tenant Retail</h1>
+        <p>Multi-tenant setup for <strong>Trade Rite</strong> and <strong>Siyaya DC</strong> with mixed-basket quote wizard.</p>
+        
+        <h2>Features</h2>
+        <ul>
+            <li><strong>Dual Company Setup:</strong> Complete configuration for Trade Rite and Siyaya DC with separate charts of accounts, warehouses, sequences, pricelists, payment terms, journals, and fiscal positions.</li>
+            <li><strong>Cross-Company Product Search:</strong> Search and select products from both companies in a single interface.</li>
+            <li><strong>Mixed-Basket Quote Wizard:</strong> Build a single basket with products from both companies, then automatically split into two separate quotations (one per company).</li>
+            <li><strong>No Profile Switching:</strong> Create quotes for both companies without changing user company/profile.</li>
+            <li><strong>Company-Specific Configuration:</strong> Each quote uses the correct company's pricelist, warehouse, journal, payment terms, and fiscal position.</li>
+        </ul>
+
+        <h2>Workflow</h2>
+        <ol>
+            <li>Open <em>Mixed Basket Quote</em> from the Vuma Multi-Tenant menu</li>
+            <li>Select the customer</li>
+            <li>Click <strong>Add Products</strong> to search across both companies</li>
+            <li>Products are grouped by company (Trade Rite / Siyaya DC)</li>
+            <li>Add desired quantities to the basket</li>
+            <li>Review the combined basket with per-company totals</li>
+            <li>Click <strong>Create Quotes</strong> to generate two separate sale orders</li>
+            <li>Each quote is created in its respective company context with correct settings</li>
+        </ol>
+
+        <h2>Company-Specific Defaults</h2>
+        <table class="table table-sm">
+            <thead>
+                <tr><th>Setting</th><th>Trade Rite</th><th>Siyaya DC</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Sequence Prefix</td><td>TR/</td><td>SY/</td></tr>
+                <tr><td>Warehouse Code</td><td>TRWH</td><td>SYWH</td></tr>
+                <tr><td>Default Pricelist</td><td>Retail / Wholesale / Trade</td><td>Retail / Wholesale / Trade</td></tr>
+                <tr><td>Default Payment Term</td><td>30 Days</td><td>30 Days</td></tr>
+                <tr><td>Fiscal Position</td><td>Domestic (SA VAT 15%)</td><td>Domestic (SA VAT 15%)</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Security</h2>
+        <p>Access controlled via standard Odoo groups:</p>
+        <ul>
+            <li><strong>Mixed Basket User:</strong> Can create mixed-basket quotes (implies Sales User)</li>
+            <li><strong>Mixed Basket Manager:</strong> Full access including configuration (implies Sales Manager)</li>
+        </ul>
+    </div>
+</body>
+</html>

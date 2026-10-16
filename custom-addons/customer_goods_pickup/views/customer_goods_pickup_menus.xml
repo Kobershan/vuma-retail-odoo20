@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        One place for the whole workflow. The three entries a user cares
+        about — a rep's own pickups, the store's receiving queue, and the
+        accountant's credit queue — sit side by side, and each menu is
+        restricted to the group that is allowed to use it.
+    -->
+    <menuitem id="menu_customer_goods_pickup_root"
+              name="Customer Goods"
+              sequence="92"/>
+
+    <!-- Sales representative -->
+    <menuitem id="menu_customer_goods_pickup_my"
+              name="My Goods Pickups"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_pickup_mine"
+              groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+              sequence="10"/>
+
+    <menuitem id="menu_customer_goods_pickup_draft"
+              name="Draft Pickups"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_pickup_draft"
+              groups="customer_goods_pickup.group_goods_pickup_sales_rep"
+              sequence="20"/>
+
+    <!-- Store receiving -->
+    <menuitem id="menu_customer_goods_pickup_store_receiving"
+              name="Store Receiving"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_receipt_pending"
+              groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+              sequence="30"/>
+
+    <menuitem id="menu_customer_goods_pickup_receipts"
+              name="Store Receipts"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_receipt_all"
+              groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+              sequence="40"/>
+
+    <menuitem id="menu_customer_goods_quarantine"
+              name="Goods In The Returns Area"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_quarantine_held"
+              groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+              sequence="45"/>
+
+    <!-- Accounting -->
+    <menuitem id="menu_customer_goods_pickup_awaiting_credit"
+              name="Goods Awaiting Credit"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_receipt_awaiting_credit"
+              groups="customer_goods_pickup.group_goods_pickup_accountant"
+              sequence="50"/>
+
+    <!-- Management and reporting -->
+    <menuitem id="menu_customer_goods_pickup_all"
+              name="All Goods Pickups"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_pickup_all"
+              groups="customer_goods_pickup.group_goods_pickup_store_receiver"
+              sequence="60"/>
+
+    <menuitem id="menu_customer_goods_pickup_outstanding"
+              name="Outstanding By Sales Representative"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_pickup_outstanding"
+              groups="customer_goods_pickup.group_goods_pickup_manager"
+              sequence="70"/>
+
+    <menuitem id="menu_customer_goods_quarantine_all"
+              name="Quarantine History"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_quarantine_all"
+              groups="customer_goods_pickup.group_goods_pickup_manager"
+              sequence="75"/>
+
+    <menuitem id="menu_customer_goods_quarantine_legacy"
+              name="Legacy Rejections To Verify"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_quarantine_unverified"
+              groups="customer_goods_pickup.group_goods_pickup_manager"
+              sequence="78"/>
+
+    <menuitem id="menu_customer_goods_pickup_returns"
+              name="Returns By Customer And Invoice"
+              parent="menu_customer_goods_pickup_root"
+              action="action_customer_goods_pickup_invoice"
+              groups="customer_goods_pickup.group_goods_pickup_manager"
+              sequence="80"/>
+
+</odoo>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Lot form: expiry status banner + the alert window in use. -->
+    <record id="stock_lot_form_inherit_cognify_expiry" model="ir.ui.view">
+        <field name="name">stock.lot.inherit.cognify.expiry.form</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="product_expiry.view_move_form_expiry"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='alert_date']" position="after">
+                <field name="expiry_alert_window" nolabel="1"/>
+                <field name="expiry_status" widget="badge"
+                       decoration-success="expiry_status == 'ok'"
+                       decoration-warning="expiry_status == 'expiring'"
+                       decoration-danger="expiry_status == 'expired'"/>
+                <field name="expiry_days_left"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        The Expiry Alerts list. Grouped by status so the expired goods are at the
+        top, with colour coding and a re-scan button.
+    -->
+    <record id="stock_lot_view_expiry_tree" model="ir.ui.view">
+        <field name="name">stock.lot.cognify.expiry.list</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <list string="Expiry Alerts"
+                  default_order="expiration_date asc"
+                  decoration-danger="expiry_status == 'expired'"
+                  decoration-warning="expiry_status == 'expiring'"
+                  decoration-muted="expiry_status == 'none'"
+                  create="false">
+                <field name="expiry_status" widget="badge"
+                       decoration-success="expiry_status == 'ok'"
+                       decoration-warning="expiry_status == 'expiring'"
+                       decoration-danger="expiry_status == 'expired'"/>
+                <field name="expiry_days_left" string="Days Left"/>
+                <field name="product_id"/>
+                <field name="product_qty" string="On Hand"/>
+                <field name="uom_id" column_invisible="True"/>
+                <field name="name" string="Lot / Serial"/>
+                <field name="location_id"/>
+                <field name="expiration_date" string="Expires On"/>
+                <field name="alert_date" string="Alert From" optional="hide"/>
+                <field name="removal_date" string="Removal Date" optional="hide"/>
+                <field name="use_date" string="Best Before" optional="hide"/>
+                <field name="expiry_alert_window" string="Alert Window" optional="hide"/>
+                <field name="responsible_id" optional="hide"
+                       groups="stock.group_stock_manager"/>
+                <field name="product_expiry_reminded" column_invisible="True"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search view used by the Expiry Alerts action. -->
+    <record id="stock_lot_view_expiry_search" model="ir.ui.view">
+        <field name="name">stock.lot.cognify.expiry.search</field>
+        <field name="model">stock.lot</field>
+        <field name="arch" type="xml">
+            <search string="Expiry Alerts">
+                <field name="product_id"/>
+                <field name="name"/>
+                <field name="location_id"/>
+                <filter name="filter_on_hand" string="In Stock" domain="[('product_qty', '&gt;', 0)]"/>
+                <separator/>
+                <filter name="filter_expiring" string="Expiring Soon" domain="[('expiry_status', '=', 'expiring')]"/>
+                <filter name="filter_expired" string="Expired" domain="[('expiry_status', '=', 'expired')]"/>
+                <filter name="filter_alert_window" string="Inside Alert Window"
+                        domain="[('alert_date', '&lt;=', time.strftime('%Y-%m-%d %H:%M:%S'))]"/>
+                <separator/>
+                <filter name="filter_no_expiry" string="No Expiry Date" domain="[('expiration_date', '=', False)]"/>
+                <group>
+                    <filter name="group_product" string="Product" domain="[]" context="{'group_by': 'product_id'}"/>
+                    <filter name="group_location" string="Location" domain="[]" context="{'group_by': 'location_id'}"/>
+                    <filter name="group_expiration" string="Expiry Date" domain="[]" context="{'group_by': 'expiration_date'}"/>
+                    <filter name="group_alert" string="Alert From" domain="[]" context="{'group_by': 'alert_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Extra filters on the standard Lots &amp; Serial Numbers search view. -->
+    <record id="stock_lot_search_inherit_cognify_expiry" model="ir.ui.view">
+        <field name="name">stock.lot.search.inherit.cognify.expiry</field>
+        <field name="model">stock.lot</field>
+        <field name="inherit_id" ref="stock.search_product_lot_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='expiration_alerts']" position="after">
+                <filter name="cognify_expired" string="Expired (with stock)"
+                        domain="[('expiry_status', '=', 'expired'), ('product_qty', '&gt;', 0)]"/>
+                <filter name="cognify_expiring" string="Expiring Soon (with stock)"
+                        domain="[('expiry_status', '=', 'expiring'), ('product_qty', '&gt;', 0)]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

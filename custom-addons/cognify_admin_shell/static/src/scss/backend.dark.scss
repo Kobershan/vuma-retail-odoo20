@@ -1,0 +1,39 @@
+/* Dark mode overrides for Vuma admin shell. */
+:root {
+    --vuma-paper: #0f1116;
+    --vuma-panel: #181a20;
+    --vuma-line: #2a2d34;
+}
+.o_main_navbar {
+    background: #181a20 !important;
+    color: #e6e8ee !important;
+    border-bottom-color: #2a2d34 !important;
+}
+.o_main_navbar .o_nav_entry,
+.o_main_navbar .dropdown-toggle {
+    color: #e6e8ee !important;
+}
+.o_main_navbar .o_nav_entry:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+}
+.o_control_panel {
+    background: #181a20 !important;
+    border-bottom-color: #2a2d34 !important;
+}
+.o_web_client {
+    background: var(--vuma-paper);
+}
+.vuma-navsearch {
+    background: #23262c;
+    border-color: #2a2d34;
+    color: #a0a6b8;
+}
+.vuma-navsearch kbd {
+    background: #1b1e24;
+    border-color: #2a2d34;
+}
+.vuma-navtitle,
+.vuma-navtoggle { color: #e6e8ee; }
+.vuma-navtoggle:hover { background: rgba(255, 255, 255, 0.06); }
+.o_list_view thead th { background: #1f2128; color: #a0a6b8; border-bottom-color: #2a2d34; }
+.card { border-color: #2a2d34; background: #181a20; }

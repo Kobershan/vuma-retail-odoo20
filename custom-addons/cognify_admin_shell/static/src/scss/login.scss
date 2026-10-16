@@ -1,0 +1,142 @@
+/* Vuma login page */
+.o_web_login_vuma {
+    min-height: 100vh;
+    display: flex;
+    background: #f5f6fa;
+    font-family: "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+}
+.o_web_login_vuma .vuma-side {
+    flex: 1 1 50%;
+    background:
+        radial-gradient(120% 80% at 0% 0%, rgba(255, 229, 0, 0.12), transparent 55%),
+        linear-gradient(160deg, #14161a 0%, #0a0c10 100%);
+    color: #ffffff;
+    padding: 48px 56px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+.o_web_login_vuma .vuma-side::after {
+    content: "";
+    position: absolute;
+    inset: auto -120px -120px auto;
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle, rgba(255, 229, 0, 0.18), transparent 62%);
+    pointer-events: none;
+}
+.o_web_login_vuma .vuma-side .logo-plate {
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 10px;
+    max-width: max-content;
+}
+.o_web_login_vuma .vuma-side .logo-plate img {
+    height: 32px;
+    max-width: 200px;
+    object-fit: contain;
+}
+.o_web_login_vuma .vuma-side .tagline {
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--vuma-accent);
+}
+.o_web_login_vuma .vuma-side .hero {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    max-width: 480px;
+}
+.o_web_login_vuma .vuma-side .hero-sub {
+    margin-top: 16px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #b8bec9;
+    max-width: 440px;
+}
+.o_web_login_vuma .vuma-side .foot {
+    font-size: 0.75rem;
+    color: #8a90a0;
+}
+
+.o_web_login_vuma .vuma-form {
+    flex: 1 1 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 32px;
+    background: #f5f6fa;
+}
+.o_web_login_vuma .vuma-form .card-plate {
+    width: 100%;
+    max-width: 380px;
+    background: #ffffff;
+    border: 1px solid #e6e8ee;
+    border-radius: 16px;
+    padding: 36px 32px;
+    box-shadow: 0 18px 48px rgba(20, 22, 26, 0.08);
+}
+.o_web_login_vuma .vuma-form h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #14161a;
+}
+.o_web_login_vuma .vuma-form .subtitle {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+.o_web_login_vuma .vuma-form .form-control {
+    height: 42px;
+    border-radius: 8px;
+    border-color: #dde0e7;
+    background: #ffffff;
+}
+.o_web_login_vuma .vuma-form .form-control:focus {
+    border-color: #14161a;
+    box-shadow: 0 0 0 0.2rem rgba(255, 229, 0, 0.3);
+}
+.o_web_login_vuma .vuma-form .btn-primary {
+    height: 44px;
+    border-radius: 8px;
+    background: #ffe500 !important;
+    color: #14161a !important;
+    border: 1px solid #14161a !important;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+.o_web_login_vuma .vuma-form .btn-primary:hover {
+    background: #ffef5a !important;
+}
+.o_web_login_vuma .vuma-form label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #14161a;
+}
+.o_web_login_vuma .oe_structure {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .o_web_login_vuma {
+        flex-direction: column;
+    }
+    .o_web_login_vuma .vuma-side {
+        flex: 0 0 auto;
+        padding: 28px 22px;
+    }
+    .o_web_login_vuma .vuma-side .hero {
+        font-size: 1.6rem;
+    }
+    .o_web_login_vuma .vuma-side .foot {
+        display: none;
+    }
+}

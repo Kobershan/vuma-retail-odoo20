@@ -1,0 +1,33 @@
+id,name,model_id,group_id/id,operation,domain
+access_customer_goods_pickup_sales_rep,customer.goods.pickup sales rep,customer.goods.pickup,customer_goods_pickup.group_goods_pickup_sales_rep,crud,"[('sales_rep_id', '=', user.id)]"
+access_customer_goods_pickup_store_receiver,customer.goods.pickup store receiving,customer.goods.pickup,customer_goods_pickup.group_goods_pickup_store_receiver,ru,
+access_customer_goods_pickup_accountant,customer.goods.pickup accountant,customer.goods.pickup,customer_goods_pickup.group_goods_pickup_accountant,r,
+access_customer_goods_pickup_manager,customer.goods.pickup manager,customer.goods.pickup,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_pickup_line_sales_rep,customer.goods.pickup.line sales rep,customer.goods.pickup.line,customer_goods_pickup.group_goods_pickup_sales_rep,crud,"[('pickup_id.sales_rep_id', '=', user.id)]"
+access_customer_goods_pickup_line_store_receiver,customer.goods.pickup.line store receiving,customer.goods.pickup.line,customer_goods_pickup.group_goods_pickup_store_receiver,r,
+access_customer_goods_pickup_line_accountant,customer.goods.pickup.line accountant,customer.goods.pickup.line,customer_goods_pickup.group_goods_pickup_accountant,r,
+access_customer_goods_pickup_line_manager,customer.goods.pickup.line manager,customer.goods.pickup.line,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_receipt_store_receiver,customer.goods.receipt store receiving,customer.goods.receipt,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_receipt_sales_rep,customer.goods.receipt sales rep,customer.goods.receipt,customer_goods_pickup.group_goods_pickup_sales_rep,r,"[('pickup_id.sales_rep_id', '=', user.id)]"
+access_customer_goods_receipt_accountant,customer.goods.receipt accountant,customer.goods.receipt,customer_goods_pickup.group_goods_pickup_accountant,ru,
+access_customer_goods_receipt_manager,customer.goods.receipt manager,customer.goods.receipt,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_receipt_line_sales_rep,customer.goods.receipt.line sales rep,customer.goods.receipt.line,customer_goods_pickup.group_goods_pickup_sales_rep,r,"[('receipt_id.pickup_id.sales_rep_id', '=', user.id)]"
+access_customer_goods_receipt_line_store_receiver,customer.goods.receipt.line store receiving,customer.goods.receipt.line,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_receipt_line_accountant,customer.goods.receipt.line accountant,customer.goods.receipt.line,customer_goods_pickup.group_goods_pickup_accountant,r,
+access_customer_goods_receipt_line_manager,customer.goods.receipt.line manager,customer.goods.receipt.line,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_pickup_line_wizard,customer.goods.pickup line wizard,customer.goods.pickup.add.lines,customer_goods_pickup.group_goods_pickup_sales_rep,crud,
+access_customer_goods_pickup_line_wizard_manager,customer.goods.pickup line wizard manager,customer.goods.pickup.add.lines,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_pickup_line_wizard_line,customer.goods.pickup.add.lines.line,customer.goods.pickup.add.lines.line,customer_goods_pickup.group_goods_pickup_sales_rep,crud,
+access_customer_goods_pickup_line_wizard_line_manager,customer.goods.pickup.add.lines.line manager,customer.goods.pickup.add.lines.line,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_receipt_receive_wizard,customer.goods.receipt.receive store receiving,customer.goods.receipt.receive,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_receipt_receive_wizard_manager,customer.goods.receipt.receive manager,customer.goods.receipt.receive,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_receipt_receive_line,customer.goods.receipt.receive.line,customer.goods.receipt.receive.line,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_receipt_receive_line_manager,customer.goods.receipt.receive.line manager,customer.goods.receipt.receive.line,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_receipt_reject_wizard,customer.goods.receipt reject wizard,customer.goods.receipt.reject,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_receipt_reject_wizard_manager,customer.goods.receipt reject wizard manager,customer.goods.receipt.reject,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_pickup_cancel_wizard,customer.goods.pickup cancel wizard,customer.goods.pickup.cancel,customer_goods_pickup.group_goods_pickup_sales_rep,crud,
+access_customer_goods_pickup_cancel_wizard_manager,customer.goods.pickup cancel wizard manager,customer.goods.pickup.cancel,customer_goods_pickup.group_goods_pickup_manager,crud,
+access_customer_goods_quarantine_store_receiver,customer.goods.quarantine store receiving,customer.goods.quarantine,customer_goods_pickup.group_goods_pickup_store_receiver,crud,
+access_customer_goods_quarantine_sales_rep,customer.goods.quarantine sales rep,customer.goods.quarantine,customer_goods_pickup.group_goods_pickup_sales_rep,r,"[('pickup_id.sales_rep_id', '=', user.id)]"
+access_customer_goods_quarantine_accountant,customer.goods.quarantine accountant,customer.goods.quarantine,customer_goods_pickup.group_goods_pickup_accountant,r,
+access_customer_goods_quarantine_manager,customer.goods.quarantine manager,customer.goods.quarantine,customer_goods_pickup.group_goods_pickup_manager,crud,

@@ -1,0 +1,790 @@
+/* Vuma Admin Shell — global theme variables */
+:root {
+    --vuma-ink: #14161a;
+    --vuma-ink-2: #23262d;
+    --vuma-ink-soft: #6b7280;
+    --vuma-line: #e6e8ee;
+    --vuma-paper: #f5f6fa;
+    --vuma-panel: #ffffff;
+    --vuma-accent: #ffe500;
+    --vuma-accent-soft: #fff4b8;
+    --vuma-sidebar-w: 276px;
+    --vuma-rail-w: 76px;
+    --vuma-nav-h: 56px;
+    --vuma-font: "Inter", "Segoe UI", "Helvetica Neue", system-ui, -apple-system, sans-serif;
+}
+
+/* Teardown the Odoo purple nav bar. */
+.o_main_navbar {
+    background: #ffffff !important;
+    color: #0f1116 !important;
+    border-bottom: 1px solid #e6e8ee !important;
+    box-shadow: none !important;
+    min-height: var(--vuma-nav-h);
+    height: var(--vuma-nav-h) !important;
+    padding: 0 4px 0 2px;
+}
+
+.o_main_navbar .o_nav_entry,
+.o_main_navbar .dropdown-toggle,
+.o_main_navbar .o_dropdown_toggle_custo {
+    color: #0f1116 !important;
+}
+
+.o_main_navbar .o_menu_systray .dropdown-toggle:hover,
+.o_main_navbar .o_nav_entry:hover {
+    background: rgba(20, 22, 26, 0.05) !important;
+}
+
+.o_web_client {
+    background: var(--vuma-paper);
+    font-family: var(--vuma-font);
+}
+
+/* Hide the default apps button, brand, and sections — our sidebar takes over.
+   We keep them visible only while the website editor is active, so the page builder keeps working. */
+.o_main_navbar .o_navbar_apps_menu,
+.o_main_navbar .o_menu_brand,
+.o_main_navbar .o_menu_sections,
+.o_main_navbar .o_menu_sections_more {
+    display: none !important;
+}
+
+/* When the website editor has its systray rendered, restore the standard bars so editors can switch pages. */
+body:has(.o_website_systray) .o_main_navbar .o_navbar_apps_menu,
+body:has(.o_website_systray) .o_main_navbar .o_menu_brand,
+body:has(.o_website_systray) .o_main_navbar .o_menu_sections,
+body:has(.o_website_systray) .o_main_navbar .o_menu_sections_more {
+    display: inline-flex !important;
+}
+
+/* Mobile burger apps toggle is redundant now. */
+.o_mobile_menu_toggle {
+    display: none !important;
+}
+
+/* Control panel */
+.o_control_panel {
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--vuma-line) !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--vuma-ink) !important;
+    border-color: var(--vuma-ink) !important;
+    border-radius: 8px;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--vuma-ink-2) !important;
+    border-color: var(--vuma-ink-2) !important;
+}
+.btn-primary:focus {
+    box-shadow: 0 0 0 0.2rem var(--vuma-accent) !important;
+}
+
+/* Form required markers and focus ring stay app-neutral. */
+.form-control:focus {
+    border-color: var(--vuma-ink) !important;
+    box-shadow: 0 0 0 0.2rem var(--vuma-accent-soft) !important;
+}
+
+/* Sharper cards */
+.card {
+    border-radius: 14px;
+    border-color: var(--vuma-line);
+}
+
+/* List view header */
+.o_list_view thead th {
+    background: #f7f8fb;
+    border-bottom: 1px solid var(--vuma-line);
+    font-weight: 600;
+    text-transform: none;
+    font-size: 0.85rem;
+    color: var(--vuma-ink-soft);
+}
+
+/* Kanban tweaks */
+.o_kanban_view .o_kanban_record {
+    border-radius: 12px;
+    border-color: var(--vuma-line);
+}
+
+/* Hide Discussions chat bubbles and chat windows (chat facility is gone). */
+.o-mail-ChatHub,
+.o-mail-ChatBubble,
+.o-mail-ChatWindow {
+    display: none !important;
+}
+
+/* Systray cleanup: remove the messaging bubble-icon (we kept the activity menu). */
+.o_main_navbar .o_menu_systray [data-index] .o-discuss-badge + div {
+    display: none;
+}
+
+@media print {
+    .vuma-sidebar,
+    .vuma-mobile-backdrop {
+        display: none !important;
+    }
+    .o_web_client {
+        padding-left: 0 !important;
+    }
+}
+/* ------------------------------------------------------------------
+   Layout: sidebar + content column.
+   ------------------------------------------------------------------ */
+body.o_vuma_has_sidebar .o_web_client {
+    padding-left: var(--vuma-sidebar-w);
+    transition: padding-left 0.18s ease;
+}
+body.o_vuma_has_sidebar.o_vuma_sidebar_collapsed .o_web_client {
+    padding-left: var(--vuma-rail-w);
+}
+
+/* Small-screen drawer mode */
+@media (max-width: 991.98px) {
+    body.o_vuma_has_sidebar .o_web_client {
+        padding-left: 0 !important;
+    }
+    .vuma-sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
+        z-index: 1032;
+    }
+    body.o_vuma_sidebar_open .vuma-sidebar {
+        transform: translateX(0);
+    }
+    .vuma-mobile-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 17, 22, 0.5);
+        z-index: 1031;
+    }
+    body.o_vuma_sidebar_open .vuma-mobile-backdrop {
+        display: block;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Sidebar shell
+   ------------------------------------------------------------------ */
+.vuma-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--vuma-sidebar-w);
+    background: var(--vuma-ink);
+    color: #e9ecf2;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--vuma-font);
+    z-index: 1000;
+    transition: width 0.18s ease;
+    overflow: hidden;
+}
+
+body.o_vuma_sidebar_collapsed .vuma-sidebar {
+    width: var(--vuma-rail-w);
+}
+
+.vuma-sidebar * {
+    user-select: none;
+}
+.vuma-sidebar input,
+.vuma-sidebar textarea {
+    user-select: text;
+}
+
+/* Top stripe brand band */
+.vuma-topstripe {
+    height: 3px;
+    background: linear-gradient(90deg, var(--vuma-accent) 0 34%, transparent 34%);
+}
+
+.vuma-head {
+    display: flex;
+    align-items: center;
+    padding: 16px 14px 8px;
+    gap: 10px;
+    min-height: 56px;
+}
+
+.vuma-mark {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: #ffffff;
+    padding: 4px 5px;
+}
+
+body.o_vuma_sidebar_collapsed .vuma-mark {
+    padding: 3px;
+}
+
+.vuma-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.vuma-wordmark {
+    height: 30px;
+    max-width: 140px;
+    object-fit: contain;
+    object-position: left center;
+    flex-shrink: 0;
+}
+
+.vuma-appname {
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+body.o_vuma_sidebar_collapsed .vuma-logo-row .vuma-appname,
+body.o_vuma_sidebar_collapsed .vuma-logo-row .vuma-wordmark {
+    display: none;
+}
+
+.vuma-rail-toggle {
+    margin-left: auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #cfd3de;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.12s ease;
+}
+.vuma-rail-toggle:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.09);
+}
+.o_vuma_sidebar_open .vuma-mobile-close {
+    display: flex !important;
+}
+.vuma-mobile-close {
+    display: none !important;
+}
+
+body.o_vuma_sidebar_collapsed .vuma-rail-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Search */
+.vuma-search {
+    padding: 4px 14px 10px;
+    position: relative;
+}
+.vuma-search input {
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e6e9f2;
+    padding-left: 34px;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+.vuma-search input::placeholder {
+    color: #8a90a0;
+}
+.vuma-search input:focus {
+    outline: none;
+    border-color: var(--vuma-accent);
+    background: rgba(255, 255, 255, 0.07);
+}
+.vuma-search i {
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #8a90a0;
+    opacity: 0.9;
+}
+body.o_vuma_sidebar_collapsed .vuma-search {
+    padding: 8px 14px;
+}
+body.o_vuma_sidebar_collapsed .vuma-search input {
+    width: 0;
+    border: 0;
+    padding: 0;
+    opacity: 0;
+}
+.vuma-rail-search-btn {
+    display: none;
+}
+body.o_vuma_sidebar_collapsed .vuma-rail-search-btn {
+    display: flex;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #a0a6b8;
+    cursor: pointer;
+    width: 100%;
+}
+body.o_vuma_sidebar_collapsed .vuma-rail-search-btn:hover {
+    color: #ffffff;
+}
+
+/* Scroll area */
+.vuma-body {
+    flex: 1 1 auto;
+    overflow: auto;
+    padding: 6px 8px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+.vuma-body::-webkit-scrollbar {
+    width: 6px;
+}
+.vuma-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+}
+
+body.o_vuma_sidebar_collapsed .vuma-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Section labels */
+.vuma-group-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a90a0;
+    padding: 12px 8px 4px;
+    white-space: nowrap;
+}
+body.o_vuma_sidebar_collapsed .vuma-group-label {
+    display: none;
+}
+
+/* Empty / skeleton */
+.vuma-empty {
+    padding: 24px 14px;
+    font-size: 0.82rem;
+    color: #8a90a0;
+    text-align: center;
+}
+.vuma-skeleton {
+    height: 32px;
+    margin: 6px 8px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+    background-size: 200% 100%;
+    animation: vuma-shimmer 1.4s infinite;
+}
+@keyframes vuma-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* App row */
+.vuma-app {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    margin: 2px 0;
+    border-radius: 10px;
+    color: #cfd3de;
+    font-size: 0.88rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.vuma-app:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+.vuma-app.is-active {
+    background: var(--vuma-accent);
+    color: #14161a;
+    font-weight: 700;
+}
+.vuma-app.is-current-inactive {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.vuma-app-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    color: #cfd3de;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    font-weight: 700;
+    font-size: 0.85rem;
+    position: relative;
+    overflow: hidden;
+}
+.vuma-app-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+}
+.vuma-app.is-active .vuma-app-icon {
+    background: rgba(14, 16, 20, 0.18);
+    color: #14161a;
+    border-color: rgba(14, 16, 20, 0.18);
+}
+.vuma-app-letter {
+    text-transform: uppercase;
+}
+
+.vuma-app-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+body.o_vuma_sidebar_collapsed .vuma-app-name,
+body.o_vuma_sidebar_collapsed .vuma-app-chevron,
+body.o_vuma_sidebar_collapsed .vuma-app-flyout {
+    display: none;
+}
+
+.vuma-app-chevron {
+    font-size: 0.7rem;
+    transition: transform 0.15s ease;
+    color: #8a90a0;
+}
+.vuma-app.is-expanded .vuma-app-chevron {
+    transform: rotate(90deg);
+    color: #ffffff;
+}
+.vuma-app.is-active .vuma-app-chevron {
+    color: #14161a;
+}
+
+/* Folders nested under active app */
+.vuma-folders {
+    margin: 4px 0 10px;
+    padding-left: 8px;
+    position: relative;
+}
+.vuma-folders::before {
+    content: "";
+    position: absolute;
+    left: 19px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.vuma-submenu {
+    position: relative;
+}
+.vuma-sub {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 6px 24px;
+    margin: 1px 0;
+    border-radius: 8px;
+    color: #a0a6b8;
+    font-size: 0.82rem;
+    font-weight: 450;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.1s ease, color 0.1s ease;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+.vuma-sub::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #606680;
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.vuma-sub:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+.vuma-sub.is-active {
+    color: var(--vuma-accent);
+    background: rgba(255, 229, 0, 0.08);
+    font-weight: 600;
+}
+.vuma-sub.is-active::before {
+    background: var(--vuma-accent);
+    box-shadow: 0 0 6px rgba(255, 229, 0, 0.4);
+}
+.vuma-sub-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vuma-folder > .vuma-sub {
+    font-weight: 600;
+    color: #cfd3de;
+}
+.vuma-folder.is-open > .vuma-sub {
+    color: #ffffff;
+}
+.vuma-folder-children {
+    padding-left: 10px;
+    margin: 2px 0 4px;
+}
+
+.vuma-sub-section-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #8a90a0;
+    padding: 8px 10px 2px 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Flyout on collapsed rail */
+.vuma-flyouthost {
+    position: relative;
+}
+.vuma-flyout {
+    position: fixed;
+    left: var(--vuma-rail-w);
+    top: 60px;
+    width: 260px;
+    background: #1d1f26;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0 10px 10px 0;
+    padding: 8px 8px 10px;
+    box-shadow: 24px 0 48px rgba(0, 0, 0, 0.35);
+    z-index: 1002;
+    font-family: var(--vuma-font);
+}
+.vuma-flyout-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 8px 10px 6px;
+    color: #ffffff;
+}
+.vuma-flyout-path {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #8a90a0;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 4px;
+}
+
+/* Search results */
+.vuma-results {
+    padding: 4px 0;
+}
+.vuma-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    margin: 2px 0;
+    border-radius: 8px;
+    color: #cfd3de;
+    font-size: 0.84rem;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+.vuma-result:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+.vuma-result-app {
+    font-weight: 600;
+}
+.vuma-result-path {
+    font-size: 0.72rem;
+    color: #8a90a0;
+    margin-left: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+.vuma-result-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.vuma-result-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 2px;
+}
+
+/* Footer */
+.vuma-foot {
+    padding: 10px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    background: rgba(0, 0, 0, 0.15);
+}
+.vuma-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+}
+.vuma-foot-meta {
+    min-width: 0;
+    font-size: 0.78rem;
+}
+.vuma-foot-name {
+    color: #ffffff;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.vuma-foot-company {
+    color: #8a90a0;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+body.o_vuma_sidebar_collapsed .vuma-foot-meta {
+    display: none;
+}
+body.o_vuma_sidebar_collapsed .vuma-foot {
+    justify-content: center;
+}
+
+/* Navbar custom */
+.vuma-navtoggle {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #0f1116;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.vuma-navtoggle:hover {
+    background: rgba(20, 22, 26, 0.05);
+}
+.vuma-navtitle {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #0f1116;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+    margin-right: 10px;
+}
+@media (max-width: 767.98px) {
+    .vuma-navtitle {
+        display: none;
+    }
+}
+.vuma-navsearch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 12px 0 10px;
+    margin-right: 6px;
+    border-radius: 8px;
+    border: 1px solid #e6e8ee;
+    background: #f5f6fa;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: border-color 0.12s ease;
+}
+.vuma-navsearch:hover {
+    border-color: #c9cdd7;
+}
+.vuma-navsearch kbd {
+    background: #ffffff;
+    border: 1px solid #dde0e7;
+    border-radius: 4px;
+    padding: 0 5px;
+    font-size: 0.68rem;
+    color: #6b7280;
+    line-height: 1.6;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+/* Fullscreen from POS / fullscreen actions: sidebar pinned, content spills. */
+body.o_action_fullscreen .o_vuma_has_sidebar,
+body.o_fullscreen .o_vuma_has_sidebar,
+body.o_vuma_fullscreen .o_vuma_has_sidebar {
+    padding-left: 0 !important;
+}
+body.o_action_fullscreen .vuma-sidebar,
+body.o_fullscreen .vuma-sidebar,
+body.o_vuma_fullscreen .vuma-sidebar {
+    display: none !important;
+}

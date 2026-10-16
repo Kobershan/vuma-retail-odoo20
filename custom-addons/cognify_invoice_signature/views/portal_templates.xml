@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        The signing page. Uses the stock portal.signature_form component so the
+        customer gets Odoo's own signature pad; no custom JS assets needed.
+    -->
+    <template id="portal_invoice_sign_page" name="Invoice Signature">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <div class="container py-4">
+                <t t-set="invoice" t-value="invoice"/>
+                <t t-set="access_token" t-value="access_token"/>
+
+                <h3 class="mb-1">
+                    Sign invoice
+                    <span t-out="invoice.name"/>
+                </h3>
+                <p class="text-muted mb-4">
+                    <span t-out="invoice.partner_id.name"/>
+                    <span t-if="invoice.amount_total"> &amp;#8212; </span>
+                    <span t-out="invoice.amount_total"
+                          t-options='{"widget": "monetary", "display_currency": invoice.currency_id}'/>
+                </p>
+
+                <div t-if="not signature_requested and not invoice.signature"
+                     class="alert alert-warning" role="alert">
+                    This invoice has not been sent to you for signature yet.
+                    Please ask the supplier to send it for signing.
+                </div>
+
+                <div t-elif="invoice.signature" class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Signed</h5>
+                        <p class="mb-2">
+                            Signed by
+                            <strong t-out="invoice.signed_by"/>
+                            on
+                            <span t-out="invoice.signed_on"
+                                  t-options='{"widget": "datetime"}'/>
+                        </p>
+                        <img t-if="invoice.signature"
+                             t-att-src="image_data_uri(invoice.signature)"
+                             alt="Customer signature"
+                             style="max-height: 120px; max-width: 100%; border: 1px solid #dee2e6; padding: 4px; border-radius: 4px;"/>
+                        <div class="mt-3">
+                            <a class="btn btn-primary"
+                               t-attf-href="/my/invoices/#{invoice.id}/signature.pdf?access_token=#{access_token}">
+                                <i class="oi oi-fw oi-download"/> Download invoice
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div t-else="" class="card">
+                    <div class="card-body">
+                        <p t-if="signature_note" class="alert alert-info"
+                           t-out="signature_note"/>
+
+                        <div t-if="can_be_signed">
+                            <p class="mb-3">
+                                Please review the invoice above, then draw your
+                                signature below and enter your name to confirm.
+                            </p>
+
+                            <!-- Props are passed as t-call attributes; a t-set
+                                 inside the body does not reach the callee. -->
+                            <t t-call="portal.signature_form"
+                                call_url="'/my/invoices/%s/sign/submit?access_token=%s' % (invoice.id, access_token)"
+                                default_name="partner_name or ''"
+                                send_label="'Sign &amp; Accept'"
+                                signature_ratio="4"/>
+                        </div>
+
+                        <div t-else="" class="alert alert-secondary" role="alert">
+                            This invoice cannot be signed. It may already be
+                            signed, already paid, or still a draft.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!--
+        Add the signature block to the customer's own invoice page in the
+        portal, next to the existing PDF download button.
+    -->
+    <template id="portal_invoice_page_inherit"
+              name="Invoice Signature Button"
+              inherit_id="account.portal_invoice_page">
+        <xpath expr="//t[@t-set='entries']//div[hasclass('o_download_pdf')]"
+               position="before">
+            <a t-if="invoice.signature_requested and not invoice.signature"
+               class="btn btn-primary"
+               t-attf-href="/my/invoices/#{invoice.id}/sign?access_token=#{invoice.access_token}">
+                <i class="oi oi-fw oi-pencil"/> Sign Invoice
+            </a>
+        </xpath>
+
+        <xpath expr="//t[@t-set='entries']//div[hasclass('o_download_pdf')]"
+               position="after">
+            <div t-if="invoice.signature" class="ms-2 d-inline-block align-middle">
+                <span class="badge text-bg-success">
+                    <i class="oi oi-fw oi-check"/> Signed by
+                    <span t-out="invoice.signed_by"/>
+                </span>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

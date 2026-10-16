@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_remittance_receipt_list" model="ir.ui.view">
+        <field name="name">cognify.remittance.receipt.list</field>
+        <field name="model">cognify.remittance.receipt</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="customer_id"
+                       options="{'no_create': True}"
+                       placeholder="Which customer paid?"/>
+                <field name="amount" sum="Total Collected"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_remittance_line_list" model="ir.ui.view">
+        <field name="name">cognify.remittance.line.list</field>
+        <field name="model">cognify.remittance.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="category_id"
+                       options="{'no_create': True}"
+                       placeholder="Select a category…"/>
+                <field name="description" placeholder="What was this for?"/>
+                <field name="amount" sum="Total Expenses"/>
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_remittance_form" model="ir.ui.view">
+        <field name="name">cognify.remittance.form</field>
+        <field name="model">cognify.remittance</field>
+        <field name="arch" type="xml">
+            <form string="Field Remittance">
+
+                <header>
+                    <button name="action_submit" type="object" string="Submit"
+                            class="btn-primary" invisible="state not in ('draft','rejected')"/>
+                    <button name="action_verify" type="object" string="Verify"
+                            class="btn-primary"
+                            groups="cognify_remittance.group_cognify_remittance_approver"
+                            invisible="state != 'submitted'"/>
+                    <button name="action_reject" type="object" string="Reject"
+                            groups="cognify_remittance.group_cognify_remittance_approver"
+                            invisible="state not in ('submitted','verified')"/>
+                    <button name="action_credit_accounts" type="object" string="Credit to Accounts"
+                            class="btn-primary"
+                            groups="cognify_remittance.group_cognify_remittance_approver"
+                            invisible="state != 'verified'"/>
+                    <button name="action_reset_to_draft" type="object" string="Back to Draft"
+                            groups="cognify_remittance.group_cognify_remittance_approver"
+                            invisible="state != 'rejected'"/>
+                    <button name="action_view_move" type="object" string="Journal Entry"
+                            invisible="not move_id"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,verified,credited"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_move" type="object" class="oe_stat_button"
+                                icon="fa-book" invisible="not move_id">
+                            <field name="move_state" widget="statinfo" string="Entry"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <widget name="web_ribbon" title="Rejected" bg_color="text-bg-danger"
+                            invisible="state != 'rejected'"/>
+
+                    <group>
+                        <group>
+                            <field name="rep_id" readonly="state not in ('draft','rejected')"/>
+                            <field name="date" readonly="state not in ('draft','rejected')"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="customer_ids" widget="many2many_tags"
+                                   readonly="state not in ('draft','rejected')"
+                                   invisible="not customer_ids"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Cash Collected" name="receipts">
+                            <field name="receipt_ids" readonly="state not in ('draft','rejected')"
+                                   context="{'default_currency_id': currency_id}">
+                                <list editable="bottom">
+                                    <field name="customer_id"
+                                           options="{'no_create': True}"
+                                           placeholder="Which customer paid?"/>
+                                    <field name="amount" sum="Total Collected"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Expenses" name="expenses">
+                            <field name="line_ids" readonly="state not in ('draft','rejected')">
+                                <list editable="bottom">
+                                    <field name="category_id"
+                                           options="{'no_create': True}"
+                                           placeholder="Select a category…"/>
+                                    <field name="description" placeholder="Required for ‘Other’"/>
+                                    <field name="amount" sum="Total Expenses"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Anything the office should know…"
+                                   readonly="state not in ('draft','rejected')"/>
+                        </page>
+
+                        <page string="Verification" name="verification"
+                              groups="cognify_remittance.group_cognify_remittance_approver">
+                            <group>
+                                <field name="submitted_date" readonly="1"/>
+                                <field name="verified_by_id" readonly="1"/>
+                                <field name="verified_date" readonly="1"/>
+                                <field name="rejection_reason" readonly="1"
+                                       invisible="not rejection_reason"/>
+                                <field name="move_id" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+
+                    <group class="oe_subtotal_footer oe_right">
+                        <field name="total_received" widget="monetary"
+                               options="{'field_currency': 'currency_id'}"/>
+                        <field name="total_expenses" widget="monetary"
+                               options="{'field_currency': 'currency_id'}"/>
+                        <field name="net_amount" widget="monetary"
+                               options="{'field_currency': 'currency_id'}"
+                               class="oe_subtotal_footer oe_inline_total"
+                               style="font-weight: bold;"/>
+                    </group>
+
+                    <p class="text-muted" invisible="state in ('draft','rejected')">
+                        Money collected on this remittance does not touch the accounts
+                        until it has been verified and credited at the office.
+                    </p>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_remittance_list" model="ir.ui.view">
+        <field name="name">cognify.remittance.list</field>
+        <field name="model">cognify.remittance</field>
+        <field name="arch" type="xml">
+            <list string="Field Remittances"
+                  decoration-muted="state == 'draft'"
+                  decoration-info="state == 'submitted'"
+                  decoration-success="state == 'credited'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="rep_id"/>
+                <field name="customer_ids" widget="many2many_tags" optional="show"/>
+                <field name="total_received" sum="Total Collected"/>
+                <field name="total_expenses" sum="Total Expenses" optional="show"/>
+                <field name="net_amount" sum="Net Returned"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'credited'"
+                       decoration-info="state in ('submitted','verified')"
+                       decoration-danger="state == 'rejected'"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_remittance_search" model="ir.ui.view">
+        <field name="name">cognify.remittance.search</field>
+        <field name="model">cognify.remittance</field>
+        <field name="arch" type="xml">
+            <search string="Search Remittances">
+                <field name="name"/>
+                <field name="customer_ids" string="Customer"/>
+                <field name="rep_id"/>
+                <filter name="filter_draft" string="Draft" domain="[('state','=','draft')]"/>
+                <filter name="filter_submitted" string="To Verify" domain="[('state','=','submitted')]"/>
+                <filter name="filter_verified" string="Verified" domain="[('state','=','verified')]"/>
+                <filter name="filter_credited" string="Credited" domain="[('state','=','credited')]"/>
+                <separator/>
+                <filter name="filter_my" string="My Remittances" domain="[('rep_id','=',uid)]"/>
+                <group>
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_rep" string="Sales Rep" context="{'group_by': 'rep_id'}"/>
+                    <filter name="group_customer" string="Customer" context="{'group_by': 'customer_ids'}"/>
+                    <filter name="group_date" string="Date" context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_remittance_calendar" model="ir.ui.view">
+        <field name="name">cognify.remittance.calendar</field>
+        <field name="model">cognify.remittance</field>
+        <field name="arch" type="xml">
+            <calendar string="Remittances" date_start="date" color="state"
+                      mode="month">
+                <field name="total_received"/>
+                <field name="net_amount"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="action_cognify_remittance" model="ir.actions.act_window">
+        <field name="name">Field Remittances</field>
+        <field name="res_model">cognify.remittance</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="search_view_id" ref="view_remittance_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No field remittances yet</p>
+            <p>Record the cash a rep collected from each customer, log the travel
+               expenses, and hand the net back to the office. The accounts are only
+               credited once the office verifies it.</p>
+        </field>
+    </record>
+
+    <record id="action_my_remittances" model="ir.actions.act_window">
+        <field name="name">My Remittances</field>
+        <field name="res_model">cognify.remittance</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[('rep_id', '=', uid)]</field>
+        <field name="context">{'default_rep_id': uid, 'search_default_my': 1}</field>
+        <field name="search_view_id" ref="view_remittance_search"/>
+    </record>
+
+</odoo>

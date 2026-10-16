@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Add a "City" option next to the built-in auto-batch grouping checkboxes,
+        so the Delivery Orders operation can be waved per delivery town.
+    -->
+    <record id="view_picking_type_form_wave_city" model="ir.ui.view">
+        <field name="name">stock.picking.type.form.wave.city</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='batch_contact']" position="after">
+                <div name="batch_city" class="o_row" invisible="batch_creation_type == 'manual'">
+                    <field name="batch_group_by_city"/>
+                    <label for="batch_group_by_city" string="City"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
