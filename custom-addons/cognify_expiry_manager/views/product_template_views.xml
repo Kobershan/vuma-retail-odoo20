@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Replaces Odoo's flat "Alert Date: N days before expiration date" row with
+        a value + unit pair, and adds the "Pick by Closest Expiry" switch.
+
+        `product_expiry` lays the Dates group out as a flat sequence of
+        <label for="..."/> + <div> pairs, so both halves of the alert row have to
+        be swapped. The standard `alert_time` field is left in the model — the
+        backend still falls back to it when the new pair is empty, which keeps
+        lots that predate this module working.
+    -->
+    <record id="product_template_form_view_cognify_expiry" model="ir.ui.view">
+        <field name="name">product.template.inherit.cognify.expiry.form</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product_expiry.view_product_form_expiry"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//group[@name='expiry_and_lots']/label[@for='alert_time']" position="replace">
+                <label for="expiry_alert_value"/>
+            </xpath>
+
+            <xpath expr="//group[@name='expiry_and_lots']/div[field[@name='alert_time']]" position="replace">
+                <div class="o_row">
+                    <field name="expiry_alert_value" class="oe_inline" placeholder="0"/>
+                    <field name="expiry_alert_unit" class="oe_inline ms-2" widget="selection"/>
+                    <span> before expiration date</span>
+                </div>
+                <div invisible="not expiry_alert_value" class="text-muted">
+                    Alerts <field name="expiry_alert_window" nolabel="1" class="fw-bold"/>
+                    ahead for this product. Leave empty to disable expiry alerts.
+                </div>
+            </xpath>
+
+            <xpath expr="//group[@name='expiry_and_lots']" position="inside">
+                <separator/>
+                <label for="fefo_expiration_date"/>
+                <div class="o_row">
+                    <field name="fefo_expiration_date" class="oe_inline"/>
+                    <button name="action_apply_fefo" type="object" class="btn btn-link ps-0"
+                            invisible="not fefo_expiration_date"
+                            string="Apply FEFO to this product's category"
+                            confirm="This sets the product category to pick the lot with the closest expiry date first, and zeroes the removal lead time so the removal date matches the expiry date. Continue?"/>
+                </div>
+                <button name="action_view_expiry_lots" type="object"
+                        class="btn btn-secondary btn-sm"
+                        string="Show lots needing attention"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>
