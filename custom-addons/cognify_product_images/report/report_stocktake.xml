@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Stock take: the Count Sheet printed from
+        Inventory / Adjustments / Physical Inventory.
+
+        Each row is a quant, so the product comes off line.product_id. The
+        location header rows above the products are left alone: they print a
+        location name, and the columns they span carry no product.
+    -->
+    <template id="report_inventory_inherit_cognify_product_images"
+              inherit_id="stock.report_inventory">
+        <xpath expr="//span[@t-field='line.product_id']" position="before">
+            <t t-out="cognify_product_image(line.product_id, 'stock_take')"/>
+        </xpath>
+    </template>
+
+</odoo>

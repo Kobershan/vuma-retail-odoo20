@@ -1,0 +1,39 @@
+[options]
+; ---------------------------------------------------------------------------
+; vuma-retail - Odoo 20.0 configuration (Fly.io)
+; ---------------------------------------------------------------------------
+
+; Master password for the database manager
+admin_passwd = ${ADMIN_PASSWORD}
+
+; Paths
+addons_path = /home/odoo/odoo/addons,/home/odoo/custom-addons,/home/odoo/themes
+data_dir = /home/odoo/data
+
+; Database connection
+db_host = ${DB_HOST}
+db_port = ${DB_PORT}
+db_user = ${DB_USER}
+db_password = ${DB_PASSWORD}
+dbfilter = ^${DB_NAME}$
+
+; HTTP server
+http_interface = 0.0.0.0
+http_port = 8069
+proxy_mode = True
+
+; Performance
+workers = ${WORKERS:-2}
+max_cron_threads = 1
+limit_time_cpu = 120
+limit_time_real = 240
+limit_memory_hard = 1073741824
+limit_memory_soft = 805306368
+
+; Misc
+list_db = False
+log_level = info
+logfile = /home/odoo/data/logs/odoo.log
+
+; External binaries
+bin_path = /usr/bin

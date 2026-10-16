@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Picking Operations, the sheet the picker works from.
+
+        The picture goes in as the first child of the cell that already prints
+        the product name, so the column layout (barcode, From/To, serial
+        breakdown rows) is exactly as Odoo draws it. A move line breakdown row
+        has its own product cell, indented under the move; it is left alone
+        because it prints a lot name, not a product.
+    -->
+    <template id="report_picking_inherit_cognify_product_images"
+              inherit_id="stock.report_picking">
+        <xpath expr="//span[@t-field='move.product_id.display_name']" position="before">
+            <t t-out="cognify_product_image(move.product_id, 'picking')"/>
+        </xpath>
+    </template>
+
+</odoo>

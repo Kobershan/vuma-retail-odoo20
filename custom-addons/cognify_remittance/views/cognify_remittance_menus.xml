@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_cognify_remittance_root"
+              name="Remittances"
+              sequence="95"/>
+
+    <!-- Rep-facing entry point. -->
+    <menuitem id="menu_cognify_remittance_my"
+              name="My Remittances"
+              parent="menu_cognify_remittance_root"
+              action="action_my_remittances"
+              groups="cognify_remittance.group_cognify_remittance_rep"
+              sequence="10"/>
+
+    <!-- Office-facing entry point. -->
+    <menuitem id="menu_cognify_remittance_office"
+              name="Remittances to Verify"
+              parent="menu_cognify_remittance_root"
+              action="action_cognify_remittance"
+              groups="cognify_remittance.group_cognify_remittance_approver"
+              sequence="20"/>
+
+    <menuitem id="menu_cognify_expense_category"
+              name="Expense Categories"
+              parent="menu_cognify_remittance_root"
+              action="action_cognify_expense_category"
+              groups="cognify_remittance.group_cognify_remittance_approver"
+              sequence="30"/>
+
+</odoo>

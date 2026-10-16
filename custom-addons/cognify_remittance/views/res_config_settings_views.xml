@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cognify_remittance_config_settings" model="ir.ui.view">
+        <field name="name">res.config.settings.view.cognify.remittance</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Configure Remittances">
+                <block title="Field Remittance" name="cognify_remittance_container">
+                    <setting id="remittance_journal_setting"
+                             string="Remittance Journal"
+                             help="Journal used when a verified remittance is credited.">
+                        <field name="remittance_journal_id"/>
+                    </setting>
+                    <setting id="remittance_cash_account_setting"
+                             string="Cash Returned Account"
+                             help="Account debited with the net cash a rep hands back.">
+                        <field name="remittance_cash_account_id"/>
+                    </setting>
+                </block>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_open_cognify_remittance_settings" model="ir.actions.act_window">
+        <field name="name">Remittance Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'module': 'cognify_remittance'}</field>
+    </record>
+
+</odoo>

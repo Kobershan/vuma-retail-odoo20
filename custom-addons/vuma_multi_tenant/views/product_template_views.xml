@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Product Template Form View - Add Cross-Company Sale Field -->
+        <record id="view_product_template_form_inherit_vuma_mixed_basket" model="ir.ui.view">
+            <field name="name">product.template.form.inherit.vuma.mixed.basket</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='sales']" position="inside">
+                    <group string="Vuma Multi-Tenant">
+                        <field name="vuma_cross_company_sale"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Product Template Search View - Add Cross-Company Filter -->
+        <record id="view_product_template_search_inherit_vuma_mixed_basket" model="ir.ui.view">
+            <field name="name">product.template.search.inherit.vuma.mixed.basket</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_search_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <filter name="vuma_cross_company_sale" string="Available for Mixed Basket" 
+                            domain="[('vuma_cross_company_sale', '=', True)]"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
