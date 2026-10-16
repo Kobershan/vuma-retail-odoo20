@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cognify_expense_category_list" model="ir.ui.view">
+        <field name="name">cognify.expense.category.list</field>
+        <field name="model">cognify.expense.category</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="account_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_cognify_expense_category_form" model="ir.ui.view">
+        <field name="name">cognify.expense.category.form</field>
+        <field name="model">cognify.expense.category</field>
+        <field name="arch" type="xml">
+            <form string="Expense Category">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Fuel"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code" placeholder="FUEL"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="account_id"/>
+                        </group>
+                    </group>
+                    <p class="text-muted">
+                        The expense account is debited when a remittance using this
+                        category is credited. Leave it empty to block crediting.
+                    </p>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_cognify_expense_category" model="ir.actions.act_window">
+        <field name="name">Expense Categories</field>
+        <field name="res_model">cognify.expense.category</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Configure expense categories</p>
+            <p>Map each travel expense category to the ledger account it should be
+               debited to when a field remittance is credited.</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_inherit_cognify_product_images" model="ir.ui.view">
+        <field name="name">res.config.settings.inherit.cognify.product.images</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="stock.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//block[@name='operations_setting_container']" position="after">
+                <block title="Product Pictures" name="cognify_product_images_setting_container">
+                    <setting id="cognify_picking_images"
+                             string="Picking Operations"
+                             help="Print the product picture on the Picking Operations sheet the picker works from.">
+                        <field name="cognify_picking_images"/>
+                    </setting>
+                    <setting id="cognify_purchase_order_images"
+                             string="Purchase Orders"
+                             help="Print the product picture on Purchase Orders, so the order can be checked against the shelf.">
+                        <field name="cognify_purchase_order_images"/>
+                    </setting>
+                    <setting id="cognify_stock_take_images"
+                             string="Stock Take Sheets"
+                             help="Print the product picture on the Count Sheet printed from Inventory → Adjustments → Physical Inventory.">
+                        <field name="cognify_stock_take_images"/>
+                    </setting>
+                    <setting id="cognify_image_size"
+                             string="Thumbnail Size"
+                             help="Applies to every document above. Medium fits a picking sheet without crowding it.">
+                        <div class="content-group">
+                            <div class="row mt8">
+                                <field name="cognify_image_size" class="o_light_label"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

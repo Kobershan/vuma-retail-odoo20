@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ================= top-level "Both Companies" hub ================= -->
+        <menuitem id="menu_vuma_root"
+            name="Vuma Cross-Company"
+            sequence="15"
+            groups="vuma_multi_tenant.group_vuma_mixed_basket_user"
+           />
+
+        <menuitem id="menu_vuma_operations"
+            name="Operations" parent="menu_vuma_root" sequence="10"/>
+
+        <menuitem id="menu_vuma_link_quote" name="Quotations (Both Companies)"
+            parent="menu_vuma_operations" action="sale.action_quotations_with_onboarding"
+            sequence="10"/>
+
+        <menuitem id="menu_vuma_link_orders" name="Sales Orders (Both Companies)"
+            parent="menu_vuma_operations" action="sale.action_orders"
+            sequence="15"/>
+
+        <menuitem id="menu_vuma_link_invoices" name="Customer Invoices (Both Companies)"
+            parent="menu_vuma_operations" action="account.action_move_out_invoice_type"
+            sequence="20"/>
+
+        <menuitem id="menu_vuma_link_payments" name="Payments (Both Companies)"
+            parent="menu_vuma_operations" action="account.action_account_payments"
+            sequence="25"/>
+
+        <menuitem id="menu_vuma_collect" name="Cash Collections"
+            parent="menu_vuma_operations" action="vuma_multi_tenant.action_vuma_payment_session"
+            sequence="30"/>
+
+        <menuitem id="menu_vuma_credit" name="Credit Customer Invoices"
+            parent="menu_vuma_operations" action="vuma_multi_tenant.action_vuma_partner_credit_wizard"
+            sequence="35"/>
+
+        <menuitem id="menu_vuma_stock_trace" name="Stock / Company Traceability"
+            parent="menu_vuma_operations" action="vuma_multi_tenant.action_vuma_stock_trace"
+            sequence="40"/>
+
+        <menuitem id="menu_vuma_reporting" name="Reporting" parent="menu_vuma_root" sequence="20"/>
+        <menuitem id="menu_vuma_sales_analysis" name="Sales Analysis (Both Companies)"
+            parent="menu_vuma_reporting" action="sale.action_order_report_all"
+            sequence="10"/>
+
+        <!-- ================= Sequences for the session ================= -->
+        <record id="seq_vuma_payment_session" model="ir.sequence">
+            <field name="name">Cross-Company Cash Collection</field>
+            <field name="code">vuma.payment.session</field>
+            <field name="prefix">VCC/</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

@@ -1,5 +1,0 @@
-id,name,model_id,group_id/id,operation,domain
-access_cognify_stock_lot_expiry_user,stock.lot expiry alerts user,stock.lot,cognify_expiry_manager.group_expiry_user,r,
-access_cognify_stock_quant_expiry_user,stock.quant expiry alerts user,stock.quant,cognify_expiry_manager.group_expiry_user,r,
-access_cognify_purchase_order_line_expiry_user,purchase.order.line expiry alerts user,purchase.order.line,cognify_expiry_manager.group_expiry_user,r,
-access_cognify_stock_lot_expiry_manager,stock.lot expiry alerts manager,stock.lot,cognify_expiry_manager.group_expiry_manager,ru,
