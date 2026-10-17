@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Turn on Odoo's own "Unpublish Out-of-Stock Products" website setting.
+        A product that does not continue selling when empty is unpublished by
+        the stock move that empties it, and republished by the one that
+        restocks it: no cron, no delay.
+    -->
+    <record id="website.group_website_restricted_editor" model="res.groups">
+        <field name="implied_ids" eval="[Command.link(ref('website_sale.group_unpublish_out_of_stock'))]"/>
+    </record>
+
+    <!--
+        New products start out NOT continuing sales when empty. That is what
+        puts them under the automation above; *Sell when Out-of-Stock* stays
+        available per product as the deliberate exception.
+    -->
+    <record id="default_allow_out_of_stock_order" model="ir.default">
+        <field name="field_id" ref="website_sale.field_product_template__allow_out_of_stock_order"/>
+        <field name="json_value">false</field>
+    </record>
+
+    <!--
+        Keep the product multi-company read rule in step with the shop
+        domain. Runs on install and on every update.
+    -->
+    <function model="website" name="_vuma_storefront_open_product_rule"/>
+
+</odoo>
