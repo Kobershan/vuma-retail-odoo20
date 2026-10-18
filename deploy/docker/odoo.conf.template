@@ -1,0 +1,45 @@
+[options]
+; ---------------------------------------------------------------------------
+; vuma-retail -- rendered to /var/lib/odoo/odoo.conf at container start
+; ---------------------------------------------------------------------------
+
+; Paths. The official image keeps every core addon inside the package
+; (695 of them, including the 36 website themes), and the custom modules are
+; mounted separately.
+addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+data_dir = /var/lib/odoo
+
+; Database. Listed here on purpose: the stock entrypoint only injects db_*
+; flags when they are ABSENT from the config file, so declaring them keeps its
+; guesswork (and its reuse of the $USER shell variable) out of the way.
+db_host = ${DB_HOST}
+db_port = ${DB_PORT}
+db_user = ${DB_USER}
+db_password = ${DB_PASSWORD}
+db_name = ${DB_NAME}
+dbfilter = ^${DB_NAME}$
+
+; Master password for the database manager.
+admin_passwd = ${ADMIN_PASSWORD}
+
+; HTTP
+http_interface = 0.0.0.0
+http_port = 8069
+; Behind Caddy / a Cloudflare tunnel, so generated links must be https.
+proxy_mode = True
+
+; Keep workers = 0 (threaded). This matches the tested local setup: with
+; workers > 0 Odoo switches to prefork, which changes the 'wsgi.multithread'
+; and evented conditions the websocket/longpolling routes depend on.
+workers = ${WORKERS}
+
+; Misc
+list_db = False
+log_level = info
+; No logfile: log to stdout so `docker compose logs` works.
+
+; Limit runaway report rendering rather than letting it take the box down.
+limit_time_cpu = 120
+limit_time_real = 240
+limit_memory_hard = 1073741824
+limit_memory_soft = 805306368

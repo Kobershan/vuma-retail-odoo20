@@ -1,0 +1,78 @@
+# Portable Odoo 20 + PostgreSQL 18 stack for vuma-retail.
+#
+# Works on any Docker host that stays switched on: Oracle Cloud Always Free
+# (ARM), Hetzner, DigitalOcean, a NAS, a home server.
+#
+#   docker compose up -d
+#
+services:
+  db:
+    image: postgres:18
+    container_name: vuma-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: vuma_retail
+    volumes:
+      # postgres:18 keeps data in a major-version subdirectory
+      # (/var/lib/postgresql/18/docker) and REFUSES to start if the data volume
+      # is mounted at /var/lib/postgresql/data. The mount must be the parent.
+      - db_data:/var/lib/postgresql
+      - ./deploy/bundle/restore:/restore:ro
+      # Runs once, on first boot only (Postgres' own init hook).
+      - ./deploy/restore.sh:/docker-entrypoint-initdb.d/10-vuma-restore.sh:ro
+    healthcheck:
+      # pg_isready alone goes green before the init hooks finish, which would
+      # let Odoo start against a half-restored database. Wait for the marker
+      # file that restore.sh writes on success. PGDATA is set by the image and
+      # is version-specific, so it must not be hardcoded here.
+      test: ["CMD-SHELL", "pg_isready -U odoo -d vuma_retail && test -f \"$$PGDATA/.vuma-restored\""]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s
+
+  odoo:
+    build: .
+    image: vuma-retail:latest
+    container_name: vuma-odoo
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: odoo
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      DB_NAME: vuma_retail
+      # 0 = threaded server, which is what the app was tested on. Raising this
+      # switches Odoo to prefork and changes websocket/longpolling behaviour.
+      WORKERS: ${WORKERS:-0}
+    ports:
+      # Bound to localhost on purpose -- Caddy or a Cloudflare tunnel provides
+      # HTTPS in front. Do not expose Odoo's plain HTTP to the internet.
+      # HTTP_PORT lets you run a second stack (e.g. a rehearsal) without
+      # colliding with the live one.
+      - "127.0.0.1:${HTTP_PORT:-8069}:8069"
+    volumes:
+      - odoo_data:/var/lib/odoo
+      # The filestore that ships in the bundle (product images, logos, generated
+      # PDFs). start.sh copies it into the volume once, BEFORE Odoo starts: if
+      # Odoo comes up first, the login page's background image is requested
+      # before the files exist and it logs FileNotFoundError for them.
+      # Read-only so a stray write can never corrupt the shipped bundle.
+      - ./deploy/bundle/filestore:/seed-filestore:ro
+    healthcheck:
+      # python3, not curl: curl is not installed in the Odoo image.
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=5)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+volumes:
+  db_data:
+  odoo_data:
