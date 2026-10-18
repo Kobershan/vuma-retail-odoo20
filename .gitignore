@@ -70,3 +70,11 @@ node_modules/
 
 # Fly.io
 fly.toml
+
+# Deployment artefacts. Code goes to GitHub and is cloned on the server, but the
+# database dump and filestore are rsynced straight there and never committed
+# (see deploy/README.md: git would keep every version of live customer data).
+# deploy/bundle/ is ~244MB of output from deploy/bundle.sh.
+deploy/bundle/
+deploy/export/
+*.tar.gz
