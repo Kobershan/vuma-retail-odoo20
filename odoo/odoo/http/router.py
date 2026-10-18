@@ -282,9 +282,11 @@ class Application:
                         # TODO: move those bits in a dedicated function
                         request.db = None
                         logout(request.session)
-                        if (httprequest.path.startswith('/odoo/')
+                        # Vuma Retail serves the webclient at /vuma; /odoo is kept for legacy links.
+                        if (httprequest.path.startswith('/vuma/')
+                            or httprequest.path.startswith('/odoo/')
                             or httprequest.path in (
-                                '/odoo', '/web', '/web/login', '/test_http/ensure_db',
+                                '/vuma', '/odoo', '/web', '/web/login', '/test_http/ensure_db',
                             )):
                             # ensure_db() protected routes, remove ?db= from the query string
                             args_nodb = request.httprequest.args.copy()

@@ -45,7 +45,7 @@ export class MailingListSubscribeOptionPlugin extends Plugin {
                         // TODO properly save and redirect.
                         await this.dependencies.savePlugin.save();
                         window.location.href =
-                            "/odoo/action-mass_mailing.action_view_mass_mailing_lists";
+                            "/vuma/action-mass_mailing.action_view_mass_mailing_lists";
                     },
                     cancel: () => cancelDrop = true,
                 }, { onClose: resolve });

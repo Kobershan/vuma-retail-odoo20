@@ -25,7 +25,7 @@ export function computeAppsAndMenuItems(menuTree) {
             return;
         }
         const isApp = menuItem.id === menuItem.appID;
-        let href = `/odoo/${menuItem.actionPath || "action-" + menuItem.actionID}`;
+        let href = `/vuma/${menuItem.actionPath || "action-" + menuItem.actionID}`;
         if (odoo.debug) {
             href += "?debug=" + odoo.debug;
         }

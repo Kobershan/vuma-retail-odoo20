@@ -116,7 +116,7 @@ function pathFromActionState(state) {
 }
 
 export function startUrl() {
-    return isScopedApp() ? "scoped_app" : "odoo";
+    return isScopedApp() ? "scoped_app" : "vuma";
 }
 
 /**
@@ -200,7 +200,7 @@ function urlToState(urlObj) {
 
     const [prefix, ...splitPath] = urlObj.pathname.split("/").filter(Boolean);
 
-    if (["odoo", "scoped_app"].includes(prefix)) {
+    if (["vuma", "odoo", "scoped_app"].includes(prefix)) {
         const actionParts = [...splitPath.entries()].filter(
             ([_, part]) => !isNumeric(part) && part !== "new"
         );
@@ -256,7 +256,7 @@ function urlToState(urlObj) {
 
 async function shareUrl() {
     // avoid exposing /scoped_app urls to the user and replace them with /odoo when possible
-    const url = location.href.replace("/scoped_app", "/odoo");
+    const url = location.href.replace("/scoped_app", "/vuma");
     await browser.navigator
         .share({
             url,
@@ -355,13 +355,15 @@ browser.addEventListener("click", (ev) => {
         }
         if (
             location.host === url.host &&
-            location.pathname.startsWith("/odoo") &&
-            (["/web", "/odoo"].includes(url.pathname) || url.pathname.startsWith("/odoo/")) &&
+            (location.pathname.startsWith("/vuma") || location.pathname.startsWith("/odoo")) &&
+            (["/web", "/vuma", "/odoo"].includes(url.pathname) ||
+                url.pathname.startsWith("/vuma/") ||
+                url.pathname.startsWith("/odoo/")) &&
             a.target !== "_blank"
         ) {
             ev.preventDefault();
             state = router.urlToState(url);
-            if (url.pathname.startsWith("/odoo") && url.hash) {
+            if ((url.pathname.startsWith("/vuma") || url.pathname.startsWith("/odoo")) && url.hash) {
                 browser.history.pushState({}, "", url.href);
             }
             new Promise((res) => setTimeout(res, 0)).then(() => routerBus.trigger("ROUTE_CHANGE"));

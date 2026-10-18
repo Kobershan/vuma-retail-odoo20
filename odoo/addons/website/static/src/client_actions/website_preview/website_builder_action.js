@@ -363,7 +363,7 @@ export class WebsiteBuilderClientAction extends Component {
             // loads "about:blank"), do not push that into the history
             // state as that could prevent the user from going back and could
             // trigger a traceback.
-            history.replaceState(history.state, document.title, "/odoo");
+            history.replaceState(history.state, document.title, "/vuma");
             return;
         }
         const currentTitle = iframe.contentDocument.title;
@@ -615,7 +615,7 @@ export class WebsiteBuilderClientAction extends Component {
         const data = { snippetTitle: snippetTitle };
         const encodedData = encodeURIComponent(JSON.stringify(data));
         redirect(
-            `/odoo/action-website.website_preview?website_id=${encodeURIComponent(
+            `/vuma/action-website.website_preview?website_id=${encodeURIComponent(
                 websiteId
             )}&path=${currentPath}&enable_editor=1&module_installed=${encodedData}`
         );
@@ -764,7 +764,7 @@ export class WebsiteBuilderClientAction extends Component {
         const path = this.websiteService.contentWindow.location;
         const debugMode = this.debugMode.isActive() ? `&debug=${this.debugMode.toString()}` : "";
         redirect(
-            `/odoo/action-website.website_preview?path=${encodeURIComponent(path)}${debugMode}`
+            `/vuma/action-website.website_preview?path=${encodeURIComponent(path)}${debugMode}`
         );
     }
 
@@ -817,12 +817,13 @@ function isTopWindowURL({ host, pathname }) {
 registry
     .category("isTopWindowURL")
     .add("html_builder.website_builder_action", ({ host, pathname }) => {
-        const backendRoutes = ["/web", "/web/session/logout", "/odoo"];
+        const backendRoutes = ["/web", "/web/session/logout", "/vuma", "/odoo"];
         return (
             host !== window.location.host ||
             (pathname &&
                 (backendRoutes.includes(pathname) ||
                     pathname.startsWith("/@/") ||
+                    pathname.startsWith("/vuma/") ||
                     pathname.startsWith("/odoo/") ||
                     pathname.startsWith("/web/content/") ||
                     pathname.startsWith("/document/share/")))

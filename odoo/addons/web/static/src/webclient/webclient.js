@@ -173,7 +173,7 @@ export class WebClient extends Component {
     registerServiceWorker() {
         if (navigator.serviceWorker) {
             navigator.serviceWorker
-                .register("/web/service-worker.js", { scope: "/odoo" })
+                .register("/web/service-worker.js", { scope: "/vuma" })
                 .then((registration) => {
                     if (registration.active && registration.active.state === "activated") {
                         this.serviceWorkerActivationResolvers.resolve();

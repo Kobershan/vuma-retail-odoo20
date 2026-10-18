@@ -44,7 +44,7 @@ const pwaService = {
             isAvailable: false,
             isScopedApp: location.href.includes("/scoped_app"),
             isSupportedOnBrowser: false,
-            startUrl: "/odoo",
+            startUrl: "/vuma",
             decline,
             getManifest,
             hasScopeBeenInstalled,

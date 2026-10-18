@@ -500,7 +500,7 @@ export class Store extends BaseStore {
                 // Ignore invalid URLs
                 return false;
             }
-            if (location.host === url.host && location.pathname.startsWith("/odoo")) {
+            if (location.host === url.host && (location.pathname.startsWith("/vuma") || location.pathname.startsWith("/odoo"))) {
                 this.ChatWindow.get({ channel: thread.channel })?.fold();
             }
         }

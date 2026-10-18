@@ -143,7 +143,7 @@ export class FollowerSubtypeDialog extends Component {
 
     get parentRecordHint() {
         const record = this.parentRecord;
-        const parentRecordLink = markup`<a data-oe-model="${record.model}" href="/odoo/${record.model}/${record.id}">${record.display_name}</a>`;
+        const parentRecordLink = markup`<a data-oe-model="${record.model}" href="/vuma/${record.model}/${record.id}">${record.display_name}</a>`;
         return _t(
             "💡 You can set default notifications for all future records in the notification preferences of the %(parent_model_name)s %(parent_record_name)s.",
             {

@@ -143,11 +143,11 @@ function arrayBufferToBase64Url(buffer) {
  * @param {Client | ServiceWorker | MessagePort} [source] if set, will not open the channel on the source
  */
 async function openDiscussChannel(channelId, { action, joinCall = false, source } = {}) {
-    const discussURLRegexes = [new RegExp("/odoo/discuss")];
+    const discussURLRegexes = [new RegExp("/(vuma|odoo)/discuss")];
     if (action) {
         discussURLRegexes.push(
-            new RegExp(`/odoo/\\d+/action-${action}`),
-            new RegExp(`/odoo/action-${action}`)
+            new RegExp(`/(vuma|odoo)/\\d+/action-${action}`),
+            new RegExp(`/(vuma|odoo)/action-${action}`)
         );
     }
     let targetClient;
@@ -168,7 +168,7 @@ async function openDiscussChannel(channelId, { action, joinCall = false, source 
         return;
     }
     if (action) {
-        const url = new URL(`/odoo/action-${action}`, location.origin);
+        const url = new URL(`/vuma/action-${action}`, location.origin);
         url.searchParams.set("active_id", `discuss.channel_${channelId}`);
         if (joinCall) {
             url.searchParams.set("call", "accept");
@@ -200,7 +200,7 @@ async function handleNotificationClick(event) {
         });
     } else {
         const modelPath = model.includes(".") ? model : `m-${model}`;
-        return clients.openWindow(`/odoo/${modelPath}/${res_id}`);
+        return clients.openWindow(`/vuma/${modelPath}/${res_id}`);
     }
 }
 

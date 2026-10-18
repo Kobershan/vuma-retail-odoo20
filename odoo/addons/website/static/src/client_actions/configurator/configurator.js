@@ -1005,7 +1005,7 @@ export class ApplyConfiguratorScreen extends Component {
                     window.sessionStorage.setItem("website.first_configurator_edit", "1");
                     const defaultLanguagePath = encodeURIComponent("/website/lang/default?r=/");
                     redirect(
-                        `/odoo/action-website.website_preview?website_id=${encodeURIComponent(
+                        `/vuma/action-website.website_preview?website_id=${encodeURIComponent(
                             resp.website_id
                         )}&path=${defaultLanguagePath}&enable_editor=1`
                     );

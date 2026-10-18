@@ -1601,7 +1601,7 @@ class Website(models.CachedModel):
                 dependencies[model_display_name] += [{
                     'field_name': field_string,
                     'record_name': rec.display_name,
-                    'link': 'website_url' in rec and rec.website_url or f'/odoo/{model_name}/{rec.id}',
+                    'link': 'website_url' in rec and rec.website_url or f'/vuma/{model_name}/{rec.id}',
                     'model_name': model_display_name,
                     'url': _choose_url(rec[field_name]),
                 } for rec in dependency_records]
@@ -2047,7 +2047,7 @@ class Website(models.CachedModel):
             action_params["enable_editor"] = 1
         if mode_debug:
             action_params["debug"] = mode_debug
-        return "/odoo/action-website.website_preview?" + urls.url_encode(action_params)
+        return "/vuma/action-website.website_preview?" + urls.url_encode(action_params)
 
     def get_client_action(self, url, mode_edit=False, website_id=False):
         action = self.env["ir.actions.actions"]._for_xml_id("website.website_preview")

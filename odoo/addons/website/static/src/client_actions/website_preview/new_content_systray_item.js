@@ -244,7 +244,7 @@ export class NewContentSystrayItem extends Component {
             this.website.redirectOutFromLoader({
                 redirectAction: () => {
                     redirect(
-                        `/odoo/action-website.website_preview?website_id=${id}&path=${encodedPath}&module_installed=${encodedData}`
+                        `/vuma/action-website.website_preview?website_id=${id}&path=${encodedPath}&module_installed=${encodedData}`
                     );
                 },
             });

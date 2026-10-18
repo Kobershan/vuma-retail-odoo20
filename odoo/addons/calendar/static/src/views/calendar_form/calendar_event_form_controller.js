@@ -70,7 +70,7 @@ export class CalendarEventFormController extends FormController {
                 recurrency: record.data.recurrency,
                 start: record.data.start,
                 defaultAction: () => this.deleteRecordsWithConfirmation(this.deleteConfirmationDialogProps),
-                nextAction: { type: "ir.actions.act_url", target: "self", url: "/odoo/calendar" },
+                nextAction: { type: "ir.actions.act_url", target: "self", url: "/vuma/calendar" },
             });
         }
     }

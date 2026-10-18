@@ -85,7 +85,7 @@ class Session(Controller):
         logout(request.session)
 
     @route('/web/session/logout', type='http', auth='none', methods=['POST'], readonly=True)
-    def logout(self, redirect='/odoo'):
+    def logout(self, redirect='/vuma'):
         logout(request.session, keep_db=True)
         return request.redirect(redirect, 303)
 

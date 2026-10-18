@@ -29,7 +29,7 @@ class WebManifest(http.Controller):
             if data:
                 shortcuts.append({
                     'name': module.display_name,
-                    'url': '/odoo?menu_id=%s' % data.mapped('res_id')[0],
+                    'url': '/vuma?menu_id=%s' % data.mapped('res_id')[0],
                     'description': module.summary,
                     'icons': [{
                         'sizes': '100x100',
@@ -43,8 +43,8 @@ class WebManifest(http.Controller):
         web_app_name = request.env['ir.config_parameter'].sudo().get_str('web.web_app_name') or 'Vuma Retail'
         manifest = {
             'name': web_app_name,
-            'scope': '/odoo',
-            'start_url': '/odoo',
+            'scope': '/vuma',
+            'start_url': '/vuma',
             'display': 'standalone',
             'background_color': '#714B67',
             'theme_color': '#714B67',
@@ -59,7 +59,7 @@ class WebManifest(http.Controller):
         manifest['shortcuts'] = self._get_shortcuts()
         if self._has_share_target():
             manifest['share_target'] = {
-                'action': '/odoo?share_target=trigger',
+                'action': '/vuma?share_target=trigger',
                 'method': 'POST',
                 'enctype': 'multipart/form-data',
                 'params': {
@@ -90,7 +90,7 @@ class WebManifest(http.Controller):
             self._get_service_worker_content(),
             [
                 ('Content-Type', 'text/javascript'),
-                ('Service-Worker-Allowed', '/odoo'),
+                ('Service-Worker-Allowed', '/vuma'),
             ]
         )
         return response
@@ -105,7 +105,7 @@ class WebManifest(http.Controller):
     def _icon_path(self):
         return 'web/static/img/odoo-icon-192x192.png'
 
-    @http.route('/odoo/offline', type='http', auth='public', methods=['GET'], readonly=True)
+    @http.route('/vuma/offline', type='http', auth='public', methods=['GET'], readonly=True)
     def offline(self):
         """ Returns the offline page delivered by the service worker """
         with file_open(self._icon_path(), 'rb') as f:

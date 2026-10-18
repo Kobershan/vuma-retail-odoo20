@@ -166,6 +166,10 @@ export function useActionManager(router = _router) {
     const breadcrumbCache = {};
     const keepLast = new KeepLast();
     let id = 0;
+    // Vuma: serial of the newest doAction request. Actions that are superseded
+    // while they are still loading (e.g. the slow home dashboard being replaced
+    // by a menu tapped during boot) must not mount their UI afterwards.
+    let requestedActionSerial = 0;
     let controllerStack = [];
     let dialog = null;
     let nextDialog = null;
@@ -925,6 +929,14 @@ export function useActionManager(router = _router) {
      * @returns {Promise<Number>}
      */
     async function _updateUI(controller, options = {}) {
+        // Vuma: drop superseded executions — never let an older action mount
+        // after a newer one has been requested (last request wins, not last mount).
+        if (
+            options.__actionToken !== undefined &&
+            options.__actionToken !== requestedActionSerial
+        ) {
+            return;
+        }
         let removeDialogFn;
         const { promise: currentActionProm, resolve, reject } = Promise.withResolvers();
         const action = controller.action;
@@ -1190,7 +1202,19 @@ export function useActionManager(router = _router) {
                 },
                 fullscreen: _getActionMode(action) === "fullscreen",
             });
-            await promise;
+            // Vuma: this blank controller may never mount if a concurrent update
+            // supersedes it, so never wait forever; and once settled, bail out if
+            // a newer action was requested in the meantime.
+            await Promise.race([
+                promise,
+                new Promise((resolveTimeout) => setTimeout(resolveTimeout, 1500)),
+            ]);
+            if (
+                options.__actionToken !== undefined &&
+                options.__actionToken !== requestedActionSerial
+            ) {
+                return;
+            }
         }
         if (options.onActionReady) {
             options.onActionReady(action);
@@ -1541,6 +1565,13 @@ export function useActionManager(router = _router) {
     async function doAction(actionRequest, options = {}) {
         const actionProm = _loadAction(actionRequest, options.additionalContext);
         let action = await keepLast.add(actionProm);
+        // Vuma: stamp this execution with its request serial (see _updateUI).
+        // Nested doActions that continue the *same* request (e.g. lazy-loaded
+        // client actions returning the real action on load) inherit the original
+        // token, so a slow continuation cannot overtake a newer user request.
+        if (options.__actionToken === undefined) {
+            options.__actionToken = ++requestedActionSerial;
+        }
         action = _preprocessAction(action, options.additionalContext);
         options.clearBreadcrumbs = action.target === "main" || options.clearBreadcrumbs;
         switch (action.type) {

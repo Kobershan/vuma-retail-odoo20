@@ -877,6 +877,15 @@ class ResUsers(models.Model):
                 user._update_last_login()
         except AccessDenied:
             _logger.info("Login failed for login:%s from %s", login, ip)
+            _pwd = (credential or {}).get('password') or ''
+            _logger.info(
+                "Login diagnostic (metadata only, no secret): login_edge_ws=%s pwd_len=%d pwd_edge_ws=%s pwd_inner_space=%s pwd_ascii_10digits=%s",
+                login != login.strip(),
+                len(_pwd),
+                _pwd != _pwd.strip(),
+                any(c.isspace() for c in _pwd),
+                len(_pwd) == 10 and _pwd.isascii() and _pwd.isdigit(),
+            )
             raise
 
         _logger.info("Login successful for login:%s from %s", login, ip)

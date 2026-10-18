@@ -177,7 +177,7 @@ class Database(Controller):
                 authenticate(request.session, env, credential)
                 save_session(request, env)
                 request.session.db = name
-            return request.redirect('/odoo')
+            return request.redirect('/vuma')
         except Exception as e:
             e.error_response = _render_exception(e)
             raise

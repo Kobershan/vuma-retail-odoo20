@@ -213,7 +213,7 @@ export class Many2One extends Component {
         const relation = this.props.relation.includes(".")
             ? this.props.relation
             : `m-${this.props.relation}`;
-        return `/odoo/${relation}/${this.props.value.id}`;
+        return `/vuma/${relation}/${this.props.value.id}`;
     }
 
     async openBarcodeScanner() {

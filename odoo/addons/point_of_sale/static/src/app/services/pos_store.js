@@ -2551,7 +2551,7 @@ export class PosStore extends WithLazyGetterTrap {
     }
 
     redirectToBackend() {
-        window.location = "/odoo/action-point_of_sale.action_client_pos_menu";
+        window.location = "/vuma/action-point_of_sale.action_client_pos_menu";
     }
 
     getExcludedProductIds() {

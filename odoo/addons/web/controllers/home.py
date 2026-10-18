@@ -40,13 +40,13 @@ class Home(Controller):
     def index(self, s_action=None, db=None, **kw):
         if request.db and request.session.uid and not is_user_internal(request.session.uid):
             return request.redirect_query('/web/login_successful', query=request.params)
-        return request.redirect_query('/odoo', query=request.params)
+        return request.redirect_query('/vuma', query=request.params)
 
     def _web_client_readonly(self, rule, args):
         return False
 
     # ideally, this route should be `auth="user"` but that don't work in non-monodb mode.
-    @route(['/web', '/odoo', '/odoo/<path:subpath>', '/scoped_app/<path:subpath>'], type='http', auth="none", readonly=_web_client_readonly)
+    @route(['/web', '/vuma', '/vuma/<path:subpath>', '/scoped_app/<path:subpath>'], type='http', auth="none", readonly=_web_client_readonly)
     def web_client(self, s_action=None, **kw):
 
         # Ensure we have both a database and a user
@@ -83,6 +83,12 @@ class Home(Controller):
             return response
         except AccessError:
             return request.redirect('/web/login?error=access')
+
+    # Vuma Retail serves the webclient at /vuma; keep legacy /odoo links working.
+    @route(['/odoo', '/odoo/<path:subpath>'], type='http', auth="none", readonly=True)
+    def web_client_legacy_redirect(self, subpath=None, **kw):
+        url = '/vuma' + (f'/{subpath}' if subpath else '')
+        return request.redirect_query(url, request.httprequest.args, code=302)
 
     # `/web/webclient/load_menus` must be `check_identity=False`
     # because it is called in Javascript using a simple `fetch` rather than a `rpc(...)`
@@ -155,7 +161,7 @@ class Home(Controller):
             values['disable_database_manager'] = True
 
         safe_redirect = redirect if (redirect and redirect.startswith('/') and not redirect.startswith('//')) else None
-        values['disable_opengraph'] = bool(safe_redirect and safe_redirect.startswith('/odoo'))
+        values['disable_opengraph'] = bool(safe_redirect and safe_redirect.startswith(('/vuma', '/odoo')))
         if values['disable_opengraph']:
             url_root = request.httprequest.url_root
             try:

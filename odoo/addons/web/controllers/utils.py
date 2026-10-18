@@ -20,7 +20,7 @@ _logger = logging.getLogger(__name__)
 def og_title_from_path(env, path):
     if not path:
         return "Vuma Retail"
-    odoo_path = urlsplit(path).path.removeprefix('/odoo')
+    odoo_path = urlsplit(path).path.removeprefix('/vuma').removeprefix('/odoo')
     if not odoo_path or odoo_path == '/':
         return "Vuma Retail"
     try:
@@ -250,7 +250,7 @@ def _get_login_redirect_url(uid, redirect=None):
     fully logged and can proceed to the requested URL
     """
     if request.session.uid:  # fully logged
-        return redirect or ('/odoo' if is_user_internal(request.session.uid)
+        return redirect or ('/vuma' if is_user_internal(request.session.uid)
                             else '/web/login_successful')
 
     # partial session (MFA)

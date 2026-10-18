@@ -1259,7 +1259,7 @@ export class PromptSaveRedirectAction extends BuilderAction {
     }
     apply({ params: { mainParam } }) {
         const redirectToAction = (action) => {
-            redirect(`/odoo/action-${encodeURIComponent(action)}`);
+            redirect(`/vuma/action-${encodeURIComponent(action)}`);
         };
         new Promise((resolve) => {
             const message = _t("You are about to be redirected. Your changes will be saved.");

@@ -68,7 +68,7 @@
 
   <t t-name="web.NavBar.AppsMenu">
     <t t-if="this.ui.isSmall">
-      <a href="/odoo" class="o_menu_toggle border-0" t-att-class="{'hasImage': this.currentApp?.webIconData}" accesskey="h" t-ref="this.menuApps" t-on-click.prevent="this._openAppMenuSidebar">
+      <a href="/vuma" class="o_menu_toggle border-0" t-att-class="{'hasImage': this.currentApp?.webIconData}" accesskey="h" t-ref="this.menuApps" t-on-click.prevent="this._openAppMenuSidebar">
         <t t-call="web.NavBar.AppsMenu.Sidebar" apps="apps"/>
       </a>
     </t>
@@ -102,7 +102,7 @@
         <div class="o_app_menu_sidebar position-fixed top-0 bottom-0 end-100 d-flex flex-column flex-nowrap" t-att-class="transition.className" t-on-touchstart.stop="this._onSwipeStart" t-on-touchend.stop="this._onSwipeEnd">
           <div class="o_sidebar_topbar d-flex align-items-center justify-content-between flex-shrink-0 py-0 fs-4">
               <small class="d-flex align-items-center justify-content-between ms-2">
-                  <a href="/odoo" class="btn btn-primary" t-on-click.prevent="this.onAllAppsBtnClick"><i class="oi" data-icon="apps"></i><span class="px-2">All Apps</span></a>
+                  <a href="/vuma" class="btn btn-primary" t-on-click.prevent="this.onAllAppsBtnClick"><i class="oi" data-icon="apps"></i><span class="px-2">All Apps</span></a>
               </small>
               <button class="o_sidebar_close oi btn d-flex align-items-center h-100 bg-transparent border-0 fs-2 text-reset" data-icon="close" aria-label="Close menu" title="Close menu" t-on-click.stop="this._closeAppMenuSidebar" data-available-offline=""/>
           </div>
