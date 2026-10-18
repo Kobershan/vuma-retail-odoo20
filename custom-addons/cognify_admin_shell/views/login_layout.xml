@@ -6,7 +6,7 @@
         <div class="o_web_login_vuma">
           <aside class="vuma-side">
             <div class="logo-plate">
-              <img t-att-src="'/cognify_admin_shell/static/img/vuma-logo.png'" alt="Vuma Retail"/>
+              <img t-att-src="'/cognify_admin_shell/static/img/vuma-logo-light.png?unique=20261017'" alt="Vuma Retail"/>
             </div>
             <div>
               <p class="tagline">Vuma Retail · Admin</p>

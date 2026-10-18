@@ -171,16 +171,16 @@ class VumaPaymentSessionLine(models.Model):
         created_ids = []
 
         if self.invoice_ids:
-            invoice_ids = self.invoice_ids.filtered(
+            invoices = self.invoice_ids.filtered(
                 lambda m: m.company_id == company
-                and m.payment_state in ['not_paid', 'partial']).ids
-            if not invoice_ids:
+                and m.payment_state in ['not_paid', 'partial'])
+            if not invoices:
                 self.payment_ids_saved = ''
                 return []
             Register = self.env['account.payment.register'].with_company(
                 company).sudo().with_context(
                 active_model='account.move',
-                active_ids=invoice_ids,
+                active_ids=invoices.ids,
                 vuma_mixed_basket=True,
             )
             wizard = Register.create({
@@ -188,7 +188,31 @@ class VumaPaymentSessionLine(models.Model):
                 'payment_date': self.session_id.date,
                 'journal_id': self.journal_id.id,
                 'payment_method_line_id': method_line.id if method_line else False,
+                # Only in "edit" mode does the wizard honour `amount`. It
+                # edits when the selected lines make a single batch AND
+                # `group_payment` is set, and `group_payment` defaults to True
+                # only when ONE invoice was picked. Left at its default, a row
+                # settling two or more invoices falls back to one payment PER
+                # INVOICE, each for that invoice's whole residual
+                # (_create_payments -> _create_payment_vals_from_batch), so
+                # what the rep actually collected is thrown away and the
+                # customer is credited far more than they paid. Pinning it
+                # keeps the cash honest: one payment of exactly the collected
+                # amount, allocated oldest invoice first.
+                'group_payment': True,
             })
+            if not wizard.can_edit_wizard:
+                # Several batches (mixed currencies/terms) cannot share one
+                # payment. Refuse rather than silently post the full residual
+                # of every invoice instead of the cash in hand.
+                raise UserError(_(
+                    'The invoices picked on this row do not share one payment '
+                    'setup (for example mixed currencies), so the collected '
+                    'cash cannot be allocated across them safely. Split the '
+                    'row into one company/currency row per set of invoices.'))
+            # Re-assert after create: `group_payment` is a stored computed
+            # field, so recomputing `can_edit_wizard` can reset it.
+            wizard.group_payment = True
             payments = wizard._create_payments()
             for pay in payments:
                 pay.message_post(body=_('Linked to cross-company collection session %s')

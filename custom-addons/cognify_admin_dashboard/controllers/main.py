@@ -32,7 +32,7 @@ class VumaDashboardController(http.Controller):
                 'name': menu.name,
                 'sequence': menu.sequence or 0,
                 'icon_url': '/web/image/ir.ui.menu/{}/web_icon_data'.format(menu.id),
-                'href': '/odoo/action-{}'.format(action_id),
+                'href': '/vuma/action-{}'.format(action_id),
             })
 
         # Keep a consistent, scannable order (by sequence then name).

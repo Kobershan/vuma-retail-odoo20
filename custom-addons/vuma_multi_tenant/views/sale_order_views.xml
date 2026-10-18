@@ -41,10 +41,12 @@
                     <field name="vuma_source_location_id"
                            string="Stock Location"
                            optional="show"
+                           column_invisible="not parent.vuma_is_mixed_basket"
                            options="{'no_quick_create': True}"/>
                     <field name="vuma_source_available_qty"
                            string="Available"
-                           optional="show"/>
+                           optional="show"
+                           column_invisible="not parent.vuma_is_mixed_basket"/>
                 </xpath>
 
                 <xpath expr="//header" position="inside">

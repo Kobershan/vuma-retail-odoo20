@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="cognify_management.AllReports">
+  <div class="o_vuma_reports">
+
+    <header class="o_vuma_reports_head">
+      <div>
+        <h1>Management Reports</h1>
+        <p class="o_vuma_reports_sub">
+          Every report and graph in one place, read live from Odoo — nothing is
+          snapshotted, so these cannot drift from the books.
+          <span t-out="this.reportCount"/> reports below.
+        </p>
+      </div>
+    </header>
+
+    <t t-foreach="this.sections" t-as="sec" t-key="sec.key">
+      <section class="o_vuma_reports_section">
+        <div class="o_vuma_reports_section_head">
+          <h2 t-out="sec.title"/>
+          <span t-if="sec.subtitle" class="o_vuma_reports_section_sub" t-out="sec.subtitle"/>
+        </div>
+
+        <div class="o_vuma_reports_grid">
+          <t t-foreach="sec.reports" t-as="r" t-key="r.title">
+            <div class="o_vuma_report_card">
+              <div class="o_vuma_report_card_head">
+                <h3 t-out="r.title"/>
+                <span t-if="r.note" class="o_vuma_report_note" t-out="r.note"/>
+              </div>
+              <div class="o_vuma_report_card_body">
+                <View t-props="r.viewProps"/>
+              </div>
+            </div>
+          </t>
+        </div>
+      </section>
+    </t>
+
+  </div>
+</t>
+
+</templates>

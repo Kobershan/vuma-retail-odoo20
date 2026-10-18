@@ -37,3 +37,59 @@
 .vuma-navtoggle:hover { background: rgba(255, 255, 255, 0.06); }
 .o_list_view thead th { background: #1f2128; color: #a0a6b8; border-bottom-color: #2a2d34; }
 .card { border-color: #2a2d34; background: #181a20; }
+
+/* Register + tablets, dark counterparts of the light finish. */
+.o_list_renderer {
+    --ListRenderer-thead-bg-color: #1f2128;
+    --ListRenderer-thead-border-end-color: #2a2d34;
+    --ListRenderer-tfoot-bg-color: #1f2128;
+    --ListRendererGrouped__th-bg-color: #23262c;
+}
+.o_list_view .o_list_table {
+    --table-bg: #181a20;
+    --table-border-color: #24272e;
+    --table-hover-bg: rgba(255, 229, 0, 0.08);
+    --table-hover-color: #f2f4f8;
+}
+.o_list_view .o_list_table > tbody > tr:has(> td.o_list_record_selector) > td.o_data_cell:nth-child(2):not(.o_list_number),
+.o_list_view .o_list_table > tbody > tr:not(:has(> td.o_list_record_selector)) > td.o_data_cell:nth-child(1):not(.o_list_number),
+.o_list_table .o_group_header > td {
+    color: #e6e8ee;
+}
+.o_main_navbar .o_menu_systray .o-dropdown > button,
+.o_main_navbar .o_menu_systray .o-dropdown > .btn,
+.o_main_navbar .o_menu_systray .dropdown-toggle {
+    background: #23262c !important;
+    border-color: #2a2d34 !important;
+    color: #e6e8ee !important;
+    box-shadow: none !important;
+}
+.o_main_navbar .o_menu_systray .dropdown-toggle:hover,
+.o_main_navbar .o_menu_systray .dropdown-toggle.show {
+    background: #2a2d34 !important;
+    border-color: #3a3e48 !important;
+}
+.o_main_navbar .o-dropdown--menu,
+.o_main_navbar .dropdown-menu {
+    border-color: #2a2d34;
+}
+.o_switch_company_menu_items .o_switch_company_item {
+    background: #181a20;
+    border-color: #2a2d34;
+}
+.o_switch_company_menu_items .o_switch_company_item:hover {
+    background: #23262c !important;
+}
+.vuma-navtoggle {
+    background: #23262c;
+    border-color: #2a2d34;
+    color: #e6e8ee;
+}
+.vuma-navtitle {
+    background: #1f2128;
+    border-color: #2a2d34;
+    color: #e6e8ee;
+}
+.vuma-navsearch {
+    background: #23262c;
+}

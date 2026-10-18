@@ -106,6 +106,12 @@ class VumaPartnerCreditWizard(models.TransientModel):
             if not self.full_credit:
                 remaining_cap -= min(remaining_cap, due * ratio)
             ratio = min(1.0, max(0.0, ratio))
+            # A credit that rounds to nothing is not a credit. The note would
+            # post as a zero document, net against nothing, and leave the
+            # invoice exactly as due as before — while still showing up in the
+            # goods pickup ledger as "already returned". Skip to the next one.
+            if inv.currency_id.is_zero(inv.amount_total * ratio):
+                continue
             created |= self._vuma_create_credit_note(inv, ratio)
 
         self.created_move_ids = created
@@ -133,6 +139,17 @@ class VumaPartnerCreditWizard(models.TransientModel):
             'currency_id': inv.currency_id.id,
             'invoice_date': fields.Date.context_today(self),
             'invoice_origin': inv.name,
+            # Tie the note to the invoice it offsets. `invoice_origin` is free
+            # text and reconciles nothing; Odoo nets a reversal against its
+            # original only when `reversed_entry_id` is set and the original is
+            # posted (see account.move._post). Without the link the invoice
+            # keeps reporting the customer as owing the full amount while the
+            # credit sits next to it unreconciled, so the goods come back but
+            # the balance never moves. It is also what makes
+            # `invoice.reversal_move_ids` report this credit, which the goods
+            # pickup credit ledger reads to stop the same goods being
+            # collected a second time.
+            'reversed_entry_id': inv.id,
             'ref': _('Cross-company credit: %s — %s') % (inv.name, (self.reason or '').strip()[:500]),
             'invoice_line_ids': self._vuma_credit_lines(inv, ratio),
         }

@@ -5,7 +5,7 @@
             <div class="vuma-dashboard" data-csrf-token="">
                 <div class="vd-topband">
                     <div class="vd-brand">
-                        <img t-att-src="'/cognify_admin_dashboard/static/img/vuma-mark.png'" alt="" class="vd-mark" onerror="this.style.display='none'"/>
+                        <img t-att-src="'/cognify_admin_dashboard/static/img/vuma-mark.png?unique=20261017'" alt="" class="vd-mark" onerror="this.style.display='none'"/>
                         <span class="vd-word">VUMA ADMIN</span>
                     </div>
                     <div class="vd-topright">

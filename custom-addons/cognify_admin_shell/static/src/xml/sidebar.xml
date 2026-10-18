@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
 <t t-name="vuma.Sidebar">
-  <aside class="vuma-sidebar" t-ref="root"
+  <aside class="vuma-sidebar"
          t-att-class="{ 'is-open': this.state.mobileOpen }"
          t-on-mouseleave="this.closeFlyout">
 
@@ -11,12 +11,22 @@
     <!-- Header -->
     <div class="vuma-head">
       <div class="vuma-logo-row">
-        <img t-if="this.state.collapsed" class="vuma-mark" t-att-src="'/cognify_admin_shell/static/img/vuma-mark.png'" alt="Vuma"/>
-        <img t-else="" class="vuma-mark" t-att-src="'/cognify_admin_shell/static/img/vuma-mark.png'" alt="Vuma"/>
-        <img t-if="!this.state.collapsed" class="vuma-wordmark" t-att-src="'/cognify_admin_shell/static/img/vuma-logo.png'" alt="Vuma Retail"/>
-        <span t-if="!this.state.collapsed" class="vuma-appname">VUMA ADMIN</span>
+        <!-- The wordmark already carries the "VUMA RETAIL" lockup. An extra
+             text label beside it needs ~293px inside a 276px sidebar, so it
+             overflowed the column and collided with the logo. -->
+        <img class="vuma-mark" t-att-src="'/cognify_admin_shell/static/img/vuma-mark.png?unique=20261017'" alt="Vuma"/>
+        <!-- vuma-logo.png is the dark lockup for light backgrounds;
+             vuma-logo-light.png is the same high-res artwork with the VUMA
+             letterforms recoloured white for the near-black sidebar.
+             The ?unique= token busts the 7-day static-file cache when the
+             artwork is rebuilt. -->
+        <img t-if="!this.state.collapsed" class="vuma-wordmark" t-att-src="'/cognify_admin_shell/static/img/vuma-logo-light.png?unique=20261017'" alt="Vuma Retail"/>
       </div>
-      <button class="vuma-rail-toggle" t-on-click="this.toggleCollapse" title="Collapse sidebar" aria-label="Collapse sidebar">
+      <!-- Desktop-only. On a phone the drawer is opened by the navbar burger
+           and closed by the X or the backdrop, so collapse/expand has no
+           meaning here — and the icon is hidden at that width, leaving an
+           empty square beside the wordmark. -->
+      <button class="vuma-rail-toggle vuma-rail-collapse" t-on-click="this.toggleCollapse" title="Collapse sidebar" aria-label="Collapse sidebar">
         <i class="oi" data-icon="panel_left"/>
       </button>
       <button class="vuma-mobile-close vuma-rail-toggle" t-on-click="this.closeMobile" title="Close" aria-label="Close menu">
@@ -46,7 +56,7 @@
             <div class="vuma-empty">Nothing matches "<span t-out="this.state.search"/></div>
           </t>
           <t t-foreach="this.searchResults()" t-as="r" t-key="r_index">
-            <button class="vuma-result" t-on-click="() => { this.closeMobile(); if (r.menu) { this.menuService.selectMenu(r.menu.id); } else { this.menuService.selectMenu(r.app.id); } }">
+            <button class="vuma-result" t-on-click="() => this.onResultClick(r)">
               <span class="vuma-result-icon">
                 <img t-if="r.app.webIconData" t-att-src="r.app.webIconData" alt=""/>
                 <span t-else="" t-out="this.iconLetter(r.app)"/>
@@ -74,7 +84,7 @@
               <div class="vuma-app vuma-flyouthost"
                    t-att-class="{
                        'is-active': this.isCurrentApp(app),
-                       'is-expanded': (!this.state.collapsed) &amp;&amp; this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length,
+                       'is-expanded': (!this.state.collapsed) &amp;&amp; this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length,
                    }"
                    t-on-click="() => this.selectApp(app)"
                    t-on-mouseenter="() => this.openFlyoutFor(app)">
@@ -89,12 +99,19 @@
                 </span>
 
                 <span class="vuma-app-name" t-out="app.name"/>
-                <i t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length"
-                   class="oi vuma-app-chevron" data-icon="chevron_right"/>
+                <!-- Real control, not decoration: without its own handler the
+                     current app's sections could never be collapsed again. -->
+                <button t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length"
+                        class="vuma-app-chevron-btn"
+                        t-att-title="this.isAppOpen(app) ? 'Collapse sections' : 'Expand sections'"
+                        t-att-aria-expanded="this.isAppOpen(app) ? 'true' : 'false'"
+                        t-on-click.stop="() => this.toggleAppOpen(app)">
+                  <i class="oi vuma-app-chevron" data-icon="chevron_right"/>
+                </button>
               </div>
 
               <!-- Inline folders only for the active app when expanded -->
-              <t t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length &amp;&amp; !this.state.collapsed">
+              <t t-if="this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length &amp;&amp; !this.state.collapsed">
                 <div class="vuma-folders">
                   <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
                     <t t-call="vuma.SidebarSection" item="section" activeId="this.activeMenuId()" level="0"/>
@@ -141,17 +158,50 @@
       </t>
     </div>
 
-    <!-- Footer -->
-    <div class="vuma-foot">
-      <img class="vuma-avatar" t-att-src="this.imageUrlForUser()" alt=""/>
-      <div class="vuma-foot-meta">
-        <div class="vuma-foot-name" t-out="this.user.name"/>
-        <div class="vuma-foot-company" t-out="this.companyName()"/>
-      </div>
-    </div>
-
-    <div t-if="this.isSmall &amp;&amp; this.state.mobileOpen" class="vuma-mobile-backdrop" t-on-click="this.closeMobile"/>
+    <!-- Footer: the account menu. Mirrors web.UserMenu — the stock avatar
+         button is hidden below the md breakpoint (d-none d-md-flex), which is
+         exactly why phones had no way to log out. Same registry, same items;
+         on touch devices Odoo renders this dropdown as a bottom sheet. -->
+    <Dropdown position="'top-start'">
+      <button class="vuma-foot" title="Account menu" aria-label="Account menu">
+        <img class="vuma-avatar" t-att-src="this.imageUrlForUser()" alt=""/>
+        <div class="vuma-foot-meta">
+          <div class="vuma-foot-name" t-out="this.user.name"/>
+          <div class="vuma-foot-company" t-out="this.companyName()"/>
+        </div>
+        <i class="oi vuma-foot-caret" data-icon="expand_more"/>
+      </button>
+      <t t-set-slot="content">
+        <t t-foreach="this.profileMenuItems()" t-as="element" t-key="element_index">
+          <t t-if="!element.hide">
+            <DropdownItem
+                t-if="element.type == 'item' || element.type == 'switch'"
+                attrs="{ href: element.href, 'data-menu': element.id }"
+                onSelected="() => this.onProfileMenuSelect(element)"
+            >
+              <div class="d-flex justify-content-between p-0 w-100">
+                <t t-out="element.description"/>
+                <CheckBox
+                    t-if="element.type == 'switch'"
+                    value="element.isChecked"
+                    className="'form-switch ms-2'"
+                    onChange="element.callback"
+                />
+              </div>
+            </DropdownItem>
+            <div t-if="element.type == 'separator'" role="separator" class="dropdown-divider"/>
+          </t>
+        </t>
+      </t>
+    </Dropdown>
   </aside>
+
+  <!-- Sibling of the aside, never a child of it. Nested inside, its
+       `position: fixed; inset: 0` sat within the sidebar's own stacking
+       context (the sidebar carries z-index: 1032), where its z-index: 1031
+       outranked the nav items' implicit 0 — so on a phone it covered them and
+       every tap was swallowed. As a sibling it stays below the sidebar. -->
+  <div t-if="this.isSmall &amp;&amp; this.state.mobileOpen" class="vuma-mobile-backdrop" t-on-click="this.closeMobile"/>
 </t>
 
 <!-- Recursive folder renderer -->
@@ -170,7 +220,7 @@
 
   <t t-else="">
     <div class="vuma-folder" t-att-class="{ 'is-open': open }">
-      <button class="vuma-sub" t-on-click="() => { this.toggleFolder(item.id); if (item.actionID) { this.selectMenu(item); } }">
+      <button class="vuma-sub" t-on-click="() => this.onFolderClick(item)">
         <span class="vuma-sub-label" t-out="item.name"/>
       </button>
       <t t-if="open">

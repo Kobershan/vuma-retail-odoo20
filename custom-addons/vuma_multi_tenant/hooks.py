@@ -234,8 +234,130 @@ def grant_mixed_basket_access(env, only_logins=None):
     return users
 
 
+# ------------------------------------------------------------------
+# Staff administrators
+# ------------------------------------------------------------------
+# Shop-floor logins that run the backend. The passwords are only applied
+# when a login is first created: a password the person has since changed
+# is never reset by a replay of the seed.
+STAFF_ADMINS = [
+    # (login, display name, password)
+    ('traderite.dc', 'Trade Rite DC', '0757918931'),
+    ('junaid', 'Junaid', '0783331297'),
+    ('augustin', 'Augustin', '0680167091'),
+]
+
+
+def seed_staff_admins(env):
+    """Create the staff administrators (idempotent).
+
+    Each gets the Settings group. The Mixed Basket flag is set as well, so
+    ``grant_mixed_basket_access`` gives them the Mixed Basket group and all
+    three companies on the same pass.
+
+    :returns: the users that were created or updated
+    """
+    settings = env.ref('base.group_system', False)
+    main = env.ref('base.main_company', None)
+    Users = env['res.users'].sudo().with_context(active_test=False)
+    touched = Users.browse()
+    for login, name, password in STAFF_ADMINS:
+        user = Users.search([('login', '=', login)], limit=1)
+        if not user:
+            vals = {
+                'login': login,
+                'name': name,
+                'password': password,
+                'vuma_mixed_basket_access': True,  # adds group + trading companies
+            }
+            if settings:
+                vals['group_ids'] = [fields.Command.link(settings.id)]
+            if main:
+                vals['company_id'] = main.id
+                vals['company_ids'] = [fields.Command.link(main.id)]
+            touched |= Users.create(vals)
+        else:
+            vals = {}
+            if settings and settings not in user.group_ids:
+                vals['group_ids'] = [fields.Command.link(settings.id)]
+            if not user.vuma_mixed_basket_access:
+                vals['vuma_mixed_basket_access'] = True
+            if vals:
+                user.write(vals)
+            touched |= user
+    # Guarantee group + the three companies even when the flag was already
+    # set before this seed ran.
+    touched |= grant_mixed_basket_access(
+        env, only_logins=[login for login, _n, _p in STAFF_ADMINS])
+    return touched
+
+
+def open_both_catalogues(env):
+    """Let staff see BOTH trading catalogues whatever the company switcher says.
+
+    Odoo 20 keeps record rules in ``ir.access`` with ``kind='restriction'``,
+    which is derived: ``group_id`` set means "permission", ``group_id`` empty
+    means "restriction". Restrictions are AND-ed, so a rule that *excludes*
+    another company's products can only be relaxed by widening that same rule,
+    never by adding a second one.
+
+    The stock rule is::
+
+        ['|', ('company_id', '=', False),
+              ('company_id', 'parent_of', company_ids)]
+
+    ``company_ids`` there is ``env.companies`` -- the companies the *switcher*
+    has active, not the user's settings. Two things then break a rep who has
+    both companies configured:
+
+    * a fresh login starts on the single default company, because with no
+      ``cids`` cookie ``web/static/src/core/user.js`` falls back to
+      ``[defaultCompany]``, so only the shared catalogue is listed;
+    * worse, the sale product configurator does
+      ``request.update_context(allowed_company_ids=[company_id])`` with the
+      *quote's* company before reading the template, so clicking a Trade Rite
+      product on a Siyaya quote raised "Administrator doesn't have 'read'
+      access to Product ... you might be able to access the record by
+      switching to the company: Siyaya DC".
+
+    Widening the rule to also accept the two trading companies makes both
+    catalogues readable no matter which single company happens to be active,
+    which is exactly the promise of a mixed basket. It is deliberately global
+    rather than group-scoped: Odoo 20 cannot express a group-scoped
+    restriction, and every internal user here needs to see both catalogues to
+    serve a customer.
+
+    :returns: the rules that were widened
+    """
+    trade, siyaya = _vuma_companies(env)
+    if not trade or not siyaya:
+        return env['ir.access'].browse()
+    Access = env['ir.access'].sudo()
+    wanted = "['|', '|', ('company_id', '=', False), " \
+             "('company_id', 'parent_of', company_ids), " \
+             "('company_id', 'in', %s)]" % [trade.id, siyaya.id]
+    widened = Access.browse()
+    for model in ('product.template', 'product.product'):
+        model_rec = env['ir.model'].sudo().search([('model', '=', model)], limit=1)
+        if not model_rec:
+            continue
+        rules = Access.search([
+            ('model_id', '=', model_rec.id),
+            ('group_id', '=', False),
+            ('active', '=', True),
+        ])
+        for rule in rules:
+            domain = str(rule.domain or '')
+            if 'parent_of' not in domain or 'company_ids' not in domain:
+                continue
+            if domain == wanted:
+                continue
+            rule.domain = wanted
+            widened |= rule
+    return widened
+
+
 def vuma_post_init(env):
-    """Seed products (+ stock) for BOTH companies and install access rows."""
     trade, siyaya = _vuma_companies(env)
     if not trade or not siyaya:
         return
@@ -277,7 +399,10 @@ def vuma_post_init(env):
             continue
         _seed_quant(env, company, product.sudo(), qty)
 
+    seed_staff_admins(env)
+
     grant_mixed_basket_access(env)
 
     install_acls(env)
+    open_both_catalogues(env)
     backfill_stock_sources(env)

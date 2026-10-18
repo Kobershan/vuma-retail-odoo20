@@ -8,7 +8,7 @@
         restricted to the group that is allowed to use it.
     -->
     <menuitem id="menu_customer_goods_pickup_root"
-              name="Customer Goods"
+              name="Upliftment"
               sequence="92"/>
 
     <!-- Sales representative -->

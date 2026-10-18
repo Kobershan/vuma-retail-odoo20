@@ -18,6 +18,16 @@ Core features:
 * No chat facility: the Discuss application and its messaging systray, chat
   bubbles and chat windows are all hidden, while the message chatter stays
   available on documents for audit trails.
+* The generic "Apps" menu is deactivated, so the navbar app dropdown lists only
+  real applications and the redundant Apps entry no longer appears in it.
+* The website footer is replaced. It used to show Odoo's American demo company
+  ("8000 Marina Blvd ... United States", "+1 555-555-5556") on the login page,
+  the shop and every other website page. It now renders the company name,
+  address, phone and email from the company record, so the footer can no
+  longer disagree with Settings > Companies.
+* The website header's contact block and the contact form's phone placeholder
+  are bound to the same company record, so the "+1 555-555-5556" that used to
+  sit in the top bar of the shop is gone too.
 * Restyled system bar: white topbar with readable icons, soft off-white canvas,
   charcoal primary buttons and marigold accents, sharper cards and control panel.
 * Branded login page shown with the Vuma Retail identity instead of the
@@ -29,6 +39,10 @@ Core features:
     'depends': ['web', 'mail', 'website'],
     'data': [
         'data/hide_discuss_menu.xml',
+        'data/hide_apps_menu.xml',
+        'data/company_details.xml',
+        'views/website_footer.xml',
+        'views/website_header_contact.xml',
         'views/login_layout.xml',
     ],
     'assets': {

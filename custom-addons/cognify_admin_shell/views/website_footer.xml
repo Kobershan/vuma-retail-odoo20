@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        Replace the stock website footer.
+
+        Odoo ships a "Links" footer layout whose contact block is hardcoded to
+        Odoo's American demo company ("MyCompany", "8000 Marina Blvd ... United
+        States", "info@yourcompany.com", "+1 555-555-5556"). Because
+        `web.frontend_layout` is overridden by `website.layout` whenever the
+        website module is installed, that block also leaks onto pages it has
+        nothing to do with, including `/web/login`, `/shop` and `/contactus`.
+
+        Two things are wrong with it and both are fixed here:
+
+        1. The details are American placeholders, not the company's real ones.
+        2. They are frozen in the template, so they can never agree with the
+           company record. Everything below is read from
+           `website.company_id.partner_id` at render time instead, so
+           editing the company under Settings > Companies updates the footer
+           everywhere at once and the two can no longer drift apart.
+
+        `website` rather than `request.website`: `website.layout` is also
+        rendered through `website_sale._render_template`, and on that path the
+        request has no `website` attribute, so `request.website` raises
+        AttributeError and every page under `/shop` returns a 500.
+
+        This inherits `website.layout` rather than `website.template_footer_links`
+        on purpose. The footer layouts a website actually renders are the
+        per-website *copies* of `website.template_footer_links` (website_id set,
+        no external id); the module template that carries the external id is
+        inactive. Inheriting the external id would therefore attach to an
+        inactive view and silently never render. Inheriting `website.layout` and
+        outranking the copies on priority is what actually wins.
+    -->
+    <template id="vuma_footer_links" inherit_id="website.layout" name="Vuma Footer" priority="99">
+        <xpath expr="//div[@id='footer']" position="replace">
+            <!--
+                Read once at the top so every expression below stays a plain
+                attribute access. Bare method calls cannot be used inside
+                `t-out`/`t-att` of a nested node, and repeating the long
+                `website.company_id.partner_id` chain is noisy.
+
+                `sudo()` because the reader is a visitor, not a user: Odoo
+                grants the public group read on partners only under its own
+                commercial partner, so the company's own partner would 403
+                the whole page (footer, header and error pages included).
+            -->
+            <t t-set="vuma_partner" t-value="website.sudo().company_id.partner_id"/>
+            <!--
+                This addon depends on `website` but NOT on `website_sale`, so
+                `/shop` is not guaranteed to exist. Hide the link rather than
+                ship a footer that can 404.
+            -->
+            <t t-set="vuma_has_shop" t-value="env['ir.module.module'].sudo().search_count([('name', '=', 'website_sale'), ('state', '=', 'installed')])"/>
+
+            <div id="footer" class="oe_structure oe_structure_solo text-break" t-ignore="true" t-if="not no_footer">
+                <section class="s_text_block pt48 pb16" data-snippet="s_text_block" data-name="Container" data-oe-shape-data="{'shape':'html_builder/Containers/03','colors':{'c5':'o-color-4'},'flip':[],'showOnMobile':True,'shapeAnimationSpeed':'0'}">
+                    <div class="o_we_shape o_html_builder_Containers_03 o_shape_show_mobile" style="background-image: url('/html_editor/shape/html_builder/Containers/03.svg?c5=o-color-4');"/>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-lg-2 col-10 offset-1 offset-lg-0 pb16">
+                                <h5>Explore</h5>
+                                <ul class="list-unstyled">
+                                    <li><a href="/">Home</a></li>
+                                    <li><a href="/contactus">Contact us</a></li>
+                                    <li><a t-if="vuma_partner.website" t-att-href="vuma_partner.website" rel="noopener noreferrer" target="_blank">Our website</a></li>
+                                    <li><a t-if="vuma_has_shop" href="/shop">Shop</a></li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-2 col-10 offset-1 offset-lg-0 pb16">
+                                <h5>Get in touch</h5>
+                                <ul class="list-unstyled">
+                                    <li t-if="vuma_partner.email">
+                                        <i class="oi oi-fw oi-filled me-2" data-icon="mail"/>
+                                        <a t-attf-href="mailto:#{vuma_partner.email}" t-out="vuma_partner.email"/>
+                                    </li>
+                                    <li t-if="vuma_partner.phone">
+                                        <i class="oi oi-fw oi-filled me-2" data-icon="phone"/>
+                                        <span class="o_force_ltr"><a t-attf-href="tel:#{vuma_partner.phone}" t-out="vuma_partner.phone"/></span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="col-lg-4 col-10 offset-1 offset-lg-0 pb16">
+                                <h5 t-out="vuma_partner.name"/>
+                                <address class="mb-0">
+                                    <t t-if="vuma_partner.street">
+                                        <span t-out="vuma_partner.street"/><br/>
+                                    </t>
+                                    <t t-if="vuma_partner.city">
+                                        <span t-out="vuma_partner.city"/>
+                                        <t t-if="vuma_partner.zip"> <span t-out="vuma_partner.zip"/></t>
+                                        <br/>
+                                    </t>
+                                    <t t-if="vuma_partner.state_id">
+                                        <span t-out="vuma_partner.state_id.name"/>
+                                        <br/>
+                                    </t>
+                                    <t t-if="vuma_partner.country_id">
+                                        <span t-out="vuma_partner.country_id.name"/>
+                                    </t>
+                                </address>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </xpath>
+    </template>
+
+</odoo>

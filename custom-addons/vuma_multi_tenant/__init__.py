@@ -8,5 +8,6 @@ Vuma Multi-Tenant Retail: dual-company (Trade Rite / Siyaya DC) operation.
 * Invoices credited across both companies from one wizard.
 """
 from . import models
+from . import controllers
 
 from .hooks import vuma_post_init  # noqa: F401

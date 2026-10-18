@@ -1,13 +1,16 @@
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { useBus } from "@web/core/utils/hooks";
-import { Component, onMounted, onWillStart, proxy, signal, useEffect } from "@odoo/owl";
+import { Component, onMounted, onWillStart, proxy, signal, useEffect, useScope } from "@odoo/owl";
 import { user } from "@web/core/user";
 import { imageUrl } from "@web/core/utils/urls";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
+import { CheckBox } from "@web/core/checkbox/checkbox";
 
 // Apps deliberately grouped so the sidebar can be scanned instead of read.
 const GROUPS = [
-    { key: "sell", label: "Sell", icons: "sale_management,sale,crm,contacts,website,mass_mailing,utm", order: 10 },
+    { key: "sell", label: "Marketing", icons: "sale_management,sale,crm,contacts,website,mass_mailing,utm", order: 10 },
     { key: "stock", label: "Stock", icons: "stock,purchase,mrp,repair,customer_goods_pickup,cognify_expiry_manager", order: 20 },
     { key: "money", label: "Money", icons: "account,spreadsheet_dashboard,cognify_management_reports,cognify_remittance", order: 30 },
     { key: "work", label: "Work", icons: "project,project_todo,calendar", order: 40 },
@@ -15,14 +18,13 @@ const GROUPS = [
 ];
 const PINNED = [
     { xmlid: "base.menu_administration", label: "Settings" },
-    { xmlid: "base.menu_management", label: "Apps" },
 ];
 
 // Apps that must never surface on the dashboards.
 const HIDDEN_APPS = new Set(["mail.menu_root_discuss"]);
 
 const APP_GROUP = {
-    // Sell
+    // Marketing (the "sell" key is historical; the label reads Marketing)
     "sale_management.sale_menu_root": "sell", "crm.crm_menu_root": "sell",
     "contacts.menu_contacts": "sell", "website.menu_website_configuration": "sell",
     "mass_mailing.mass_mailing_menu_root": "sell", "calendar.mail_menu_calendar": "sell",
@@ -53,8 +55,12 @@ function groupKeyFor(app) {
 
 export class VumaSidebar extends Component {
     static template = "vuma.Sidebar";
+    static components = { Dropdown, DropdownItem, CheckBox };
 
     setup() {
+        // Captured here (like web.UserMenu does) so the user_menuitems
+        // factories can run inside this component's hook scope.
+        this.scope = useScope();
         this.menuService = useService("menu");
         this.actionService = useService("action");
         this.ui = useService("ui");
@@ -64,6 +70,10 @@ export class VumaSidebar extends Component {
             collapsed: this.loadCollapsed(),
             search: "",
             expandedFolders: {},
+            // Per-app visibility of the inline section list. Without this the
+            // sections were shown purely because the app was current, so the
+            // current app could never be collapsed again.
+            openApps: {},
             openFlyout: null,
             focusSearch: 0,
             isFullscreen: false,
@@ -248,7 +258,10 @@ export class VumaSidebar extends Component {
             .filter((g) => g.items.length > 0);
     }
 
-    get pinnedApps() {
+    // A method, not a getter: sidebar.xml calls it as `this.pinnedApps()`.
+    // Declaring it `get` made that call throw `TypeError: ... is not a function`
+    // on the first render, which aborted the WebClient mount and left /vuma blank.
+    pinnedApps() {
         const apps = this.allApps;
         const list = [];
         for (const p of PINNED) {
@@ -269,7 +282,26 @@ export class VumaSidebar extends Component {
 
     selectApp(app) {
         this.closeMobile();
+        // Clicking the app you are already on toggles its sections instead of
+        // pointlessly re-running the same action.
+        if (this.isCurrentApp(app)) {
+            this.toggleAppOpen(app);
+            return;
+        }
+        // Entering a different app opens its sections.
+        this.state.openApps[app.id] = true;
         this.menuService.selectMenu(app.id);
+    }
+
+    // Sections default to open for the current app, so its navigation is
+    // visible the moment you land on it.
+    isAppOpen(app) {
+        const v = this.state.openApps[app.id];
+        return v === undefined ? true : v;
+    }
+
+    toggleAppOpen(app) {
+        this.state.openApps[app.id] = !this.isAppOpen(app);
     }
 
     toggleFolder(id) {
@@ -362,6 +394,27 @@ export class VumaSidebar extends Component {
         // Collapse the folder highlight state is unchanged — watchers rely on active detection.
     }
 
+    // Handlers for the two places the template used a block-bodied arrow
+    // function. OWL compiles `t-on-click` values as expressions, so
+    // `() => { ...statements... }` produced `Unexpected token '{'` and the whole
+    // `vuma.Sidebar` template failed to compile. Expression-only arrows work,
+    // so the logic lives here instead.
+    onResultClick(r) {
+        this.closeMobile();
+        if (r.menu) {
+            this.menuService.selectMenu(r.menu.id);
+        } else {
+            this.menuService.selectMenu(r.app.id);
+        }
+    }
+
+    onFolderClick(item) {
+        this.toggleFolder(item.id);
+        if (item.actionID) {
+            this.selectMenu(item);
+        }
+    }
+
     onAppKeyDown(ev, app) {
         if (ev.key === "Enter" || ev.key === " ") {
             ev.preventDefault();
@@ -441,6 +494,46 @@ export class VumaSidebar extends Component {
             return this.user.activeCompany ? this.user.activeCompany.name : "";
         } catch (e) {
             return "";
+        }
+    }
+
+    // ---------- Account menu (footer) ----------
+
+    // Same contract as the stock web.UserMenu: the "user_menuitems" registry
+    // factories run inside this component's scope so their hooks
+    // (useService/usePlugin) bind here, then they render as menu entries.
+    // Anything that throws is dropped instead of breaking the sidebar, and
+    // component-type entries (the chat presence widget) are skipped because
+    // the Vuma shell removed chat on purpose.
+    profileMenuItems() {
+        let items = [];
+        try {
+            items = registry
+                .category("user_menuitems")
+                .getAll()
+                .map((element) => {
+                    try {
+                        return this.scope.run(() => element(this.env));
+                    } catch (e) {
+                        console.warn("[vuma] user menu item failed", e);
+                        return null;
+                    }
+                })
+                .filter(Boolean);
+        } catch (e) {
+            return [];
+        }
+        return items
+            .filter((el) => el.type !== "component")
+            .sort((x, y) => (x.sequence || 100) - (y.sequence || 100));
+    }
+
+    onProfileMenuSelect(element) {
+        // Close the phone drawer first so dialogs land on the content
+        // underneath instead of on the drawer.
+        this.closeMobile();
+        if (element.callback) {
+            element.callback();
         }
     }
 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        One page with every Management report stacked, so a manager does not
+        have to hop between seven dashboards. Each card embeds the same view
+        the individual menu item opens, so the numbers cannot disagree.
+    -->
+    <record id="action_management_all_reports" model="ir.actions.client">
+        <field name="name">All Reports</field>
+        <field name="tag">cognify_management.all_reports</field>
+    </record>
+
+    <menuitem id="menu_cognify_all_reports"
+              name="All Reports"
+              parent="cognify_management_reports.menu_cognify_management"
+              action="action_management_all_reports"
+              sequence="5"/>
+
+</odoo>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!--
+        Replace Odoo's American contact details in the website header.
+
+        `website.header_text_element` is the reusable snippet the header calls
+        to show a phone number and/or an email address. Every one of its
+        branches hardcodes Odoo's demo values, "+1 555-555-5556" and
+        "info@yourcompany.example.com", so they appeared in the top bar of
+        `/shop`, `/contactus` and every other page even after the footer was
+        bound to the company record.
+
+        The whole `<li>` is replaced rather than patched branch by branch:
+        the branches are selected by `_txt_elt_content`, they share identical
+        `class` attributes, and an xpath could not address each one
+        unambiguously. Values come from `website.sudo().company_id.partner_id`,
+        the same source as the footer, so the header and footer cannot
+        disagree. `sudo()` is required because the reader is an anonymous
+        visitor: Odoo grants the public group read on partners only under its
+        own commercial partner, so the company's own partner would 403 the
+        page instead of showing the details.
+
+        Each anchor is now hidden when the field is empty instead of printing
+        a blank icon.
+    -->
+    <template id="vuma_header_contact" inherit_id="website.header_text_element"
+              name="Vuma Header Contact" priority="99">
+        <xpath expr="//li" position="replace">
+            <li t-attf-class="#{_item_class}">
+                <t t-set="vuma_partner" t-value="website.sudo().company_id.partner_id"/>
+
+                <t t-if="_txt_elt_content == 'sentence'">
+                    <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                        <small>Free Returns and Standard Shipping</small>
+                    </div>
+                </t>
+
+                <t t-elif="_txt_elt_content == 'list'">
+                    <div t-attf-class="s_text_block d-flex flex-column flex-lg-row gap-1 gap-lg-4 align-items-lg-center #{_div_class}" data-name="Text">
+                        <small class="d-flex align-items-center">
+                            <i class="oi oi-1x oi-fw oi-stack me-1" data-icon="attach_money"/>
+                            Low Price Guarantee
+                        </small>
+                        <small class="d-flex align-items-center">
+                            <i class="oi oi-1x oi-fw oi-stack me-1" data-icon="shopping_basket"/>
+                            30 Days Online Returns
+                        </small>
+                        <small class="d-flex align-items-center">
+                            <i class="oi oi-1x oi-fw oi-stack me-1" data-icon="local_shipping"/>
+                            Standard Shipping
+                        </small>
+                    </div>
+                </t>
+
+                <t t-elif="_txt_elt_content == 'phone_mail'">
+                    <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                        <a t-if="vuma_partner.phone" t-attf-href="tel:#{vuma_partner.phone}"
+                           class="nav-link o_nav-link_secondary">
+                            <small>
+                                <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="phone"/> <!-- Empty character needed to be able to delete the icon. -->
+                                <span class="o_force_ltr" t-out="vuma_partner.phone"/>
+                            </small>
+                        </a>
+                        <a t-if="vuma_partner.email" t-attf-href="mailto:#{vuma_partner.email}"
+                           class="nav-link o_nav-link_secondary">
+                            <small>
+                                <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="mail"/>
+                                <span t-out="vuma_partner.email"/>
+                            </small>
+                        </a>
+                    </div>
+                </t>
+
+                <t t-elif="_txt_elt_content == 'mail'">
+                    <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                        <a t-if="vuma_partner.email" t-attf-href="mailto:#{vuma_partner.email}"
+                           class="nav-link o_nav-link_secondary">
+                            <small>
+                                <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="mail"/>
+                                <span t-out="vuma_partner.email"/>
+                            </small>
+                        </a>
+                    </div>
+                </t>
+
+                <t t-elif="_txt_elt_content == 'mail_stretched'">
+                    <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                        <a t-if="vuma_partner.phone" t-attf-href="tel:#{vuma_partner.phone}"
+                           class="nav-link o_nav-link_secondary p-2 o_navlink_background_hover d-flex align-items-center h-100 text-reset">
+                            <i class="oi oi-1x oi-fw i-filled me-1" data-icon="phone"/>
+                            <span class="o_force_ltr"><small t-out="vuma_partner.phone"/></span>
+                        </a>
+                    </div>
+                </t>
+
+                <t t-else="">
+                    <div t-attf-class="s_text_block #{_div_class}" data-name="Text">
+                        <a t-if="vuma_partner.phone" t-attf-href="tel:#{vuma_partner.phone}"
+                           class="nav-link o_nav-link_secondary p-2">
+                            <i class="oi oi-1x oi-fw oi-filled me-1" data-icon="phone"/>
+                            <span class="o_force_ltr"><small t-out="vuma_partner.phone"/></span>
+                        </a>
+                    </div>
+                </t>
+            </li>
+        </xpath>
+    </template>
+
+    <!--
+        The contact form's phone field shipped with a matching American
+        placeholder. It is only a hint, but it is the first thing a visitor
+        sees on `/contactus`, so it is bound to the company phone too. The
+        static `placeholder` is dropped first, otherwise it would win over the
+        dynamic one.
+    -->
+    <template id="vuma_contactus_phone_placeholder" inherit_id="website.contactus"
+              name="Vuma Contact Us Phone Placeholder" priority="99">
+        <xpath expr="//input[@name='phone']" position="attributes">
+            <attribute name="placeholder"/>
+            <attribute name="t-att-placeholder">website.sudo().company_id.partner_id.phone or ''</attribute>
+        </xpath>
+    </template>
+
+</odoo>

@@ -66,8 +66,16 @@ from a nightly snapshot, so they cannot drift from the books.
         'views/finance_stock_views.xml',
         'views/sale_report_views.xml',
         'views/res_config_settings_views.xml',
+        'views/all_reports_menu.xml',
         'data/dashboard_data.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'cognify_management_reports/static/src/scss/all_reports.scss',
+            'cognify_management_reports/static/src/js/all_reports.js',
+            'cognify_management_reports/static/src/xml/all_reports.xml',
+        ],
+    },
     'installable': True,
     'application': True,
 }

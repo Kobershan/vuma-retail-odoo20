@@ -36,6 +36,27 @@
     background: rgba(20, 22, 26, 0.05) !important;
 }
 
+/* Odoo paints the systray pills (company switcher, period picker) with the
+   brand purple `#71639e`. The rule above forces near-black text on them, which
+   renders as black-on-dark-purple and is unreadable. Reclaim a light pill so
+   the dark label has proper contrast against the white navbar. */
+.o_main_navbar .o_menu_systray .dropdown-toggle,
+.o_main_navbar .o_menu_systray .o-dropdown {
+    background: #f1f2f7 !important;
+    color: #0f1116 !important;
+    border-color: #e2e5ec !important;
+    box-shadow: none !important;
+}
+.o_main_navbar .o_menu_systray .dropdown-toggle:hover,
+.o_main_navbar .o_menu_systray .o-dropdown:hover {
+    background: #e6e8f1 !important;
+}
+/* The avatar / user menu keeps Odoo's own look — it is not a text pill. */
+.o_main_navbar .o_menu_systray .o-dropdown-caret,
+.o_main_navbar .o_menu_systray img {
+    opacity: 1;
+}
+
 .o_web_client {
     background: var(--vuma-paper);
     font-family: var(--vuma-font);
@@ -58,8 +79,19 @@ body:has(.o_website_systray) .o_main_navbar .o_menu_sections_more {
     display: inline-flex !important;
 }
 
-/* Mobile burger apps toggle is redundant now. */
+/* The stock mobile apps-menu toggle (`.o_menu_toggle`, only rendered under
+   768px) opens Odoo's own app drawer — the Vuma burger replaced it. The
+   legacy class is kept in the selector for older bundles. */
+.o_main_navbar .o_menu_toggle,
 .o_mobile_menu_toggle {
+    display: none !important;
+}
+
+/* The activities clock ("schedule" icon). Vuma reads activities from the
+   dashboards, never from the navbar, and on phones it opened an old-style
+   dropdown. Registry removal happens in hide_chat.js; this is the visual
+   backstop. */
+.o_main_navbar button:has(i[aria-label="Activities"]) {
     display: none !important;
 }
 
@@ -138,20 +170,42 @@ body:has(.o_website_systray) .o_main_navbar .o_menu_sections_more {
 /* ------------------------------------------------------------------
    Layout: sidebar + content column.
    ------------------------------------------------------------------ */
-body.o_vuma_has_sidebar .o_web_client {
+/* NOTE: `body` itself carries the `o_web_client` class (the webclient mounts
+   into document.body), so these must be *same-element* selectors. Writing
+   `body.o_vuma_has_sidebar .o_web_client` looks for a descendant and never
+   matches — which left the whole action column sitting underneath the fixed
+   sidebar. */
+body.o_vuma_has_sidebar.o_web_client {
     padding-left: var(--vuma-sidebar-w);
     transition: padding-left 0.18s ease;
 }
-body.o_vuma_has_sidebar.o_vuma_sidebar_collapsed .o_web_client {
+body.o_vuma_has_sidebar.o_vuma_sidebar_collapsed.o_web_client {
     padding-left: var(--vuma-rail-w);
+}
+
+/* Odoo renders its own left-hand category/filter panel (`.o_search_panel`) in
+   many views — the spreadsheet dashboards, Project, Employees and so on. It is
+   duplicate navigation, and once the content column is offset by the Vuma
+   sidebar it becomes a *second* sidebar sitting directly beside it. Drop it
+   everywhere rather than per-action, so no view can reintroduce it. */
+body.o_vuma_has_sidebar .o_search_panel {
+    display: none !important;
+}
+body.o_vuma_has_sidebar .o_component_with_search_panel {
+    padding-left: 0 !important;
 }
 
 /* Small-screen drawer mode */
 @media (max-width: 991.98px) {
-    body.o_vuma_has_sidebar .o_web_client {
+    body.o_vuma_has_sidebar.o_web_client {
         padding-left: 0 !important;
     }
-    .vuma-sidebar {
+    /* Bumped to a `body`-qualified selector on purpose. The base
+       `.vuma-sidebar` rule below also sets z-index: 1000 and has equal
+       specificity but later source order, so it was winning — leaving the
+       drawer *under* its own backdrop (1031). The drawer must paint above the
+       dim layer or every tap is swallowed and the navigation is dead. */
+    body.o_vuma_has_sidebar .vuma-sidebar {
         transform: translateX(-100%);
         transition: transform 0.2s ease;
         z-index: 1032;
@@ -168,6 +222,11 @@ body.o_vuma_has_sidebar.o_vuma_sidebar_collapsed .o_web_client {
     }
     body.o_vuma_sidebar_open .vuma-mobile-backdrop {
         display: block;
+    }
+    /* Deliberately scoped to .vuma-rail-collapse rather than .vuma-rail-toggle:
+       the close button carries both classes. */
+    .vuma-rail-collapse {
+        display: none !important;
     }
 }
 
@@ -348,20 +407,30 @@ body.o_vuma_sidebar_collapsed .vuma-rail-search-btn:hover {
     color: #ffffff;
 }
 
-/* Scroll area */
+/* Scroll area. The thumb was 12% white, which reads as "this doesn't scroll" —
+   the nav list is ~2150px tall in an ~790px box, so make the affordance clear. */
 .vuma-body {
     flex: 1 1 auto;
     overflow: auto;
     padding: 6px 8px 8px;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    scrollbar-color: rgba(255, 255, 255, 0.34) transparent;
 }
 .vuma-body::-webkit-scrollbar {
-    width: 6px;
+    width: 9px;
+}
+.vuma-body::-webkit-scrollbar-track {
+    background: transparent;
 }
 .vuma-body::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
-    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.34);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.vuma-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.55);
+    background-clip: padding-box;
 }
 
 body.o_vuma_sidebar_collapsed .vuma-body {
@@ -476,6 +545,29 @@ body.o_vuma_sidebar_collapsed .vuma-app-name,
 body.o_vuma_sidebar_collapsed .vuma-app-chevron,
 body.o_vuma_sidebar_collapsed .vuma-app-flyout {
     display: none;
+}
+
+/* The chevron is a real button now, so it needs to read as one. */
+.vuma-app-chevron-btn {
+    margin-left: auto;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+}
+.vuma-app-chevron-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
+}
+.vuma-app-chevron-btn:focus-visible {
+    outline: 2px solid var(--vuma-accent);
+    outline-offset: 1px;
 }
 
 .vuma-app-chevron {
@@ -671,14 +763,36 @@ body.o_vuma_sidebar_collapsed .vuma-app-flyout {
     padding: 2px;
 }
 
-/* Footer */
+/* Footer — also the account-menu toggle (see sidebar.xml: it is a real
+   <button> that opens the standard user_menuitems list). */
 .vuma-foot {
     padding: 10px 12px;
+    border: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 9px;
     background: rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+.vuma-foot:hover,
+.vuma-foot:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+}
+.vuma-foot-caret {
+    margin-left: auto;
+    color: #8a90a0;
+    font-size: 1.05rem;
+    flex-shrink: 0;
+}
+body.o_vuma_sidebar_collapsed .vuma-foot-caret {
+    display: none;
 }
 .vuma-avatar {
     width: 30px;
@@ -778,13 +892,270 @@ body.o_vuma_sidebar_collapsed .vuma-foot {
 }
 
 /* Fullscreen from POS / fullscreen actions: sidebar pinned, content spills. */
-body.o_action_fullscreen .o_vuma_has_sidebar,
-body.o_fullscreen .o_vuma_has_sidebar,
-body.o_vuma_fullscreen .o_vuma_has_sidebar {
+body.o_action_fullscreen.o_vuma_has_sidebar,
+body.o_fullscreen.o_vuma_has_sidebar,
+body.o_vuma_fullscreen.o_vuma_has_sidebar {
     padding-left: 0 !important;
 }
 body.o_action_fullscreen .vuma-sidebar,
 body.o_fullscreen .vuma-sidebar,
 body.o_vuma_fullscreen .vuma-sidebar {
     display: none !important;
+}
+
+/* ==================================================================
+   The register and the tablets.
+   ==================================================================
+   Two finishes on top of the chrome above:
+
+   * List views read as a proper register — a white slab with a quiet
+     small-caps header, roomier rows, separators you can follow and a
+     running total that lands with weight.
+   * Every control in the top bar is a "tablet": a rounded slab with a
+     hairline edge and a soft lift, so the company switcher, the
+     activities bell and the user menu look like one family instead of
+     three different eras of Odoo.
+   ================================================================== */
+
+/* ------------------------------------------------------------------
+   Tables: list views as the register.
+   ------------------------------------------------------------------ */
+
+/* The slab. Odoo keeps `border-collapse: collapse` on the table (its
+   section lines rely on it), so cell-level `border-radius` would be
+   ignored — and `overflow: hidden` on the renderer would turn it into a
+   scroll container and kill the sticky header. `clip-path` rounds the
+   painted box without either side effect: the sticky header keeps
+   sticking and wide tables keep their horizontal scrollbar. */
+.o_list_view .o_list_renderer {
+    padding: 14px 18px 22px;
+}
+.o_list_view .o_list_table {
+    --table-bg: #ffffff;
+    --table-border-color: #f0f1f6;
+    --table-hover-bg: #fffbe8;
+    --table-hover-color: #14161a;
+    border-radius: 14px;
+    clip-path: inset(0 round 14px);
+}
+
+/* Header: a band of small caps, quieter than the data below it. */
+.o_list_renderer {
+    --ListRenderer-thead-bg-color: #f7f8fb;
+    --ListRenderer-thead-border-end-color: #e6e8ee;
+    --ListRenderer-thead-padding-y: 11px;
+    --ListRenderer-tfoot-bg-color: #f7f8fb;
+    --ListRendererGrouped__th-bg-color: #eef0f6;
+}
+.o_list_table thead th {
+    color: var(--vuma-ink-soft);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+/* Rows: room to breathe, and the name column carries the weight. */
+.o_list_view .o_list_table > tbody > tr > td {
+    padding-top: 9px;
+    padding-bottom: 9px;
+    vertical-align: middle;
+}
+.o_list_view .o_list_table > tbody > tr:last-child > td {
+    border-bottom: 0;
+}
+/* The name column carries the weight. The record-selector column is
+   optional in Odoo, so find the first data cell both with and without it
+   (`:has` is already used by Odoo's own list styles). */
+.o_list_view .o_list_table > tbody > tr:has(> td.o_list_record_selector) > td.o_data_cell:nth-child(2):not(.o_list_number),
+.o_list_view .o_list_table > tbody > tr:not(:has(> td.o_list_record_selector)) > td.o_data_cell:nth-child(1):not(.o_list_number) {
+    color: var(--vuma-ink);
+    font-weight: 600;
+}
+.o_list_table .o_group_header > td {
+    color: var(--vuma-ink);
+    font-weight: 700;
+}
+
+/* The running total: a footer band with tabular figures. */
+.o_list_view .o_list_table tfoot > tr > td {
+    --table-bg: #f7f8fb;
+    border-top: 1px solid var(--vuma-line);
+    font-weight: 700;
+}
+
+/* Controls inside the table follow the chrome's rounding. */
+.o_list_view .o_list_table .form-check-input {
+    border-radius: 5px;
+    border-color: #c9cdd7;
+    cursor: pointer;
+}
+.o_list_view .o_list_table .form-check-input:checked {
+    background-color: var(--vuma-ink);
+    border-color: var(--vuma-ink);
+}
+
+@media print {
+    .o_list_view .o_list_renderer {
+        padding: 0;
+    }
+}
+
+/* ------------------------------------------------------------------
+   The top bar as a row of tablets.
+   ------------------------------------------------------------------ */
+
+/* Spacing: the systray carries an empty placeholder before every item,
+   so a 4px gap lands as an 8px gap between tablet surfaces. */
+.o_main_navbar .o_menu_systray {
+    gap: 4px;
+    padding-right: 6px;
+}
+
+/* --- The tablet itself: company switcher, activities, user menu. ---
+   Odoo paints these buttons with the brand purple; this overrides the
+   light-pill patch above with the full slab treatment. */
+.o_main_navbar .o_menu_systray .o-dropdown > button,
+.o_main_navbar .o_menu_systray .o-dropdown > .btn,
+.o_main_navbar .o_menu_systray .dropdown-toggle {
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 14px !important;
+    border: 1px solid #e2e5ec !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    color: #0f1116 !important;
+    font-size: 0.84rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(20, 22, 26, 0.06) !important;
+    transition: background 0.12s ease, border-color 0.12s ease,
+        box-shadow 0.12s ease, transform 0.12s ease;
+}
+.o_main_navbar .o_menu_systray .o-dropdown > button:hover,
+.o_main_navbar .o_menu_systray .dropdown-toggle:hover,
+.o_main_navbar .o_menu_systray .dropdown-toggle.show {
+    background: #fffdf3 !important;
+    border-color: #d9dde8 !important;
+    box-shadow: 0 10px 22px -14px rgba(20, 22, 26, 0.45) !important;
+    transform: translateY(-1px);
+}
+.o_main_navbar .o_menu_systray .o-dropdown > button:active,
+.o_main_navbar .o_menu_systray .dropdown-toggle:active {
+    transform: translateY(0);
+    box-shadow: inset 0 1px 3px rgba(20, 22, 26, 0.12) !important;
+}
+/* The wrapper div carries the old pill background; the button is the pill now. */
+.o_main_navbar .o_menu_systray .o-dropdown {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+/* The company tablet leads with a marigold chip. */
+.o_main_navbar .o_switch_company_menu::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--vuma-accent);
+    box-shadow: inset 0 0 0 1px rgba(20, 22, 26, 0.22);
+    flex: 0 0 auto;
+}
+
+/* The user tablet: the avatar is part of the slab, not a bare icon. */
+.o_main_navbar .o_user_menu .o_user_avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px !important;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px rgba(20, 22, 26, 0.14);
+}
+
+/* --- The dropdown panels they open: cards that match the slabs. --- */
+.o_main_navbar .o-dropdown--menu,
+.o_main_navbar .dropdown-menu {
+    border: 1px solid var(--vuma-line);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 30px 70px -40px rgba(20, 22, 26, 0.55);
+}
+.o_main_navbar .o-dropdown--menu .dropdown-item,
+.o_main_navbar .dropdown-menu .dropdown-item {
+    border-radius: 10px;
+    padding: 8px 10px;
+}
+.o_main_navbar .o-dropdown--menu .dropdown-item:hover,
+.o_main_navbar .o-dropdown--menu .dropdown-item.focus {
+    background: #fffbe8;
+}
+
+/* The company list: each option is its own tablet, and the one you are
+   working in is the charcoal one. */
+.o_switch_company_menu_dropdown {
+    min-width: 320px;
+}
+.o_switch_company_menu_items {
+    gap: 6px !important;
+}
+.o_switch_company_menu_items .o_switch_company_item {
+    min-height: 44px;
+    border: 1px solid var(--vuma-line);
+    border-radius: 12px;
+    background: #ffffff;
+    transition: background 0.12s ease, border-color 0.12s ease,
+        box-shadow 0.12s ease;
+}
+.o_switch_company_menu_items .o_switch_company_item:hover {
+    background: #fffdf3 !important;
+    border-color: #d9dde8;
+    box-shadow: 0 8px 18px -14px rgba(20, 22, 26, 0.5);
+}
+.o_switch_company_menu_items .o_switch_company_item.alert-light {
+    background: #fff4b8 !important;
+    border-color: var(--vuma-accent) !important;
+}
+.o_switch_company_menu_items .o_switch_company_item.bg-primary-subtle {
+    background: var(--vuma-ink) !important;
+    border-color: var(--vuma-ink) !important;
+}
+.o_switch_company_menu_items .o_switch_company_item.bg-primary-subtle .company_label,
+.o_switch_company_menu_items .o_switch_company_item.bg-primary-subtle .btn-link,
+.o_switch_company_menu_items .o_switch_company_item.bg-primary-subtle .log_into {
+    color: #ffffff !important;
+}
+.o_switch_company_menu_items .o_switch_company_item .log_into {
+    text-decoration: none;
+}
+.o_switch_company_menu_dropdown .form-control {
+    border-radius: 10px;
+}
+.o_switch_company_menu_dropdown .btn {
+    border-radius: 10px;
+}
+
+/* --- The left end of the bar joins the same family. --- */
+.vuma-navtoggle {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid #e2e5ec;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(20, 22, 26, 0.06);
+}
+.vuma-navtoggle:hover {
+    background: #fffdf3;
+    border-color: #d9dde8;
+}
+.vuma-navtitle {
+    padding: 7px 12px;
+    border: 1px solid #eef0f5;
+    border-radius: 10px;
+    background: #f7f8fb;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+.vuma-navsearch {
+    height: 38px;
+    border-radius: 12px;
+    background: #ffffff;
 }

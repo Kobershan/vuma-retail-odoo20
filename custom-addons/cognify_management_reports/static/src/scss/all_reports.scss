@@ -1,0 +1,136 @@
+/* Management — all reports on one scrollable page. */
+
+.o_vuma_reports {
+    padding: 20px 24px 48px;
+    overflow-y: auto;
+    height: 100%;
+    background: var(--o-view-background-color, #f5f6fa);
+}
+
+.o_vuma_reports_head {
+    margin-bottom: 22px;
+
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin: 0 0 4px;
+        color: #14161a;
+    }
+}
+
+.o_vuma_reports_sub {
+    margin: 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+    max-width: 70ch;
+}
+
+.o_vuma_reports_section {
+    margin-bottom: 30px;
+}
+
+.o_vuma_reports_section_head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e6e8ee;
+
+    h2 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #14161a;
+    }
+}
+
+.o_vuma_reports_section_sub {
+    color: #6b7280;
+    font-size: 0.85rem;
+}
+
+.o_vuma_reports_grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 16px;
+    align-items: start;
+}
+
+.o_vuma_report_card {
+    background: #ffffff;
+    border: 1px solid #e6e8ee;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 1px 2px rgba(20, 22, 26, 0.05);
+}
+
+.o_vuma_report_card_head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #eef0f5;
+
+    h3 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #14161a;
+    }
+}
+
+.o_vuma_report_note {
+    font-size: 0.78rem;
+    color: #8a90a0;
+}
+
+/* Each embedded view needs a concrete height. The graph renderer sizes its
+   SVG from the container's clientHeight, so the previous
+   `height: auto` measured 0 and no chart was drawn at all. Fix the body
+   height and let the view scroll inside it, exactly as an Odoo action panel
+   does; lists still scroll internally once they outgrow the box. */
+.o_vuma_report_card_body {
+    flex: 1 1 auto;
+    height: 360px;
+    padding: 0;
+
+    .o_action,
+    .o_view_controller,
+    .o_content {
+        height: 100% !important;
+        max-height: none !important;
+        overflow: auto !important;
+    }
+    .o_graph_controller {
+        height: 100%;
+    }
+    /* Each of the 16 cards would otherwise repeat this page's own breadcrumb
+       ("All Reports") and carry its own search box. Neither earns its space on
+       a stacked overview — the measure selector and graph-type toggles in the
+       row below are the controls worth keeping. The wrapper (.o_cp_searchview)
+       has to go too: hiding only the inner .o_searchview left an empty 12px
+       strip with a visible border at the top of every card. */
+    .o_control_panel_breadcrumbs,
+    .o_cp_searchview,
+    .o_searchview {
+        display: none !important;
+    }
+    .o_control_panel {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+}
+
+@media (max-width: 1100px) {
+    .o_vuma_reports_grid {
+        grid-template-columns: 1fr;
+    }
+    .o_vuma_reports {
+        padding: 16px 14px 40px;
+    }
+}

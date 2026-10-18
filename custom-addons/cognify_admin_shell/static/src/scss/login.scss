@@ -27,17 +27,16 @@
     background: radial-gradient(circle, rgba(255, 229, 0, 0.18), transparent 62%);
     pointer-events: none;
 }
+/* The clear (light) wordmark sits straight on the charcoal panel — no
+   white plate behind it, so the letterforms float on the gradient. */
 .o_web_login_vuma .vuma-side .logo-plate {
-    background: #ffffff;
     display: inline-flex;
     align-items: center;
-    padding: 8px 12px;
-    border-radius: 10px;
     max-width: max-content;
 }
 .o_web_login_vuma .vuma-side .logo-plate img {
-    height: 32px;
-    max-width: 200px;
+    height: 36px;
+    max-width: 220px;
     object-fit: contain;
 }
 .o_web_login_vuma .vuma-side .tagline {

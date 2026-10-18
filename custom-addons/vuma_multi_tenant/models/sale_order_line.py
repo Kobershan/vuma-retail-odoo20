@@ -338,8 +338,21 @@ class SaleOrderLine(models.Model):
         ])
 
     def _vuma_cross_company_active(self):
-        if self.env.context.get('vuma_mixed_basket'):
-            return True
+        """Is the product picker allowed to reach the OTHER trading company?
+
+        An explicit flag in the context wins even when it is False. The order
+        line context carries the order's own ``vuma_is_mixed_basket`` (see the
+        ``order_line`` field in the form view), so on a single-company quote it
+        is present and False. Falling through to the group check in that case
+        left the picker showing the other company's goods on every ordinary
+        order: the rep was offered a Siyaya DC product, picked it, and was then
+        refused by Odoo's company constraint with a message about a product
+        they had just chosen. The group is only the fallback when no order has
+        spoken yet (RPCs, imports, on a brand-new quote).
+        """
+        flag = self.env.context.get('vuma_mixed_basket')
+        if flag is not None:
+            return bool(flag)
         return self.env.user.has_group('vuma_multi_tenant.group_vuma_mixed_basket_user')
 
     def _vuma_stock_location(self, company):
