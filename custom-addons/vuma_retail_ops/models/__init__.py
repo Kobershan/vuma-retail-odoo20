@@ -14,3 +14,4 @@ from . import accounting
 from . import field
 from . import notifications
 from . import product_pricing
+from . import product_costing

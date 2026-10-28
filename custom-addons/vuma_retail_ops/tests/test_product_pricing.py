@@ -6,6 +6,7 @@ Covers both halves of the feature: the figures that lean on each other
 the two of them that are written back into Odoo's own *Sales Price* and
 *Cost* fields.
 """
+from odoo import Command
 from odoo.tests import Form, TransactionCase, tagged
 
 
@@ -253,3 +254,159 @@ class VumaProductPricingTest(TransactionCase):
         self.assertAlmostEqual(product.vuma_selling_ex_vat, 100.0, places=2)
         self.assertAlmostEqual(product.list_price, 115.0, places=2)
         self.assertAlmostEqual(product.standard_price, 80.0, places=2)
+
+    # ---------------------------------------------- weighted average costing
+
+    def test_weighted_average_cost_weights_by_volume_not_simple_average(self):
+        # 100 items at R1000 and 1 item at R1:
+        # Total spent = 100,000 + 1 = R100,001 across 101 units -> R990.11
+        # (never the unweighted average of R500.50).
+        product = self._product('Bulk Item', tax=self.tax_excluded)
+        product.write({
+            'vuma_cost_line_ids': [
+                Command.create({'quantity': 100.0, 'unit_price': 1000.0}),
+                Command.create({'quantity': 1.0, 'unit_price': 1.0}),
+            ],
+            'vuma_markup_percent': 20.0,
+        })
+        self.assertTrue(product.vuma_gross_cost_driven)
+        self.assertAlmostEqual(product.vuma_cost_total_qty, 101.0, places=2)
+        self.assertAlmostEqual(
+            product.vuma_cost_total_value, 100001.0, places=2)
+        self.assertAlmostEqual(product.vuma_cost_low, 1.0, places=2)
+        self.assertAlmostEqual(product.vuma_cost_high, 1000.0, places=2)
+        self.assertAlmostEqual(product.vuma_weighted_cost, 990.11, places=2)
+        self.assertAlmostEqual(product.vuma_gross_cost, 990.11, places=2)
+        self.assertAlmostEqual(product.vuma_nett_cost, 990.11, places=2)
+        self.assertAlmostEqual(product.standard_price, 990.11, places=2)
+        # 20% markup on 990.11 -> selling ex VAT = 1188.132
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 1188.13, places=2)
+        self.assertAlmostEqual(product.list_price, 1188.13, places=2)
+
+    def test_adding_another_batch_updates_weighted_cost_and_keeps_pin(self):
+        product = self._product('Cement Bag', tax=self.tax_included)
+        product.write({
+            'vuma_cost_line_ids': [
+                Command.create({'quantity': 50.0, 'unit_price': 80.0}),
+            ],
+            'vuma_transport_cost': 10.0,
+            'vuma_markup_percent': 25.0,
+        })
+        self.assertAlmostEqual(product.vuma_gross_cost, 80.0, places=2)
+        self.assertAlmostEqual(product.vuma_nett_cost, 90.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 112.5, places=2)
+
+        # Bring in another 50 units at R100 -> weighted average is R90.00,
+        # plus R10 transport = R100 nett cost, 25% markup -> R125 ex VAT,
+        # R143.75 incl VAT.
+        product.write({
+            'vuma_cost_line_ids': [
+                Command.create({'quantity': 50.0, 'unit_price': 100.0}),
+            ],
+        })
+        self.assertAlmostEqual(product.vuma_weighted_cost, 90.0, places=2)
+        self.assertAlmostEqual(product.vuma_gross_cost, 90.0, places=2)
+        self.assertAlmostEqual(product.vuma_nett_cost, 100.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 125.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_inc_vat, 143.75, places=2)
+        self.assertAlmostEqual(product.list_price, 143.75, places=2)
+        self.assertAlmostEqual(product.standard_price, 100.0, places=2)
+
+    def test_price_points_in_the_form_drive_gross_cost_and_selling_price(self):
+        product = self._product('Timber Plank', tax=self.tax_included)
+        with Form(product) as form:
+            form.vuma_markup_percent = 50.0
+            with form.vuma_cost_line_ids.new() as line1:
+                line1.quantity = 80.0
+                line1.unit_price = 100.0
+            with form.vuma_cost_line_ids.new() as line2:
+                line2.quantity = 20.0
+                line2.unit_price = 150.0
+            # (80*100 + 20*150) / 100 = 11,000 / 100 = 110.00
+            self.assertAlmostEqual(form.vuma_weighted_cost, 110.0, places=2)
+            self.assertAlmostEqual(form.vuma_gross_cost, 110.0, places=2)
+            self.assertAlmostEqual(form.vuma_nett_cost, 110.0, places=2)
+            self.assertAlmostEqual(form.vuma_selling_ex_vat, 165.0, places=2)
+            self.assertAlmostEqual(
+                form.vuma_selling_inc_vat, 189.75, places=2)
+            form.save()
+        self.assertAlmostEqual(product.vuma_gross_cost, 110.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 110.0, places=2)
+        self.assertAlmostEqual(product.list_price, 189.75, places=2)
+
+    # --------------------------------------------------------- VAT treatment
+
+    def test_vat_treatment_marks_product_and_charges_correct_vat_on_order(self):
+        self.company.account_price_include = 'tax_included'
+        partner = self.env['res.partner'].create({'name': 'VAT Test Buyer'})
+        standard_item = self._product(
+            'Standard Item', vuma_vat_treatment='standard',
+            vuma_gross_cost=100.0, vuma_selling_ex_vat=100.0)
+        zero_item = self._product(
+            'Zero Rated Maize', vuma_vat_treatment='zero_rated',
+            vuma_gross_cost=100.0, vuma_selling_ex_vat=100.0)
+        exempt_item = self._product(
+            'Exempt Financial Fee', vuma_vat_treatment='exempt',
+            vuma_gross_cost=100.0, vuma_selling_ex_vat=100.0)
+
+        self.assertAlmostEqual(standard_item.vuma_vat_percent, 15.0, places=2)
+        self.assertEqual(standard_item.vuma_vat_box, '[1]')
+        self.assertAlmostEqual(zero_item.vuma_vat_percent, 0.0, places=2)
+        self.assertEqual(zero_item.vuma_vat_box, '[2]')
+        self.assertAlmostEqual(exempt_item.vuma_vat_percent, 0.0, places=2)
+        self.assertEqual(exempt_item.vuma_vat_box, '[3]')
+        self.assertNotEqual(zero_item.taxes_id, exempt_item.taxes_id)
+
+        # Raising a sale order charges 15% VAT on the standard item and R0 VAT
+        # on both the zero-rated and VAT-exempt items, while keeping their
+        # distinct VAT201 taxes on the order lines.
+        order = self.env['sale.order'].create({
+            'partner_id': partner.id,
+            'company_id': self.company.id,
+            'order_line': [
+                Command.create({
+                    'product_id': standard_item.product_variant_id.id,
+                    'product_uom_qty': 1.0,
+                }),
+                Command.create({
+                    'product_id': zero_item.product_variant_id.id,
+                    'product_uom_qty': 1.0,
+                }),
+                Command.create({
+                    'product_id': exempt_item.product_variant_id.id,
+                    'product_uom_qty': 1.0,
+                }),
+            ],
+        })
+        std_line, zero_line, exempt_line = order.order_line
+        self.assertEqual(std_line.tax_ids, standard_item.taxes_id)
+        self.assertAlmostEqual(std_line.price_tax, 15.0, places=2)
+        self.assertAlmostEqual(std_line.price_subtotal, 100.0, places=2)
+        self.assertAlmostEqual(std_line.price_total, 115.0, places=2)
+
+        self.assertEqual(zero_line.tax_ids, zero_item.taxes_id)
+        self.assertAlmostEqual(zero_line.price_tax, 0.0, places=2)
+        self.assertAlmostEqual(zero_line.price_total, 100.0, places=2)
+
+        self.assertEqual(exempt_line.tax_ids, exempt_item.taxes_id)
+        self.assertAlmostEqual(exempt_line.price_tax, 0.0, places=2)
+        self.assertAlmostEqual(exempt_line.price_total, 100.0, places=2)
+
+    def test_switching_vat_treatment_in_form_updates_tax_and_prices(self):
+        product = self._product(
+            'Cooking Oil', vuma_vat_treatment='standard',
+            vuma_gross_cost=100.0, vuma_markup_percent=20.0)
+        self.assertAlmostEqual(product.vuma_vat_percent, 15.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 120.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_inc_vat, 138.0, places=2)
+
+        with Form(product) as form:
+            form.vuma_vat_treatment = 'zero_rated'
+            self.assertAlmostEqual(form.vuma_vat_percent, 0.0, places=2)
+            self.assertAlmostEqual(form.vuma_selling_ex_vat, 120.0, places=2)
+            self.assertAlmostEqual(form.vuma_selling_inc_vat, 120.0, places=2)
+            form.save()
+        self.assertEqual(product.vuma_vat_treatment, 'zero_rated')
+        self.assertEqual(product.vuma_vat_box, '[2]')
+        self.assertAlmostEqual(product.vuma_selling_inc_vat, 120.0, places=2)
+        self.assertAlmostEqual(product.list_price, 120.0, places=2)

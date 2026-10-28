@@ -1,6 +1,6 @@
 {
     "name": "Vuma Retail Operations",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "category": "Sales/Retail",
     "summary": "Complete retail operations layer: procurement control, stock counts, "
                "POD and trips, debtor management, creditor claims and rebates, "

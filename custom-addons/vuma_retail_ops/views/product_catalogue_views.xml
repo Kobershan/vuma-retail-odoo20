@@ -261,27 +261,58 @@
                     <field name="currency_id" invisible="1"/>
                     <field name="cost_currency_id" invisible="1"/>
                     <field name="vuma_pricing_driver" invisible="1"/>
+                    <field name="vuma_gross_cost_driven" invisible="1"/>
+                    <field name="vuma_cost_line_count" invisible="1"/>
                     <div class="alert alert-light border" role="note">
                         Price the item the way you would on a spreadsheet:
-                        type a <strong>Gross Cost</strong>, add a
-                        <strong>Transport Cost</strong> if there is one, then
-                        fill in <b>any one</b> of Markup %, Markup Value,
-                        Selling Excl VAT or Selling Incl VAT. The other three
-                        fill themselves in, and stay filled in when the cost
-                        changes. <b>Saving updates the product's Sales Price
-                        and Cost</b>.
+                        enter the <strong>Cost Price Points</strong> below (or
+                        type a single <strong>Gross Cost</strong> directly),
+                        add a <strong>Transport Cost</strong> if there is one,
+                        choose the <strong>VAT Treatment</strong>, then fill in
+                        <b>any one</b> of Markup %, Markup Value, Selling Excl
+                        VAT or Selling Incl VAT. The other three fill
+                        themselves in, and stay filled in when the cost
+                        changes. <b>Saving updates the product's Sales Price,
+                        Cost and Sales Tax</b>.
                     </div>
                     <group>
-                        <group string="Cost" name="vuma_pricing_cost">
-                            <field name="vuma_gross_cost" widget="monetary"
+                        <group string="Cost Price Excl VAT" name="vuma_pricing_cost">
+                            <field name="vuma_gross_cost"
+                                   string="Gross Cost Excl VAT"
+                                   widget="monetary"
+                                   readonly="vuma_gross_cost_driven"
+                                   force_save="1"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                             <field name="vuma_transport_cost" widget="monetary"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                             <field name="vuma_nett_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"
+                                   class="fw-bold"/>
+                            <field name="vuma_weighted_cost"
+                                   string="Weighted Average Cost"
+                                   widget="monetary"
+                                   invisible="not vuma_gross_cost_driven"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_total_qty"
+                                   invisible="not vuma_gross_cost_driven"/>
+                            <field name="vuma_cost_total_value"
+                                   widget="monetary"
+                                   invisible="not vuma_gross_cost_driven"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_low"
+                                   widget="monetary"
+                                   invisible="not vuma_gross_cost_driven"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_high"
+                                   widget="monetary"
+                                   invisible="not vuma_gross_cost_driven"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                         </group>
-                        <group string="Markup &amp; Selling Price"
+                        <group string="VAT, Markup &amp; Selling Price"
                                name="vuma_pricing_selling">
+                            <field name="vuma_vat_treatment"/>
+                            <field name="vuma_vat_box"
+                                   invisible="not vuma_vat_box"/>
                             <field name="vuma_vat_percent"/>
                             <field name="vuma_markup_percent"/>
                             <field name="vuma_markup_value" widget="monetary"
@@ -293,12 +324,42 @@
                                    class="fw-bold"/>
                         </group>
                     </group>
-                    <div class="text-muted small">
+
+                    <separator string="How Cost Price Excl VAT is Worked Out (Weighted by Volume)"/>
+                    <div class="text-muted small mb-2">
+                        List each batch bought at a different price point. The
+                        cost is weighted by volume (<b>Total Spent ÷ Total
+                        Units</b>), not a simple average of the prices — for
+                        example, 100 items at R1,000 and 1 item at R1 gives
+                        R100,001 ÷ 101 = <b>R990.11</b> per unit (not R500.50).
+                        When price points are listed here, their weighted
+                        average feeds <b>Gross Cost Excl VAT</b> above.
+                    </div>
+                    <field name="vuma_cost_line_ids">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="date" optional="show"/>
+                            <field name="supplier_id" optional="show"/>
+                            <field name="quantity" sum="Total Units"/>
+                            <field name="unit_price"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="subtotal"
+                                   sum="Total Spent"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+
+                    <div class="text-muted small mt-2">
                         Markup is on the <b>nett cost</b>: 30% means the item
-                        sells for the nett cost plus 30% of it. VAT comes from
-                        this item's sales taxes, so the inclusive price always
-                        matches the invoice. Selling Incl VAT becomes the
-                        product's <b>Sales Price</b> and Nett Cost becomes its
+                        sells for the nett cost plus 30% of it. Marking the
+                        <b>VAT Treatment</b> (Standard Rated, Zero Rated, Zero
+                        Rated Export or VAT Exempt) sets the product's sales
+                        tax so orders and invoices automatically charge the
+                        right VAT. Selling Incl VAT becomes the product's
+                        <b>Sales Price</b> and Nett Cost becomes its
                         <b>Cost</b>.
                     </div>
                 </page>
@@ -567,6 +628,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='categ_id']" position="after">
                 <field name="vuma_department_id" optional="hide"/>
+                <field name="vuma_vat_treatment" optional="show"/>
             </xpath>
         </field>
     </record>
@@ -578,6 +640,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='uom_id']" position="after">
                 <field name="vuma_department_id" optional="hide"/>
+                <field name="vuma_vat_treatment" optional="hide"/>
             </xpath>
         </field>
     </record>
@@ -589,10 +652,13 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='product_tag_ids']" position="after">
                 <field name="vuma_department_id" string="Department"/>
+                <field name="vuma_vat_treatment" string="VAT Treatment"/>
             </xpath>
             <xpath expr="//filter[@name='group_by_categ_id']" position="after">
                 <filter string="Department" name="group_vuma_department"
                         context="{'group_by': 'vuma_department_id'}"/>
+                <filter string="VAT Treatment" name="group_vuma_vat_treatment"
+                        context="{'group_by': 'vuma_vat_treatment'}"/>
             </xpath>
         </field>
     </record>

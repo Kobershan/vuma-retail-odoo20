@@ -128,10 +128,26 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         return (self.vuma_gross_cost or 0.0) + (self.vuma_transport_cost or 0.0)
 
+    def _vuma_company_taxes(self):
+        """Sales taxes for this item's company (or the active company).
+
+        A shared product created while several companies are active in
+        ``env.companies`` can carry a default sale tax from each company; only
+        the current company's tax applies to one invoice or price calculation.
+        """
+        self.ensure_one()
+        taxes = self.taxes_id
+        if not taxes:
+            return taxes
+        company = self.company_id or self.env.company
+        scoped = taxes.filtered(lambda tax: tax.company_id == company)
+        return scoped or taxes[:1]
+
     def _vuma_vat_percent_value(self):
         """The percentage rate of this item's sales taxes, read live."""
         self.ensure_one()
-        taxes = self.taxes_id.filtered(lambda tax: tax.amount_type == 'percent')
+        taxes = self._vuma_company_taxes().filtered(
+            lambda tax: tax.amount_type == 'percent')
         return sum(taxes.mapped('amount')) if taxes else 0.0
 
     def _vuma_round_pricing_field(self, field_name, value):
@@ -179,7 +195,7 @@ class ProductTemplate(models.Model):
     def _vuma_price_includes_vat(self):
         """Does Odoo's Sales Price hold a VAT-inclusive figure?"""
         self.ensure_one()
-        taxes = self.taxes_id
+        taxes = self._vuma_company_taxes()
         if taxes:
             return all(tax.price_include for tax in taxes)
         company = self.company_id or self.env.company
