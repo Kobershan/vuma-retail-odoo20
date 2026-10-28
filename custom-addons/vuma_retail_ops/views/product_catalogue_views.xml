@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Departments
+         ================================================================ -->
+    <record id="view_vuma_department_list" model="ir.ui.view">
+        <field name="name">vuma.department.list</field>
+        <field name="model">vuma.department</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       options="{'no_create': True}"/>
+                <field name="product_count" readonly="1"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vuma_department_form" model="ir.ui.view">
+        <field name="name">vuma.department.form</field>
+        <field name="model">vuma.department</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Paint"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   options="{'no_create': True}"
+                                   placeholder="Shared by all companies"/>
+                            <field name="product_count" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="note" nolabel="1" colspan="2"
+                               placeholder="What belongs in this department?"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vuma_department_search" model="ir.ui.view">
+        <field name="name">vuma.department.search</field>
+        <field name="model">vuma.department</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Company" name="group_company"
+                            context="{'group_by': 'company_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vuma_department" model="ir.actions.act_window">
+        <field name="name">Departments</field>
+        <field name="res_model">vuma.department</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vuma_department_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create the first stock department
+            </p>
+            <p>
+                Departments group products for stock reporting, counts and
+                filtering, for example Paint, Hardware or Groceries.
+            </p>
+        </field>
+    </record>
+
+    <record id="menu_vuma_department" model="ir.ui.menu">
+        <field name="name">Departments</field>
+        <field name="parent_id" ref="vuma_retail_ops.menu_vuma_warehouse"/>
+        <field name="action" ref="action_vuma_department"/>
+        <field name="sequence">45</field>
+    </record>
+
+    <record id="menu_vuma_department_config" model="ir.ui.menu">
+        <field name="name">Departments</field>
+        <field name="parent_id" ref="stock.menu_stock_config_settings"/>
+        <field name="action" ref="action_vuma_department"/>
+        <field name="sequence">115</field>
+    </record>
+
+    <!-- ================================================================
+         Product labels
+         ================================================================ -->
+    <record id="view_vuma_product_label_list" model="ir.ui.view">
+        <field name="name">vuma.product.label.list</field>
+        <field name="model">vuma.product.label</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="template_id"/>
+                <field name="name"/>
+                <field name="label_type"/>
+                <field name="pack_line_id"/>
+                <field name="barcode"/>
+                <field name="price" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="label_size" optional="hide"/>
+                <field name="copies" optional="hide"/>
+                <field name="last_printed" optional="hide"/>
+                <field name="print_count" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vuma_product_label_form" model="ir.ui.view">
+        <field name="name">vuma.product.label.form</field>
+        <field name="model">vuma.product.label</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_print_label" string="Print Label"
+                            type="object" class="btn-primary"
+                            icon="fa-print"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="template_id"
+                                   options="{'no_create': True}"/>
+                            <field name="pack_line_id"
+                                   domain="[('template_id', '=', template_id)]"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="product_id"
+                                   domain="[('product_tmpl_id', '=', template_id)]"
+                                   options="{'no_create': True}"/>
+                            <field name="name"/>
+                            <field name="label_type"/>
+                        </group>
+                        <group>
+                            <field name="barcode"/>
+                            <field name="price" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="label_size"/>
+                            <field name="copies"/>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Extra Details">
+                        <field name="notes" nolabel="1" colspan="2"
+                               placeholder="Promotion end date, storage note, ..."/>
+                    </group>
+                    <group string="Printing" invisible="not print_count">
+                        <field name="last_printed"/>
+                        <field name="print_count"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vuma_product_label_search" model="ir.ui.view">
+        <field name="name">vuma.product.label.search</field>
+        <field name="model">vuma.product.label</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="template_id"/>
+                <field name="barcode"/>
+                <filter string="Archived" name="inactive"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Product" name="group_template"
+                            context="{'group_by': 'template_id'}"/>
+                    <filter string="Label Type" name="group_type"
+                            context="{'group_by': 'label_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vuma_product_label" model="ir.actions.act_window">
+        <field name="name">Product Labels</field>
+        <field name="res_model">vuma.product.label</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_vuma_product_label_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a product label
+            </p>
+            <p>
+                Labels carry the shelf price, pack name and barcode that the
+                shop prints. Open a product to add labels to every pack size
+                at once.
+            </p>
+        </field>
+    </record>
+
+    <record id="menu_vuma_product_label" model="ir.ui.menu">
+        <field name="name">Product Labels</field>
+        <field name="parent_id" ref="vuma_retail_ops.menu_vuma_warehouse"/>
+        <field name="action" ref="action_vuma_product_label"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- ================================================================
+         Product form: General, Details, Suppliers, Recipes, Labels,
+         Components
+         ================================================================ -->
+    <record id="product_template_form_view_vuma_catalogue" model="ir.ui.view">
+        <field name="name">product.template.form.vuma.catalogue</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+
+            <!-- The first tab is simply called General. -->
+            <xpath expr="//page[@name='general_information']" position="attributes">
+                <attribute name="string">General</attribute>
+            </xpath>
+
+            <!-- Department belongs with the everyday product fields. -->
+            <xpath expr="//group[@name='group_standard_price']" position="inside">
+                <field name="vuma_department_id"
+                       options="{'no_quick_create': True}"/>
+            </xpath>
+
+            <!-- Pack sizes at a glance on General. -->
+            <xpath expr="//group[@name='internal_notes']" position="before">
+                <group name="vuma_pack_overview" string="Pack Sizes">
+                    <field name="vuma_pack_count" string="Number of Pack Sizes"
+                           readonly="1"/>
+                    <field name="vuma_pack_summary" string="Configured Packs"
+                           colspan="2" readonly="1"/>
+                </group>
+            </xpath>
+
+            <xpath expr="//page[@name='general_information']" position="after">
+
+                <!-- ============ Pricing ============ -->
+                <page string="Pricing" name="vuma_pricing">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="cost_currency_id" invisible="1"/>
+                    <field name="vuma_pricing_driver" invisible="1"/>
+                    <div class="alert alert-light border" role="note">
+                        Price the item the way you would on a spreadsheet:
+                        type a <strong>Gross Cost</strong>, add a
+                        <strong>Transport Cost</strong> if there is one, then
+                        fill in <b>any one</b> of Markup %, Markup Value,
+                        Selling Excl VAT or Selling Incl VAT. The other three
+                        fill themselves in, and stay filled in when the cost
+                        changes. <b>Saving updates the product's Sales Price
+                        and Cost</b>.
+                    </div>
+                    <group>
+                        <group string="Cost" name="vuma_pricing_cost">
+                            <field name="vuma_gross_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_transport_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_nett_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                        </group>
+                        <group string="Markup &amp; Selling Price"
+                               name="vuma_pricing_selling">
+                            <field name="vuma_vat_percent"/>
+                            <field name="vuma_markup_percent"/>
+                            <field name="vuma_markup_value" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_selling_ex_vat" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_selling_inc_vat" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"
+                                   class="fw-bold"/>
+                        </group>
+                    </group>
+                    <div class="text-muted small">
+                        Markup is on the <b>nett cost</b>: 30% means the item
+                        sells for the nett cost plus 30% of it. VAT comes from
+                        this item's sales taxes, so the inclusive price always
+                        matches the invoice. Selling Incl VAT becomes the
+                        product's <b>Sales Price</b> and Nett Cost becomes its
+                        <b>Cost</b>.
+                    </div>
+                </page>
+
+                <!-- ============ Details ============ -->
+                <page string="Details" name="vuma_details">
+                    <group>
+                        <group string="Identification" name="vuma_details_identification">
+                            <field name="default_code"/>
+                            <field name="barcode"/>
+                            <field name="product_tag_ids" widget="many2many_tags"
+                                   options="{'on_tag_click': 'open_form'}"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   options="{'no_create': True}"
+                                   placeholder="Visible to all"/>
+                        </group>
+                        <group string="Units &amp; Measures" name="vuma_details_measures">
+                            <field name="uom_id" widget="many2one_uom"
+                                   options="{'no_quick_create': True}"/>
+                            <label for="weight"/>
+                            <div class="o_row" name="vuma_weight">
+                                <field name="weight" class="oe_inline"
+                                       style="max-width: 7rem;"/>
+                                <field name="weight_uom_name"/>
+                            </div>
+                            <label for="volume"/>
+                            <div class="o_row" name="vuma_volume">
+                                <field name="volume" class="oe_inline"
+                                       style="max-width: 7rem;"/>
+                                <field name="volume_uom_name"/>
+                            </div>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Stock" name="vuma_details_stock">
+                            <field name="is_storable"/>
+                            <field name="store_by" groups="stock.group_production_lot"/>
+                            <label for="qty_available"/>
+                            <div class="o_row">
+                                <field name="qty_available" readonly="1"/>
+                                <field name="uom_name" class="ms-2"
+                                       groups="uom.group_uom"/>
+                            </div>
+                            <label for="virtual_available"/>
+                            <div class="o_row">
+                                <field name="virtual_available" readonly="1"/>
+                                <field name="uom_name" class="ms-2"
+                                       groups="uom.group_uom"/>
+                            </div>
+                            <field name="free_qty" readonly="1"/>
+                        </group>
+                        <group string="Sales &amp; Purchase Notes"
+                               name="vuma_details_notes">
+                            <field name="description_sale" nolabel="1"
+                                   colspan="2"
+                                   placeholder="This note is added to sales orders and invoices."/>
+                            <field name="description_purchase" nolabel="1"
+                                   colspan="2"
+                                   placeholder="This note is added to purchase orders."/>
+                        </group>
+                    </group>
+                    <group string="Internal Notes" name="vuma_details_internal">
+                        <field name="description" nolabel="1" colspan="2"
+                               placeholder="This note is only for internal purposes."/>
+                    </group>
+                </page>
+
+                <!-- ============ Suppliers & Codes ============ -->
+                <page string="Suppliers &amp; Codes" name="vuma_suppliers"
+                      groups="purchase.group_purchase_user">
+                    <div class="d-flex gap-2 mb-2">
+                        <button name="action_vuma_request_supplier_quotes"
+                                type="object"
+                                string="Request Quotations from Suppliers"
+                                class="btn-primary"
+                                icon="fa-paper-plane"/>
+                    </div>
+                    <div class="text-muted mb-3">
+                        Each supplier can have its own stock code and
+                        description for this item. Select the suppliers above
+                        to create one RFQ per supplier, carrying the correct
+                        code. Odoo still uses the sequence and minimum
+                        quantity to choose the supplier price.
+                    </div>
+                    <field name="seller_ids"
+                           context="{'default_product_tmpl_id': id, 'default_price': standard_price, 'product_template_invisible_variant': True, 'list_view_ref': 'vuma_retail_ops.view_product_supplierinfo_tree_vuma_codes'}"
+                           nolabel="1"
+                           invisible="product_variant_count &gt; 1"
+                           readonly="product_variant_count &gt; 1"/>
+                    <field name="variant_seller_ids"
+                           context="{'model': 'product.template', 'active_id': id, 'list_view_ref': 'vuma_retail_ops.view_product_supplierinfo_tree_vuma_codes'}"
+                           nolabel="1"
+                           invisible="product_variant_count &lt;= 1"
+                           readonly="product_variant_count &lt;= 1"/>
+                </page>
+
+                <!-- ============ Recipes ============ -->
+                <page string="Recipes" name="vuma_recipes"
+                      invisible="type == 'service'"
+                      groups="stock.group_stock_user">
+                    <group>
+                        <group string="Recipe Summary" name="vuma_recipe_summary">
+                            <field name="bom_count" invisible="1"/>
+                            <field name="vuma_recipe_count"
+                                   string="Recipes Configured" readonly="1"/>
+                        </group>
+                        <group name="vuma_recipe_buttons">
+                            <button name="action_new_recipe"
+                                    string="New Recipe" type="object"
+                                    class="btn-primary" colspan="2"/>
+                            <button name="action_open_recipes"
+                                    string="Open All Recipes" type="object"
+                                    class="btn-secondary" colspan="2"/>
+                        </group>
+                    </group>
+                    <field name="bom_ids" readonly="1">
+                        <list create="false" delete="false" edit="false">
+                            <field name="code"/>
+                            <field name="type"/>
+                            <field name="product_qty"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="component_count" string="Components"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"
+                                   optional="hide"/>
+                        </list>
+                    </field>
+                    <group string="Components Required"
+                           name="vuma_recipe_components">
+                        <field name="vuma_recipe_line_ids" nolabel="1"
+                               colspan="2" readonly="1">
+                            <list create="false" delete="false" edit="false"
+                                  action="action_open_parent_bom" type="object">
+                                <field name="vuma_component_label"
+                                       string="Component Name"/>
+                                <field name="product_id"/>
+                                <field name="product_qty"/>
+                                <field name="uom_id" groups="uom.group_uom"/>
+                                <field name="bom_id" string="Recipe"/>
+                            </list>
+                        </field>
+                    </group>
+                    <div class="text-muted mt-2">
+                        A recipe (bill of materials) says what an item is made
+                        of. Add one recipe per pack size when packs are made
+                        differently. Component names can be changed on the
+                        recipe line without renaming the catalogue product.
+                    </div>
+                </page>
+
+                <!-- ============ Labels ============ -->
+                <page string="Labels" name="vuma_labels">
+                    <field name="vuma_label_count" invisible="1"/>
+                    <group>
+                        <group name="vuma_label_buttons">
+                            <button name="action_add_default_labels"
+                                    string="Add a Label for Each Pack"
+                                    type="object" class="btn-secondary"/>
+                            <button name="action_print_labels"
+                                    string="Print Labels" type="object"
+                                    class="btn-primary"/>
+                        </group>
+                    </group>
+                    <field name="vuma_label_ids"
+                           context="{'default_template_id': id}">
+                        <list editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="label_type"/>
+                            <field name="pack_line_id"
+                                   domain="[('template_id', '=', parent.id)]"
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <field name="product_id"
+                                   domain="[('product_tmpl_id', '=', parent.id)]"
+                                   options="{'no_create': True}" optional="hide"/>
+                            <field name="barcode"/>
+                            <field name="price" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="label_size"/>
+                            <field name="copies"/>
+                            <field name="notes" optional="show"/>
+                            <field name="last_printed" readonly="1"
+                                   optional="hide"/>
+                            <field name="print_count" readonly="1"
+                                   optional="hide"/>
+                        </list>
+                    </field>
+                    <div class="text-muted mt-2">
+                        Labels carry the shelf price, pack name and barcode
+                        that are printed for the shop. Leave the price empty
+                        to use the pack price, or the item's normal sales
+                        price. <b>Add a Label for Each Pack</b> creates one
+                        label per configured pack size and one for the base
+                        item.
+                    </div>
+                </page>
+
+                <!-- ============ Components ============ -->
+                <page string="Components" name="vuma_components"
+                      invisible="type == 'service'"
+                      groups="stock.group_stock_user">
+                    <group>
+                        <group string="Usage" name="vuma_component_usage">
+                            <field name="vuma_used_in_product_count"
+                                   string="Used in Items" readonly="1"/>
+                            <field name="used_in_bom_count"
+                                   string="Used in Recipes" readonly="1"/>
+                        </group>
+                        <group name="vuma_component_buttons">
+                            <button name="action_used_in_bom"
+                                    string="Open Used-In List" type="object"
+                                    class="btn-secondary" colspan="2"
+                                    icon="fa-list"/>
+                        </group>
+                    </group>
+                    <field name="vuma_component_ids" nolabel="1" readonly="1">
+                        <list create="false" delete="false" edit="false"
+                              action="action_open_parent_bom" type="object">
+                            <field name="parent_product_tmpl_id"
+                                   string="Parent Item"/>
+                            <field name="vuma_component_label"
+                                   string="Component Name"/>
+                            <field name="product_qty"
+                                   string="Quantity Required"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="bom_id" string="Recipe"/>
+                            <field name="bom_code" optional="hide"/>
+                        </list>
+                    </field>
+                    <div class="text-muted mt-2">
+                        Each row is an item this stock part is used in, and how
+                        much of it that item requires. Rename the component on
+                        the recipe line to use a different label in a specific
+                        recipe without changing the stock part's own name.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_product_form_view_vuma_catalogue" model="ir.ui.view">
+        <field name="name">product.product.form.vuma.catalogue</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Suppliers and labels are managed on the product template; the
+                 variant form's standard Purchase tab carries variant vendors. -->
+            <xpath expr="//page[@name='vuma_suppliers']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//page[@name='vuma_labels']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Product lists and searches
+         ================================================================ -->
+    <record id="product_template_tree_view_vuma_department" model="ir.ui.view">
+        <field name="name">product.template.list.vuma.department</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="vuma_department_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_product_tree_view_vuma_department" model="ir.ui.view">
+        <field name="name">product.product.list.vuma.department</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='uom_id']" position="after">
+                <field name="vuma_department_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_template_search_view_vuma_catalogue" model="ir.ui.view">
+        <field name="name">product.template.search.vuma.catalogue</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_tag_ids']" position="after">
+                <field name="vuma_department_id" string="Department"/>
+            </xpath>
+            <xpath expr="//filter[@name='group_by_categ_id']" position="after">
+                <filter string="Department" name="group_vuma_department"
+                        context="{'group_by': 'vuma_department_id'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Recipe line: optional component name used in recipes/components
+         ================================================================ -->
+    <record id="mrp_bom_form_view_vuma_component_label" model="ir.ui.view">
+        <field name="name">mrp.bom.form.vuma.component.label</field>
+        <field name="model">mrp.bom</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='bom_line_ids']/list/field[@name='product_id']"
+                   position="after">
+                <field name="vuma_component_label" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="mrp_bom_line_view_list_vuma_component_label" model="ir.ui.view">
+        <field name="name">mrp.bom.line.list.vuma.component.label</field>
+        <field name="model">mrp.bom.line</field>
+        <field name="inherit_id" ref="mrp.mrp_bom_line_view_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="vuma_component_label" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

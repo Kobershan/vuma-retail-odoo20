@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="paperformat_vuma_product_label" model="report.paperformat">
+        <field name="name">A4 Product Label Sheet</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">8</field>
+        <field name="margin_bottom">8</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <record id="action_report_vuma_product_label" model="ir.actions.report">
+        <field name="name">Product Labels</field>
+        <field name="model">vuma.product.label</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_vuma_product_label</field>
+        <field name="paperformat_id" ref="paperformat_vuma_product_label"/>
+        <field name="print_report_name">'Product Labels'</field>
+        <field name="binding_model_id" ref="model_vuma_product_label"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

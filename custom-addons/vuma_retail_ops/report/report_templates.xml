@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_debtor_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc._get_statement_lines()"/>
+                <t t-set="company" t-value="doc.company_ids[:1]"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Statement of Account</h2>
+                        <div class="row mt-4 mb-4">
+                            <div class="col-6">
+                                <strong t-field="doc.partner_id.name"/><br/>
+                                <span t-field="doc.partner_id.street"/><br/>
+                                <span t-field="doc.partner_id.city"/>
+                                <span t-field="doc.partner_id.zip"/>
+                            </div>
+                            <div class="col-6 text-end">
+                                <div><strong>Statement date:</strong> <span t-field="doc.date_to"/></div>
+                                <div><strong>Period:</strong> <span t-field="doc.date_from"/> to <span t-field="doc.date_to"/></div>
+                                <div><strong>Companies:</strong> <span t-out="data['company_names']"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Document</th>
+                                    <th>Description</th>
+                                    <th>Due</th>
+                                    <th class="text-end">Debit</th>
+                                    <th class="text-end">Credit</th>
+                                    <th class="text-end">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6"><strong>Opening balance</strong></td>
+                                    <td class="text-end"><span t-out="'%.2f' % data['opening']"/></td>
+                                </tr>
+                                <tr t-foreach="data['lines']" t-as="line">
+                                    <td><span t-out="line['date']"/></td>
+                                    <td><span t-out="line['reference']"/></td>
+                                    <td><span t-out="line['description']"/></td>
+                                    <td><span t-out="line['due_date'] or ''"/></td>
+                                    <td class="text-end"><span t-out="'%.2f' % line['debit']"/></td>
+                                    <td class="text-end"><span t-out="'%.2f' % line['credit']"/></td>
+                                    <td class="text-end"><span t-out="'%.2f' % line['balance']"/></td>
+                                </tr>
+                                <tr class="fw-bold">
+                                    <td colspan="6"><strong>Closing balance</strong></td>
+                                    <td class="text-end"><span t-out="'%.2f' % data['closing']"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="mt-3">
+                            Please pay the closing balance by the due dates shown. Queries can be
+                            directed to the debtors department.
+                        </p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_dunning_letter">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong t-field="doc.partner_id.name"/><br/>
+                                <span t-field="doc.partner_id.street"/><br/>
+                                <span t-field="doc.partner_id.city"/>
+                                <span t-field="doc.partner_id.zip"/>
+                            </div>
+                            <div class="col-6 text-end">
+                                <div><strong>Date:</strong> <span t-field="doc.date"/></div>
+                                <div><strong>Reference:</strong> <span t-field="doc.name"/></div>
+                            </div>
+                        </div>
+                        <h3 t-out="dict(doc._fields['letter_type'].selection)[doc.letter_type]"/>
+                        <div t-field="doc.body"/>
+                        <table class="table table-sm mt-4" t-if="doc._get_overdue_lines()">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Invoice Date</th>
+                                    <th>Due Date</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc._get_overdue_lines()" t-as="line">
+                                    <td><span t-out="line['reference']"/></td>
+                                    <td><span t-out="line['date']"/></td>
+                                    <td><span t-out="line['due_date']"/></td>
+                                    <td class="text-end"><span t-out="'%.2f' % line['amount']"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_tax_pack">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>VAT Pack</h2>
+                        <p>
+                            <strong>Period:</strong>
+                            <span t-field="doc.date_from"/> to <span t-field="doc.date_to"/>
+                        </p>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Direction</th>
+                                    <th>Tax</th>
+                                    <th class="text-end">Base</th>
+                                    <th class="text-end">VAT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td><span t-out="line.direction"/></td>
+                                    <td><span t-out="line.name"/></td>
+                                    <td class="text-end"><span t-field="line.base_amount"/></td>
+                                    <td class="text-end"><span t-field="line.tax_amount"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <group>
+                            <group>
+                                <div><strong>Output VAT:</strong> <span t-field="doc.output_tax"/></div>
+                                <div><strong>Input VAT:</strong> <span t-field="doc.input_tax"/></div>
+                                <div><strong>Net VAT due:</strong> <span t-field="doc.net_due"/></div>
+                            </group>
+                        </group>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_pod">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Proof of Delivery</h2>
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <div><strong>Delivery:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Customer:</strong> <span t-field="doc.partner_id.name"/></div>
+                                <div><strong>Address:</strong> <span t-field="doc.partner_id.contact_address"/></div>
+                                <div><strong>Scheduled:</strong> <span t-field="doc.scheduled_date"/></div>
+                                <div><strong>Delivered:</strong> <span t-field="doc.date_done"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Received by:</strong> <span t-field="doc.vuma_pod_name"/></div>
+                                <div><strong>Result:</strong> <span t-field="doc.vuma_delivery_result"/></div>
+                                <div><strong>Captured:</strong> <span t-field="doc.vuma_pod_signed_on"/></div>
+                                <div><strong>Trip:</strong> <span t-field="doc.vuma_trip_id.name"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Delivered</th>
+                                    <th>Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.move_ids" t-as="move">
+                                    <td><span t-field="move.product_id.display_name"/></td>
+                                    <td class="text-end"><span t-field="move.quantity"/></td>
+                                    <td><span t-field="move.uom_id.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <div t-if="doc.vuma_pod_signature">
+                                    <strong>Customer signature</strong><br/>
+                                    <img t-att-src="image_data_uri(doc.vuma_pod_signature)"
+                                         style="max-height: 120px; max-width: 300px;"/>
+                                </div>
+                                <div t-if="doc.vuma_pod_waiver_reason" class="mt-3">
+                                    <strong>POD waiver:</strong>
+                                    <span t-field="doc.vuma_pod_waiver_reason"/>
+                                </div>
+                            </div>
+                            <div class="col-6" t-if="doc.vuma_pod_photo">
+                                <strong>Delivery photo</strong><br/>
+                                <img t-att-src="image_data_uri(doc.vuma_pod_photo)"
+                                     style="max-height: 180px; max-width: 300px;"/>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_trip_summary">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Trip Summary</h2>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div><strong>Trip:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Date:</strong> <span t-field="doc.date"/></div>
+                                <div><strong>Driver:</strong> <span t-field="doc.driver_id.name"/></div>
+                                <div><strong>Vehicle:</strong> <span t-field="doc.vehicle"/></div>
+                                <div><strong>Town:</strong> <span t-field="doc.town"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Floats issued:</strong> <span t-field="doc.float_amount"/></div>
+                                <div><strong>Expenses:</strong> <span t-field="doc.total_expenses"/></div>
+                                <div><strong>Cash returned:</strong> <span t-field="doc.cash_returned"/></div>
+                                <div><strong>Variance:</strong> <span t-field="doc.variance"/></div>
+                            </div>
+                        </div>
+                        <h4>Deliveries</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Delivery</th>
+                                    <th>Customer</th>
+                                    <th>POD</th>
+                                    <th>Result</th>
+                                    <th>State</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.picking_ids" t-as="picking">
+                                    <td><span t-field="picking.name"/></td>
+                                    <td><span t-field="picking.partner_id.name"/></td>
+                                    <td><span t-field="picking.vuma_pod_state"/></td>
+                                    <td><span t-field="picking.vuma_delivery_result"/></td>
+                                    <td><span t-field="picking.state"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <h4>Expenses</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.expense_ids" t-as="expense">
+                                    <td><span t-field="expense.date"/></td>
+                                    <td><span t-field="expense.category"/></td>
+                                    <td><span t-field="expense.description"/></td>
+                                    <td class="text-end"><span t-field="expense.amount"/></td>
+                                    <td><span t-field="expense.state"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_supplier_claim">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Supplier Claim</h2>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div><strong>Claim:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Supplier:</strong> <span t-field="doc.supplier_id.name"/></div>
+                                <div><strong>Date:</strong> <span t-field="doc.date"/></div>
+                                <div><strong>Type:</strong> <span t-field="doc.claim_type"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Purchase Order:</strong> <span t-field="doc.purchase_id.name"/></div>
+                                <div><strong>Receipt:</strong> <span t-field="doc.picking_id.name"/></div>
+                                <div><strong>Claimed:</strong> <span t-field="doc.claimed_amount"/></div>
+                                <div><strong>Approved:</strong> <span t-field="doc.approved_amount"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Claimed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td><span t-field="line.product_id.display_name"/></td>
+                                    <td class="text-end"><span t-field="line.quantity"/></td>
+                                    <td class="text-end"><span t-field="line.unit_price"/></td>
+                                    <td class="text-end"><span t-field="line.claimed_amount"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p t-field="doc.description"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+
+    <template id="report_stock_count_sheet">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Stock Count Sheet</h2>
+                        <div class="row">
+                            <div class="col-6">
+                                <div><strong>Reference:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Date:</strong> <span t-field="doc.date"/></div>
+                                <div><strong>Warehouse:</strong> <span t-field="doc.warehouse_id.name"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Location:</strong> <span t-field="doc.location_id.display_name"/></div>
+                                <div><strong>Count type:</strong> <span t-field="doc.count_type"/></div>
+                                <div><strong>Counter:</strong> <span t-field="doc.user_id.name"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Barcode</th>
+                                    <th class="text-end">System Qty</th>
+                                    <th class="text-end">Counted</th>
+                                    <th class="text-end">Recount</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td>
+                                        <img t-if="line.product_id.image_128" t-att-src="image_data_uri(line.product_id.image_128)" style="height:32px;width:32px;object-fit:contain;" class="me-2"/>
+                                        <span t-field="line.product_id.display_name"/>
+                                    </td>
+                                    <td>
+                                        <img t-if="line.product_id.barcode" t-att-src="'/report/barcode/?barcode_type=Code128&amp;value=%s&amp;width=220&amp;height=40' % line.product_id.barcode" style="height:32px;"/>
+                                        <span t-field="line.product_id.barcode"/>
+                                    </td>
+                                    <td class="text-end"><span t-field="line.system_qty"/></td>
+                                    <td class="text-end"><span t-field="line.counted_qty"/></td>
+                                    <td class="text-end"><span t-field="line.recount_qty"/></td>
+                                    <td><span t-field="line.reason"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Variance value:</strong> <span t-field="doc.difference_value"/></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_cash_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Cash Receipt</h2>
+                        <div class="row">
+                            <div class="col-6">
+                                <div><strong>Receipt:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Date:</strong> <span t-field="doc.date"/></div>
+                                <div><strong>Customer:</strong> <span t-field="doc.partner_id.name"/></div>
+                                <div><strong>Reference:</strong> <span t-field="doc.reference"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Received by:</strong> <span t-field="doc.employee_id.name"/></div>
+                                <div><strong>Journal:</strong> <span t-field="doc.journal_id.name"/></div>
+                                <div><strong>Amount:</strong> <span t-field="doc.amount" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></div>
+                                <div><strong>Status:</strong> <span t-field="doc.state"/></div>
+                            </div>
+                        </div>
+                        <p class="mt-3"><span t-field="doc.notes"/></p>
+                        <p class="text-muted">Signature: ______________________________</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_delivery_return">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Delivery Return Note</h2>
+                        <div class="row">
+                            <div class="col-6">
+                                <div><strong>Return:</strong> <span t-field="doc.name"/></div>
+                                <div><strong>Customer:</strong> <span t-field="doc.partner_id.name"/></div>
+                                <div><strong>Original delivery:</strong> <span t-field="doc.picking_id.name"/></div>
+                                <div><strong>Invoice:</strong> <span t-field="doc.invoice_id.name"/></div>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Reason:</strong> <span t-field="doc.reason"/></div>
+                                <div><strong>Action:</strong> <span t-field="doc.action"/></div>
+                                <div><strong>Status:</strong> <span t-field="doc.state"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm mt-3">
+                            <thead><tr><th>Product</th><th class="text-end">Quantity</th><th class="text-end">Unit Price</th></tr></thead>
+                            <tbody><tr>
+                                <td><span t-field="doc.product_id.display_name"/></td>
+                                <td class="text-end"><span t-field="doc.quantity"/></td>
+                                <td class="text-end"><span t-field="doc.price_unit"/></td>
+                            </tr></tbody>
+                        </table>
+                        <p><span t-field="doc.notes"/></p>
+                        <div t-if="doc.photo" class="mt-3">
+                            <strong>Photo:</strong><br/>
+                            <img t-att-src="image_data_uri(doc.photo)" style="max-height:240px;"/>
+                        </div>
+                        <p class="text-muted mt-3">Customer signature: ______________________________</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_payment_remittance">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Payment Remittance Advice</h2>
+                        <div><strong>Payment run:</strong> <span t-field="doc.name"/></div>
+                        <div><strong>Payment date:</strong> <span t-field="doc.date"/></div>
+                        <div><strong>Journal:</strong> <span t-field="doc.journal_id.name"/></div>
+                        <table class="table table-sm mt-3">
+                            <thead><tr><th>Supplier</th><th>Bill</th><th>Due</th><th class="text-end">Amount</th><th>Payment</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids.filtered('is_selected')" t-as="line">
+                                    <td><span t-field="line.partner_id.name"/></td>
+                                    <td><span t-field="line.move_id.name"/></td>
+                                    <td><span t-field="line.invoice_date_due"/></td>
+                                    <td class="text-end"><span t-field="line.amount"/></td>
+                                    <td><span t-field="line.payment_id.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Total:</strong> <span t-field="doc.total_amount"/></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_tax_ledger">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="company" t-value="doc.company_id"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>VAT Ledger Reconciliation</h2>
+                        <p><strong>Period:</strong> <span t-field="doc.date_from"/> to <span t-field="doc.date_to"/>
+                           · <strong>Documents:</strong> <span t-field="doc.direction"/></p>
+                        <table class="table table-sm" style="width:60%;">
+                            <tr><th>Output base</th><td class="text-end"><span t-field="doc.output_base"/></td></tr>
+                            <tr><th>Output VAT</th><td class="text-end"><span t-field="doc.output_tax"/></td></tr>
+                            <tr><th>Input base</th><td class="text-end"><span t-field="doc.input_base"/></td></tr>
+                            <tr><th>Input VAT</th><td class="text-end"><span t-field="doc.input_tax"/></td></tr>
+                            <tr><th>Ledger net due</th><td class="text-end"><span t-field="doc.net_due"/></td></tr>
+                            <tr t-if="doc.period_id"><th>VAT period net</th><td class="text-end"><span t-field="doc.period_net"/></td></tr>
+                            <tr t-if="doc.period_id"><th>Difference</th><td class="text-end"><span t-field="doc.difference"/></td></tr>
+                        </table>
+                        <table class="table table-sm mt-3">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Document</th>
+                                    <th>Partner</th>
+                                    <th>Direction</th>
+                                    <th>Tax</th>
+                                    <th class="text-end">Base</th>
+                                    <th class="text-end">VAT</th>
+                                    <th class="text-end">Document total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.line_ids" t-as="line">
+                                    <td><span t-field="line.date"/></td>
+                                    <td><span t-field="line.move_name"/></td>
+                                    <td><span t-field="line.partner_id.name"/></td>
+                                    <td><span t-field="line.direction"/></td>
+                                    <td><span t-field="line.tax_id.name"/></td>
+                                    <td class="text-end"><span t-field="line.base_amount"/></td>
+                                    <td class="text-end"><span t-field="line.tax_amount"/></td>
+                                    <td class="text-end"><span t-field="line.document_total"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p class="text-muted">Prepared from posted journal items. Export the line table to CSV from the reconciliation wizard for the accountant or SARS pack.</p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

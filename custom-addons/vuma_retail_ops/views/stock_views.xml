@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Stock count -->
+    <record id="view_stock_count_list" model="ir.ui.view">
+        <field name="name">vuma.stock.count.list</field>
+        <field name="model">vuma.stock.count</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="state == 'pending'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="warehouse_id"/>
+                <field name="count_type"/>
+                <field name="line_count"/>
+                <field name="counted_count"/>
+                <field name="difference_count"/>
+                <field name="difference_value" sum="Variance"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-warning="state == 'pending'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_stock_count_form" model="ir.ui.view">
+        <field name="name">vuma.stock.count.form</field>
+        <field name="model">vuma.stock.count</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load_quants" string="Load Stock" type="object"
+                            class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_submit" string="Submit for Approval"
+                            type="object" class="btn-primary" invisible="state != 'counting'"/>
+                    <button name="action_approve" string="Approve &amp; Adjust"
+                            type="object" class="btn-primary" invisible="state != 'pending'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ('approved','cancelled')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,counting,pending,approved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="warehouse_id"/>
+                            <field name="location_id"/>
+                            <field name="count_type"/>
+                            <field name="product_category_id"
+                                   invisible="count_type != 'category'"/>
+                        </group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="line_count"/>
+                            <field name="counted_count"/>
+                            <field name="difference_count"/>
+                            <field name="difference_value"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="tolerance_amount"/>
+                            <field name="tolerance_percent"/>
+                            <field name="is_locked" readonly="1"/>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="state not in ('counting',)">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="location_id"/>
+                            <field name="lot_id"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="system_qty"/>
+                            <field name="counted_qty"/>
+                            <field name="recount_qty"/>
+                            <field name="is_recounted"/>
+                            <field name="counted_by_id" readonly="1"/>
+                            <field name="recounted_by_id"/>
+                            <field name="difference"/>
+                            <field name="cost"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="value_difference" sum="Value"/>
+                            <field name="reason"/>
+                            <field name="is_counted"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_stock_count" model="ir.actions.act_window">
+        <field name="name">Stock Counts</field>
+        <field name="res_model">vuma.stock.count</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Cycle plan -->
+    <record id="view_cycle_plan_list" model="ir.ui.view">
+        <field name="name">vuma.cycle.count.plan.list</field>
+        <field name="model">vuma.cycle.count.plan</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="warehouse_id"/>
+                <field name="product_category_id"/>
+                <field name="frequency"/>
+                <field name="next_date"/>
+                <field name="responsible_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cycle_plan_form" model="ir.ui.view">
+        <field name="name">vuma.cycle.count.plan.form</field>
+        <field name="model">vuma.cycle.count.plan</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_create_count" string="Create Count Now"
+                            type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="warehouse_id"/>
+                            <field name="product_category_id"/>
+                        </group>
+                        <group>
+                            <field name="frequency"/>
+                            <field name="next_date"/>
+                            <field name="responsible_id"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_cycle_plan" model="ir.actions.act_window">
+        <field name="name">Cycle Count Plans</field>
+        <field name="res_model">vuma.cycle.count.plan</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Picking slip town fields -->
+    <record id="view_picking_slip_list_vuma_town" model="ir.ui.view">
+        <field name="name">vuma.picking.slip.list.town</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="inherit_id" ref="vuma_picking_slip.view_vuma_picking_slip_list"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="after">
+                <field name="town"/>
+                <field name="route_date"/>
+                <field name="driver_id"/>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_picking_slip_form_vuma_town" model="ir.ui.view">
+        <field name="name">vuma.picking.slip.form.town</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="inherit_id" ref="vuma_picking_slip.view_vuma_picking_slip_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="after">
+                <field name="town"/>
+                <field name="route_date"/>
+                <field name="driver_id"/>
+                <field name="vehicle"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Invoice: town slips button -->
+    <record id="view_move_form_vuma_town_slips" model="ir.ui.view">
+        <field name="name">account.move.form.vuma.town.slips</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_create_slips_by_town"
+                        string="Picking Slips by Town" type="object"
+                        invisible="move_type != 'out_invoice' or state != 'posted'"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Receiving -->
+    <record id="view_picking_form_vuma_receiving" model="ir.ui.view">
+        <field name="name">stock.picking.form.vuma.receiving</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_create_claim" string="Create Supplier Claim"
+                        type="object" invisible="picking_type_code != 'incoming' or state != 'done'"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Vuma Receiving" name="vuma_receiving"
+                      invisible="picking_type_code != 'incoming'">
+                    <group>
+                        <field name="vuma_receiving_notes"/>
+                        <field name="vuma_has_damage" readonly="1"/>
+                    </group>
+                    <field name="move_ids" readonly="1">
+                        <list>
+                            <field name="product_id"/>
+                            <field name="product_uom_qty"/>
+                            <field name="quantity"/>
+                            <field name="vuma_damaged_qty"/>
+                            <field name="vuma_rejection_reason"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                    <field name="vuma_claim_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="claim_type"/>
+                            <field name="claimed_amount"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_location_form_vuma_quarantine" model="ir.ui.view">
+        <field name="name">stock.location.form.vuma.quarantine</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='usage']" position="after">
+                <field name="vuma_is_quarantine"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_warehouse" model="ir.ui.menu">
+        <field name="name">Warehouse</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_stock_count" model="ir.ui.menu">
+        <field name="name">Stock Counts</field>
+        <field name="parent_id" ref="menu_vuma_warehouse"/>
+        <field name="action" ref="action_stock_count"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_cycle_plan" model="ir.ui.menu">
+        <field name="name">Cycle Count Plans</field>
+        <field name="parent_id" ref="menu_vuma_warehouse"/>
+        <field name="action" ref="action_cycle_plan"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_picking_slips" model="ir.ui.menu">
+        <field name="name">Picking Slips</field>
+        <field name="parent_id" ref="menu_vuma_warehouse"/>
+        <field name="action" ref="vuma_picking_slip.action_picking_slip"/>
+        <field name="sequence">30</field>
+    </record>
+
+</odoo>

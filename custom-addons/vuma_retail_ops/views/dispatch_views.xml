@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- POD on the delivery -->
+    <record id="view_picking_form_vuma_pod" model="ir.ui.view">
+        <field name="name">stock.picking.form.vuma.pod</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_pod_link" string="Open POD Page"
+                        type="object" class="btn-primary"
+                        invisible="picking_type_code != 'outgoing' or vuma_pod_state != 'pending'"/>
+                <button name="action_vuma_waive_pod" string="Waive POD"
+                        type="object" class="btn-danger"
+                        invisible="picking_type_code != 'outgoing' or vuma_pod_state != 'pending'"
+                        groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Proof of Delivery" name="vuma_pod"
+                      invisible="picking_type_code != 'outgoing'">
+                    <group>
+                        <group>
+                            <field name="vuma_pod_state"/>
+                            <field name="vuma_pod_name"/>
+                            <field name="vuma_pod_id_number"/>
+                            <field name="vuma_pod_damage"/>
+                            <field name="vuma_pod_signed_on" readonly="1"/>
+                            <field name="vuma_pod_signed_by_id" readonly="1"/>
+                            <field name="vuma_delivery_result"/>
+                            <field name="vuma_failure_reason"
+                                   invisible="vuma_delivery_result not in ('failed','refused','partial')"/>
+                        </group>
+                        <group>
+                            <field name="vuma_trip_id" readonly="1"/>
+                            <field name="vuma_route_sequence"/>
+                            <field name="vuma_pod_latitude"/>
+                            <field name="vuma_pod_longitude"/>
+                            <field name="vuma_pod_token" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Signature and photo">
+                        <field name="vuma_pod_signature" widget="image" nolabel="1"/>
+                        <field name="vuma_pod_photo" widget="image" nolabel="1"/>
+                    </group>
+                    <group>
+                        <field name="vuma_pod_notes"/>
+                        <field name="vuma_pod_waiver_reason"
+                               invisible="vuma_pod_state != 'waived'"/>
+                    </group>
+                    <field name="vuma_return_picking_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="vuma_delivery_return_id"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Trip -->
+    <record id="view_delivery_trip_list" model="ir.ui.view">
+        <field name="name">vuma.delivery.trip.list</field>
+        <field name="model">vuma.delivery.trip</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="pod_pending_count &gt; 0 and state == 'dispatched'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="driver_id"/>
+                <field name="vehicle"/>
+                <field name="town"/>
+                <field name="picking_count"/>
+                <field name="pod_pending_count" decoration-danger="pod_pending_count &gt; 0"/>
+                <field name="total_expenses" sum="Expenses"/>
+                <field name="variance" sum="Variance"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_delivery_trip_form" model="ir.ui.view">
+        <field name="name">vuma.delivery.trip.form</field>
+        <field name="model">vuma.delivery.trip</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load_deliveries" string="Load Deliveries"
+                            type="object" class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_create_float" string="Issue Float"
+                            type="object" invisible="state in ('closed','cancelled') or float_id"/>
+                    <button name="action_create_remittance" string="Create Remittance"
+                            type="object" invisible="state in ('closed','cancelled') or remittance_id"/>
+                    <button name="action_dispatch" string="Dispatch Trip" type="object"
+                            class="btn-primary" invisible="state not in ('draft','loading')"/>
+                    <button name="action_return" string="Mark Returned" type="object"
+                            invisible="state != 'dispatched'"/>
+                    <button name="action_close" string="Close Trip" type="object"
+                            class="btn-primary" invisible="state != 'returned'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,loading,dispatched,returned,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="driver_id"/>
+                            <field name="vehicle"/>
+                            <field name="town"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="departure_datetime" readonly="1"/>
+                            <field name="return_datetime" readonly="1"/>
+                            <field name="picking_count"/>
+                            <field name="pod_pending_count"/>
+                            <field name="planned_weight"/>
+                            <field name="max_stops"/>
+                            <field name="max_load_weight"/>
+                            <field name="float_id" readonly="1"/>
+                            <field name="remittance_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Cash">
+                        <group>
+                            <field name="expected_cash"/>
+                            <field name="float_amount"/>
+                            <field name="cash_returned"/>
+                        </group>
+                        <group>
+                            <field name="cash_collected"/>
+                            <field name="total_expenses"/>
+                            <field name="variance"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Deliveries" name="deliveries">
+                            <field name="picking_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="scheduled_date"/>
+                                    <field name="vuma_route_sequence"/>
+                                    <field name="vuma_pod_state" widget="badge"/>
+                                    <field name="vuma_delivery_result"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Expenses" name="expenses">
+                            <field name="expense_ids">
+                                <list editable="bottom">
+                                    <field name="date"/>
+                                    <field name="category"/>
+                                    <field name="description"/>
+                                    <field name="amount"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="verified_by_id" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Returns" name="returns">
+                            <field name="return_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="reason"/>
+                                    <field name="action"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Failed Deliveries" name="failures">
+                            <field name="failure_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="picking_id"/>
+                                    <field name="reason"/>
+                                    <field name="reschedule_date"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_delivery_trip" model="ir.actions.act_window">
+        <field name="name">Delivery Trips</field>
+        <field name="res_model">vuma.delivery.trip</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Trip expense -->
+    <record id="view_trip_expense_list" model="ir.ui.view">
+        <field name="name">vuma.trip.expense.list</field>
+        <field name="model">vuma.trip.expense</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="date"/>
+                <field name="trip_id"/>
+                <field name="category"/>
+                <field name="description"/>
+                <field name="amount" sum="Total"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_trip_expense_form" model="ir.ui.view">
+        <field name="name">vuma.trip.expense.form</field>
+        <field name="model">vuma.trip.expense</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_verify" string="Verify" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_cashier,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_cashier,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="trip_id"/>
+                            <field name="date"/>
+                            <field name="category"/>
+                            <field name="description"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="verified_by_id" readonly="1"/>
+                            <field name="verified_date" readonly="1"/>
+                            <field name="rejection_reason" invisible="state != 'rejected'"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="receipt" widget="image"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_trip_expense" model="ir.actions.act_window">
+        <field name="name">Trip Expenses</field>
+        <field name="res_model">vuma.trip.expense</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Delivery return -->
+    <record id="view_delivery_return_list" model="ir.ui.view">
+        <field name="name">vuma.delivery.return.list</field>
+        <field name="model">vuma.delivery.return</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="picking_id"/>
+                <field name="product_id"/>
+                <field name="quantity"/>
+                <field name="reason"/>
+                <field name="action"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_delivery_return_form" model="ir.ui.view">
+        <field name="name">vuma.delivery.return.form</field>
+        <field name="model">vuma.delivery.return</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_create_stock_return" string="Create Stock Return"
+                            type="object" invisible="state not in ('approved','credited') or stock_return_picking_id"/>
+                    <button name="action_create_credit_note" string="Create Credit Note"
+                            type="object" invisible="state != 'approved' or credit_note_id"/>
+                    <button name="action_view_stock_return" string="View Stock Return"
+                            type="object" invisible="not stock_return_picking_id"/>
+                    <button name="action_view_credit_note" string="View Credit Note"
+                            type="object" invisible="not credit_note_id"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="trip_id"/>
+                            <field name="picking_id"/>
+                            <field name="invoice_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="price_unit"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="reason"/>
+                            <field name="action"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="photo" widget="image"/>
+                        <field name="notes"/>
+                        <field name="rejection_reason" invisible="state != 'rejected'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_delivery_return" model="ir.actions.act_window">
+        <field name="name">Delivery Returns</field>
+        <field name="res_model">vuma.delivery.return</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Failed delivery -->
+    <record id="view_delivery_failure_list" model="ir.ui.view">
+        <field name="name">vuma.delivery.failure.list</field>
+        <field name="model">vuma.delivery.failure</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="picking_id"/>
+                <field name="reason"/>
+                <field name="reschedule_date"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_delivery_failure_form" model="ir.ui.view">
+        <field name="name">vuma.delivery.failure.form</field>
+        <field name="model">vuma.delivery.failure</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_reschedule" string="Reschedule" type="object"
+                            class="btn-primary" invisible="state != 'open'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="picking_id"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="trip_id"/>
+                            <field name="reason"/>
+                            <field name="reschedule_date"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="photo" widget="image"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_delivery_failure" model="ir.actions.act_window">
+        <field name="name">Failed Deliveries</field>
+        <field name="res_model">vuma.delivery.failure</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- KPI -->
+    <record id="view_delivery_kpi_list" model="ir.ui.view">
+        <field name="name">vuma.delivery.kpi.list</field>
+        <field name="model">vuma.delivery.kpi</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="date"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="partner_id"/>
+                <field name="trip_id"/>
+                <field name="delivery_count" sum="Deliveries"/>
+                <field name="on_time_count"/>
+                <field name="late_count"/>
+                <field name="pod_count"/>
+                <field name="failed_count"/>
+                <field name="return_count"/>
+                <field name="on_time_rate" widget="percentage"/>
+                <field name="pod_rate" widget="percentage"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_delivery_kpi" model="ir.actions.act_window">
+        <field name="name">Delivery KPIs</field>
+        <field name="res_model">vuma.delivery.kpi</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_dispatch" model="ir.ui.menu">
+        <field name="name">Dispatch</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_delivery_trip" model="ir.ui.menu">
+        <field name="name">Delivery Trips</field>
+        <field name="parent_id" ref="menu_vuma_dispatch"/>
+        <field name="action" ref="action_delivery_trip"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_trip_expense" model="ir.ui.menu">
+        <field name="name">Trip Expenses</field>
+        <field name="parent_id" ref="menu_vuma_dispatch"/>
+        <field name="action" ref="action_trip_expense"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_delivery_return" model="ir.ui.menu">
+        <field name="name">Delivery Returns</field>
+        <field name="parent_id" ref="menu_vuma_dispatch"/>
+        <field name="action" ref="action_delivery_return"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_delivery_failure" model="ir.ui.menu">
+        <field name="name">Failed Deliveries</field>
+        <field name="parent_id" ref="menu_vuma_dispatch"/>
+        <field name="action" ref="action_delivery_failure"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_delivery_kpi" model="ir.ui.menu">
+        <field name="name">Delivery KPIs</field>
+        <field name="parent_id" ref="menu_vuma_dispatch"/>
+        <field name="action" ref="action_delivery_kpi"/>
+        <field name="sequence">50</field>
+    </record>
+
+</odoo>

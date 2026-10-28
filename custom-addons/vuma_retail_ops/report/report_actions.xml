@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_debtor_statement" model="ir.actions.report">
+        <field name="name">Debtor Statement</field>
+        <field name="model">vuma.statement.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_debtor_statement</field>
+        <field name="print_report_name">'Statement - %s' % (object.partner_id.name or 'Customer')</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <record id="action_report_dunning_letter" model="ir.actions.report">
+        <field name="name">Debtor Letter</field>
+        <field name="model">vuma.dunning.letter</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_dunning_letter</field>
+        <field name="print_report_name">'Letter - %s' % (object.name or object.partner_id.name)</field>
+        <field name="binding_model_id" ref="model_vuma_dunning_letter"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_tax_pack" model="ir.actions.report">
+        <field name="name">VAT Pack</field>
+        <field name="model">vuma.tax.pack</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_tax_pack</field>
+        <field name="print_report_name">'VAT Pack - %s to %s' % (object.date_from, object.date_to)</field>
+    </record>
+
+    <record id="action_report_tax_period" model="ir.actions.report">
+        <field name="name">VAT Return Pack</field>
+        <field name="model">vuma.tax.period</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_tax_pack</field>
+        <field name="print_report_name">'VAT Pack - %s to %s' % (object.date_from, object.date_to)</field>
+        <field name="binding_model_id" ref="model_vuma_tax_period"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_tax_ledger" model="ir.actions.report">
+        <field name="name">VAT Ledger Reconciliation</field>
+        <field name="model">vuma.tax.ledger</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_tax_ledger</field>
+        <field name="print_report_name">'VAT Ledger - %s to %s' % (object.date_from, object.date_to)</field>
+        <field name="binding_model_id" ref="model_vuma_tax_ledger"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_pod" model="ir.actions.report">
+        <field name="name">Proof of Delivery</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_pod</field>
+        <field name="print_report_name">'POD - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_stock_picking"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_trip_summary" model="ir.actions.report">
+        <field name="name">Trip Summary</field>
+        <field name="model">vuma.delivery.trip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_trip_summary</field>
+        <field name="print_report_name">'Trip - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_delivery_trip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_supplier_claim" model="ir.actions.report">
+        <field name="name">Supplier Claim</field>
+        <field name="model">vuma.supplier.claim</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_supplier_claim</field>
+        <field name="print_report_name">'Claim - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_supplier_claim"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <record id="action_report_stock_count" model="ir.actions.report">
+        <field name="name">Stock Count Sheet</field>
+        <field name="model">vuma.stock.count</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_stock_count_sheet</field>
+        <field name="print_report_name">'Count - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_stock_count"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="action_report_cash_receipt" model="ir.actions.report">
+        <field name="name">Cash Receipt</field>
+        <field name="model">vuma.cash.receipt</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_cash_receipt</field>
+        <field name="print_report_name">'Receipt - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_cash_receipt"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="action_report_delivery_return" model="ir.actions.report">
+        <field name="name">Delivery Return Note</field>
+        <field name="model">vuma.delivery.return</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_delivery_return</field>
+        <field name="print_report_name">'Return - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_delivery_return"/>
+        <field name="binding_type">report</field>
+    </record>
+    <record id="action_report_payment_remittance" model="ir.actions.report">
+        <field name="name">Payment Remittance Advice</field>
+        <field name="model">vuma.payment.run</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_retail_ops.report_payment_remittance</field>
+        <field name="print_report_name">'Remittance - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_vuma_payment_run"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

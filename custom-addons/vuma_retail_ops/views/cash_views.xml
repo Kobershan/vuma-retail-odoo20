@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Cash receipt -->
+    <record id="view_cash_receipt_list" model="ir.ui.view">
+        <field name="name">vuma.cash.receipt.list</field>
+        <field name="model">vuma.cash.receipt</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="receipt_type"/>
+                <field name="partner_id"/>
+                <field name="employee_id"/>
+                <field name="amount" sum="Total"/>
+                <field name="journal_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cash_receipt_form" model="ir.ui.view">
+        <field name="name">vuma.cash.receipt.form</field>
+        <field name="model">vuma.cash.receipt</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_post" string="Post Receipt" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="receipt_type"/>
+                            <field name="partner_id"
+                                   invisible="receipt_type != 'customer'"/>
+                            <field name="employee_id"
+                                   invisible="receipt_type not in ('rep_return','driver_return')"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="journal_id"/>
+                            <field name="payment_method_line_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="received_by_id"/>
+                            <field name="payment_id" readonly="1"/>
+                            <field name="move_id" readonly="1"/>
+                            <field name="remittance_id"/>
+                            <field name="float_id"/>
+                        </group>
+                    </group>
+                    <field name="invoice_ids"
+                           invisible="receipt_type != 'customer'"
+                           domain="[('partner_id','=',partner_id),('state','=','posted')]">
+                        <list>
+                            <field name="name"/>
+                            <field name="invoice_date"/>
+                            <field name="amount_total"/>
+                            <field name="amount_residual"/>
+                        </list>
+                    </field>
+                    <group>
+                        <field name="reference"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_cash_receipt" model="ir.actions.act_window">
+        <field name="name">Cash Receipts</field>
+        <field name="res_model">vuma.cash.receipt</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Trip float -->
+    <record id="view_trip_float_list" model="ir.ui.view">
+        <field name="name">vuma.trip.float.list</field>
+        <field name="model">vuma.trip.float</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="employee_id"/>
+                <field name="trip_id"/>
+                <field name="amount_issued" sum="Issued"/>
+                <field name="amount_spent" sum="Spent"/>
+                <field name="amount_returned" sum="Returned"/>
+                <field name="amount_outstanding" sum="Outstanding"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_trip_float_form" model="ir.ui.view">
+        <field name="name">vuma.trip.float.form</field>
+        <field name="model">vuma.trip.float</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_issue" string="Issue Float" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_reconcile" string="Reconcile" type="object"
+                            invisible="state not in ('issued','reconciling')"/>
+                    <button name="action_close" string="Close Float" type="object"
+                            class="btn-primary" invisible="state not in ('issued','reconciling')"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="employee_id"/>
+                            <field name="trip_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="amount_issued"/>
+                            <field name="amount_spent"/>
+                            <field name="amount_returned"/>
+                            <field name="amount_outstanding"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="issued_by_id" readonly="1"/>
+                            <field name="closed_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="cash_receipt_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="date"/>
+                            <field name="amount"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_trip_float" model="ir.actions.act_window">
+        <field name="name">Trip Floats</field>
+        <field name="res_model">vuma.trip.float</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Cash session -->
+    <record id="view_cash_session_list" model="ir.ui.view">
+        <field name="name">vuma.cash.session.list</field>
+        <field name="model">vuma.cash.session</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="cashier_id"/>
+                <field name="journal_id"/>
+                <field name="expected_cash" sum="Expected"/>
+                <field name="cash_counted" sum="Counted"/>
+                <field name="variance" sum="Variance"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cash_session_form" model="ir.ui.view">
+        <field name="name">vuma.cash.session.form</field>
+        <field name="model">vuma.cash.session</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load_denominations" string="Load Cash Count"
+                            type="object" class="btn-secondary"/>
+                    <button name="action_count" string="Mark Counted" type="object"/>
+                    <button name="action_close" string="Close Cash-up" type="object"
+                            class="btn-primary" invisible="state == 'closed'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="cashier_id"/>
+                            <field name="journal_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="opening_float"/>
+                            <field name="receipts_total"/>
+                            <field name="payments_total"/>
+                            <field name="expected_cash"/>
+                            <field name="cash_counted"/>
+                            <field name="bank_deposit"/>
+                            <field name="variance"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="label"/>
+                            <field name="denomination"/>
+                            <field name="quantity"/>
+                            <field name="subtotal"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <group>
+                        <field name="notes"/>
+                        <field name="closed_by_id" readonly="1"/>
+                        <field name="closed_date" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_cash_session" model="ir.actions.act_window">
+        <field name="name">Cash Office Sessions</field>
+        <field name="res_model">vuma.cash.session</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Cash exception -->
+    <record id="view_cash_exception_list" model="ir.ui.view">
+        <field name="name">vuma.cash.exception.list</field>
+        <field name="model">vuma.cash.exception</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="exception_type"/>
+                <field name="amount" sum="Amount"/>
+                <field name="owner_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_cash_exception_form" model="ir.ui.view">
+        <field name="name">vuma.cash.exception.form</field>
+        <field name="model">vuma.cash.exception</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_resolve" string="Resolve" type="object"
+                            class="btn-primary" invisible="state != 'open'"/>
+                    <button name="action_write_off" string="Write Off" type="object"
+                            invisible="state != 'open'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="exception_type"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="owner_id"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="session_id"/>
+                            <field name="float_id"/>
+                            <field name="trip_id"/>
+                            <field name="remittance_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="description"/>
+                        <field name="resolution"/>
+                        <field name="resolved_by_id" readonly="1"/>
+                        <field name="resolved_date" readonly="1"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_cash_exception" model="ir.actions.act_window">
+        <field name="name">Cash Exceptions</field>
+        <field name="res_model">vuma.cash.exception</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Remittance links -->
+    <record id="view_remittance_form_vuma_links" model="ir.ui.view">
+        <field name="name">cognify.remittance.form.vuma.links</field>
+        <field name="model">cognify.remittance</field>
+        <field name="inherit_id" ref="cognify_remittance.view_remittance_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Cash Office" name="vuma_cash_office">
+                    <group>
+                        <field name="trip_id"/>
+                        <field name="float_id"/>
+                        <field name="cash_receipt_id"/>
+                        <field name="cash_session_id"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_cash" model="ir.ui.menu">
+        <field name="name">Cash Office</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">80</field>
+    </record>
+    <record id="menu_cash_receipt" model="ir.ui.menu">
+        <field name="name">Cash Receipts</field>
+        <field name="parent_id" ref="menu_vuma_cash"/>
+        <field name="action" ref="action_cash_receipt"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_trip_float" model="ir.ui.menu">
+        <field name="name">Trip Floats</field>
+        <field name="parent_id" ref="menu_vuma_cash"/>
+        <field name="action" ref="action_trip_float"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_cash_session" model="ir.ui.menu">
+        <field name="name">Cash-up Sessions</field>
+        <field name="parent_id" ref="menu_vuma_cash"/>
+        <field name="action" ref="action_cash_session"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_cash_exception" model="ir.ui.menu">
+        <field name="name">Cash Exceptions</field>
+        <field name="parent_id" ref="menu_vuma_cash"/>
+        <field name="action" ref="action_cash_exception"/>
+        <field name="sequence">40</field>
+    </record>
+
+</odoo>

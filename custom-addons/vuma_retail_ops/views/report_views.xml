@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="menu_vuma_reports" model="ir.ui.menu">
+        <field name="name">Reports</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">90</field>
+    </record>
+    <record id="menu_report_delivery_kpi" model="ir.ui.menu">
+        <field name="name">Delivery KPIs</field>
+        <field name="parent_id" ref="menu_vuma_reports"/>
+        <field name="action" ref="action_delivery_kpi"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_report_cashflow" model="ir.ui.menu">
+        <field name="name">13-Week Cashflow</field>
+        <field name="parent_id" ref="menu_vuma_reports"/>
+        <field name="action" ref="action_cashflow_forecast"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_report_rep_performance" model="ir.ui.menu">
+        <field name="name">Sales Rep Performance</field>
+        <field name="parent_id" ref="menu_vuma_reports"/>
+        <field name="action" ref="action_rep_performance"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_report_exception" model="ir.ui.menu">
+        <field name="name">Exception Dashboard</field>
+        <field name="parent_id" ref="menu_vuma_reports"/>
+        <field name="action" ref="action_exception"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_report_aged_payable" model="ir.ui.menu">
+        <field name="name">Creditor Age Analysis</field>
+        <field name="parent_id" ref="menu_vuma_reports"/>
+        <field name="action" ref="action_aged_payable"/>
+        <field name="sequence">50</field>
+    </record>
+</odoo>

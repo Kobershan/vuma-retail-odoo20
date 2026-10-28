@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="vuma_ops_privilege" model="res.groups.privilege">
+        <field name="name">Vuma Retail Operations</field>
+        <field name="sequence">6</field>
+        <field name="category_id" ref="base.module_category_sales"/>
+    </record>
+
+    <!-- The financial manager is defined first because the owner group
+         implies it.  XML records are created in file order, so a forward
+         reference works on upgrade (the xmlid already exists in the
+         database) but fails on a fresh install. -->
+    <record id="group_vuma_finance_manager" model="res.groups">
+        <field name="name">Vuma Financial Manager</field>
+        <field name="sequence">30</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_manager')),
+                                        (4, ref('purchase.group_purchase_user'))]"/>
+        <field name="comment">Debtors, creditors, cash office, tax, credit limits and financial approvals.</field>
+    </record>
+
+    <record id="group_vuma_owner" model="res.groups">
+        <field name="name">Vuma Owner</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_manager')),
+                                        (4, ref('purchase.group_purchase_manager')),
+                                        (4, ref('stock.group_stock_manager')),
+                                        (4, ref('account.group_account_manager')),
+                                        (4, ref('vuma_retail_ops.group_vuma_finance_manager')),
+                                        (4, ref('customer_goods_pickup.group_goods_pickup_manager')),
+                                        (4, ref('base.group_multi_company'))]"/>
+        <field name="comment">Final approval authority for purchases, credit, write-offs and POD waivers.</field>
+    </record>
+
+    <record id="group_vuma_ops_manager" model="res.groups">
+        <field name="name">Vuma Operations Manager</field>
+        <field name="sequence">20</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_manager')),
+                                        (4, ref('purchase.group_purchase_manager')),
+                                        (4, ref('stock.group_stock_manager')),
+                                        (4, ref('customer_goods_pickup.group_goods_pickup_manager'))]"/>
+        <field name="comment">Runs buying, warehouse, dispatch and order checking within the approval bands.</field>
+    </record>
+
+    <record id="group_vuma_cashier" model="res.groups">
+        <field name="name">Vuma Cashier</field>
+        <field name="sequence">40</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_invoice'))]"/>
+        <field name="comment">Receipts money, reconciles floats and closes the cash office day.</field>
+    </record>
+
+    <record id="group_vuma_debtors" model="res.groups">
+        <field name="name">Vuma Debtors Clerk</field>
+        <field name="sequence">50</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_invoice'))]"/>
+        <field name="comment">Maintains debtor accounts, statements, letters, forms and collections.</field>
+    </record>
+
+    <record id="group_vuma_creditors" model="res.groups">
+        <field name="name">Vuma Creditors Clerk</field>
+        <field name="sequence">60</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('account.group_account_invoice')),
+                                        (4, ref('purchase.group_purchase_user'))]"/>
+        <field name="comment">Maintains supplier agreements, claims, rebates and payment runs.</field>
+    </record>
+
+    <record id="group_vuma_driver" model="res.groups">
+        <field name="name">Vuma Driver</field>
+        <field name="sequence">70</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('stock.group_stock_user'))]"/>
+        <field name="comment">Sees assigned deliveries, captures POD, returns, expenses and collections.</field>
+    </record>
+
+    <record id="group_vuma_sales_rep" model="res.groups">
+        <field name="name">Vuma Sales Representative</field>
+        <field name="sequence">80</field>
+        <field name="privilege_id" ref="vuma_ops_privilege"/>
+        <field name="implied_ids" eval="[(4, ref('sales_team.group_sale_salesman')),
+                                        (4, ref('customer_goods_pickup.group_goods_pickup_sales_rep'))]"/>
+        <field name="comment">Uses the field app for customers, history, uplift requests and collections.</field>
+    </record>
+
+</odoo>

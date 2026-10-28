@@ -1,0 +1,467 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Fixed assets -->
+    <record id="view_fixed_asset_list" model="ir.ui.view">
+        <field name="name">vuma.fixed.asset.list</field>
+        <field name="model">vuma.fixed.asset</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="asset_type"/>
+                <field name="purchase_date"/>
+                <field name="cost" sum="Cost"/>
+                <field name="book_value" sum="Book Value"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_fixed_asset_form" model="ir.ui.view">
+        <field name="name">vuma.fixed.asset.form</field>
+        <field name="model">vuma.fixed.asset</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" string="Activate &amp; Build Schedule"
+                            type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_post_depreciation" string="Post Due Depreciation"
+                            type="object" invisible="state != 'running'"/>
+                    <button name="action_dispose" string="Dispose" type="object"
+                            invisible="state != 'running'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="asset_type"/>
+                            <field name="purchase_date"/>
+                            <field name="supplier_id"/>
+                            <field name="invoice_id"/>
+                            <field name="serial"/>
+                            <field name="location"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="cost"/>
+                            <field name="residual_value"/>
+                            <field name="useful_life_months"/>
+                            <field name="monthly_depreciation"/>
+                            <field name="posted_amount"/>
+                            <field name="book_value"/>
+                        </group>
+                    </group>
+                    <group string="Accounts">
+                        <field name="journal_id"/>
+                        <field name="asset_account_id"/>
+                        <field name="accumulated_account_id"/>
+                        <field name="expense_account_id"/>
+                    </group>
+                    <notebook>
+                        <page string="Depreciation Schedule" name="schedule">
+                            <field name="depreciation_line_ids" readonly="1">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="amount"/>
+                                    <field name="accumulated"/>
+                                    <field name="book_value"/>
+                                    <field name="state" widget="badge"/>
+                                    <field name="move_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_fixed_asset" model="ir.actions.act_window">
+        <field name="name">Fixed Assets</field>
+        <field name="res_model">vuma.fixed.asset</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Budget -->
+    <record id="view_budget_list" model="ir.ui.view">
+        <field name="name">vuma.budget.list</field>
+        <field name="model">vuma.budget</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="total_budget" sum="Budget"/>
+                <field name="total_actual" sum="Actual"/>
+                <field name="variance" sum="Variance"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_budget_form" model="ir.ui.view">
+        <field name="name">vuma.budget.form</field>
+        <field name="model">vuma.budget</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" string="Activate" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_refresh" string="Refresh Actuals" type="object"/>
+                    <button name="action_close" string="Close" type="object"
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="total_budget"/>
+                            <field name="total_actual"/>
+                            <field name="variance"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="account_id"/>
+                            <field name="description"/>
+                            <field name="town"/>
+                            <field name="vehicle"/>
+                            <field name="budget_amount"/>
+                            <field name="actual_amount" readonly="1"/>
+                            <field name="variance" readonly="1"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_budget" model="ir.actions.act_window">
+        <field name="name">Budgets</field>
+        <field name="res_model">vuma.budget</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Tax pack -->
+    <record id="view_tax_pack_form" model="ir.ui.view">
+        <field name="name">vuma.tax.pack.form</field>
+        <field name="model">vuma.tax.pack</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_compute" string="Calculate VAT" type="object"
+                            class="btn-primary"/>
+                    <button name="action_print" string="Print VAT Pack" type="object"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="company_id"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="output_base"/>
+                            <field name="output_tax"/>
+                            <field name="input_base"/>
+                            <field name="input_tax"/>
+                            <field name="net_due"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="1">
+                        <list>
+                            <field name="direction"/>
+                            <field name="tax_id"/>
+                            <field name="name"/>
+                            <field name="base_amount"/>
+                            <field name="tax_amount"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button special="cancel" string="Close" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_tax_pack" model="ir.actions.act_window">
+        <field name="name">VAT Pack</field>
+        <field name="res_model">vuma.tax.pack</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+
+    <!-- VAT period workflow -->
+    <record id="view_tax_period_list" model="ir.ui.view">
+        <field name="name">vuma.tax.period.list</field>
+        <field name="model">vuma.tax.period</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="output_tax" sum="Output VAT"/>
+                <field name="input_tax" sum="Input VAT"/>
+                <field name="net_due" sum="Net Due"/>
+                <field name="state" widget="badge"/>
+                <field name="prepared_by_id"/>
+                <field name="reviewed_by_id"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_tax_period_form" model="ir.ui.view">
+        <field name="name">vuma.tax.period.form</field>
+        <field name="model">vuma.tax.period</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_compute" string="Compute" type="object"
+                            class="btn-primary" invisible="state not in ('draft', 'prepared')"/>
+                    <button name="action_review" string="Review" type="object"
+                            class="btn-primary" invisible="state != 'prepared'"/>
+                    <button name="action_submit" string="Submit and Lock" type="object"
+                            class="btn-primary" invisible="state != 'reviewed'"/>
+                    <button name="action_print" string="Print VAT Pack" type="object"
+                            class="btn-secondary"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="output_base"/>
+                            <field name="output_tax"/>
+                            <field name="input_base"/>
+                            <field name="input_tax"/>
+                            <field name="net_due"/>
+                        </group>
+                    </group>
+                    <group string="Sign-off">
+                        <group>
+                            <field name="prepared_by_id" readonly="1"/>
+                            <field name="prepared_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="reviewed_by_id" readonly="1"/>
+                            <field name="reviewed_date" readonly="1"/>
+                            <field name="submitted_by_id" readonly="1"/>
+                            <field name="submitted_date" readonly="1"/>
+                            <field name="lock_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="review_notes"/>
+                    <field name="line_ids" readonly="1">
+                        <list>
+                            <field name="direction"/>
+                            <field name="tax_id"/>
+                            <field name="name"/>
+                            <field name="base_amount"/>
+                            <field name="tax_amount"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_tax_period" model="ir.actions.act_window">
+        <field name="name">VAT Periods</field>
+        <field name="res_model">vuma.tax.period</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_tax_ledger_form" model="ir.ui.view">
+        <field name="name">vuma.tax.ledger.form</field>
+        <field name="model">vuma.tax.ledger</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_compute" string="Build Reconciliation" type="object"
+                            class="btn-primary"/>
+                    <button name="action_print" string="Print / Export Pack" type="object"
+                            class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="direction"/>
+                            <field name="tax_id"/>
+                            <field name="period_id"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Reconciliation">
+                            <field name="output_base"/>
+                            <field name="output_tax"/>
+                            <field name="input_base"/>
+                            <field name="input_tax"/>
+                            <field name="net_due"/>
+                            <field name="period_net"/>
+                            <field name="difference"/>
+                        </group>
+                    </group>
+                    <field name="line_ids" readonly="1">
+                        <list>
+                            <field name="date"/>
+                            <field name="move_name"/>
+                            <field name="move_type"/>
+                            <field name="partner_id"/>
+                            <field name="direction"/>
+                            <field name="tax_id"/>
+                            <field name="base_amount"/>
+                            <field name="tax_amount"/>
+                            <field name="document_total"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+                <footer>
+                    <button string="Close" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_tax_ledger" model="ir.actions.act_window">
+        <field name="name">VAT Ledger Reconciliation</field>
+        <field name="res_model">vuma.tax.ledger</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_bank_import_form" model="ir.ui.view">
+        <field name="name">vuma.bank.import.form</field>
+        <field name="model">vuma.bank.import</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title"><h1>Import Bank Statement</h1></div>
+                    <group>
+                        <field name="journal_id"/>
+                        <field name="filename"/>
+                        <field name="file"/>
+                        <field name="delimiter"/>
+                        <field name="notes"/>
+                    </group>
+                    <p class="text-muted">Columns: date, reference, amount, partner, description. Amounts may be positive or negative. The statement lines remain unreconciled until the bank reconciliation is completed.</p>
+                </sheet>
+                <footer>
+                    <button name="action_import" string="Import" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_bank_import" model="ir.actions.act_window">
+        <field name="name">Import Bank Statement</field>
+        <field name="res_model">vuma.bank.import</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Exception list -->
+    <record id="view_exception_list" model="ir.ui.view">
+        <field name="name">vuma.exception.list</field>
+        <field name="model">vuma.exception</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="type"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="date"/>
+                <field name="amount" sum="Amount"/>
+                <field name="reference"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_exception" model="ir.actions.act_window">
+        <field name="name">Exception Dashboard</field>
+        <field name="res_model">vuma.exception</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_accounting" model="ir.ui.menu">
+        <field name="name">Accounting</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">70</field>
+    </record>
+    <record id="menu_fixed_asset" model="ir.ui.menu">
+        <field name="name">Fixed Assets</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_fixed_asset"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_budget" model="ir.ui.menu">
+        <field name="name">Budgets</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_budget"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_tax_pack" model="ir.ui.menu">
+        <field name="name">VAT Pack Wizard</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_tax_pack"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_tax_period" model="ir.ui.menu">
+        <field name="name">VAT Periods</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_tax_period"/>
+        <field name="sequence">35</field>
+    </record>
+    <record id="menu_tax_ledger" model="ir.ui.menu">
+        <field name="name">VAT Ledger Reconciliation</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_tax_ledger"/>
+        <field name="sequence">36</field>
+    </record>
+    <record id="menu_bank_import" model="ir.ui.menu">
+        <field name="name">Import Bank Statement</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_bank_import"/>
+        <field name="sequence">37</field>
+    </record>
+    <record id="menu_exception" model="ir.ui.menu">
+        <field name="name">Exception Dashboard</field>
+        <field name="parent_id" ref="menu_vuma_accounting"/>
+        <field name="action" ref="action_exception"/>
+        <field name="sequence">40</field>
+    </record>
+
+</odoo>

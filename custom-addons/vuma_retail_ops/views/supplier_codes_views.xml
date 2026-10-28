@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Supplier pricelist with the vendor's own stock code shown up front. -->
+    <record id="view_product_supplierinfo_tree_vuma_codes" model="ir.ui.view">
+        <field name="name">product.supplierinfo.list.vuma.codes</field>
+        <field name="model">product.supplierinfo</field>
+        <field name="inherit_id" ref="purchase.product_supplierinfo_tree_view2"/>
+        <field name="mode">primary</field>
+        <field name="priority" eval="99"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_code']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+            <xpath expr="//field[@name='product_name']" position="attributes">
+                <attribute name="optional">show</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_vuma_supplier_rfq_wizard_form" model="ir.ui.view">
+        <field name="name">vuma.supplier.rfq.wizard.form</field>
+        <field name="model">vuma.supplier.rfq.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Request Quotations from Suppliers">
+                <group>
+                    <group>
+                        <field name="product_tmpl_id" readonly="1"/>
+                        <field name="company_id"
+                               groups="base.group_multi_company"/>
+                        <field name="send_email"/>
+                    </group>
+                    <group>
+                        <field name="line_count"/>
+                        <field name="selected_count"/>
+                    </group>
+                </group>
+                <div class="text-muted mb-2">
+                    One RFQ is created per selected supplier. Each line keeps
+                    that supplier's own stock code, description, pack,
+                    quantity and price.
+                </div>
+                <field name="line_ids" nolabel="1">
+                    <list editable="bottom">
+                        <field name="selected" widget="boolean_toggle"/>
+                        <field name="supplier_id"/>
+                        <field name="stock_code"/>
+                        <field name="supplier_product_name"/>
+                        <field name="product_id" optional="show"
+                               domain="[('product_tmpl_id', '=', product_tmpl_id)]"/>
+                        <field name="quantity"/>
+                        <field name="uom_id" groups="uom.group_uom"
+                               options="{'no_open': True}"/>
+                        <field name="price"/>
+                        <field name="lead_time"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="wizard_id" column_invisible="1"/>
+                        <field name="supplierinfo_id" column_invisible="1"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_create_rfqs" type="object"
+                            string="Create RFQs" class="btn-primary"/>
+                    <button special="cancel" class="btn-secondary"
+                            string="Cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- The supplier code on the RFQ line -->
+    <record id="view_purchase_order_form_vuma_supplier_code"
+            model="ir.ui.view">
+        <field name="name">purchase.order.form.vuma.supplier.code</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/column[@name='product_and_description']"
+                   position="after">
+                <field name="vuma_supplier_code" optional="show"
+                       readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_order_line_tree_vuma_supplier_code"
+            model="ir.ui.view">
+        <field name="name">purchase.order.line.list.vuma.supplier.code</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="vuma_supplier_code" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_purchase_order_line_form_vuma_supplier_code"
+            model="ir.ui.view">
+        <field name="name">purchase.order.line.form.vuma.supplier.code</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_form2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="after">
+                <field name="vuma_supplier_code" readonly="1"/>
+                <field name="vuma_supplier_product_name" readonly="1"/>
+                <field name="vuma_supplierinfo_id" readonly="1"
+                       groups="purchase.group_purchase_manager"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- All supplier codes in one list -->
+    <record id="action_vuma_supplier_codes" model="ir.actions.act_window">
+        <field name="name">Supplier Stock Codes</field>
+        <field name="res_model">product.supplierinfo</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_product_supplierinfo_tree_vuma_codes"/>
+        <field name="context">{'visible_product_tmpl_id': True}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No supplier stock codes yet
+            </p>
+            <p>
+                Open a product, go to Suppliers &amp; Codes and add one line
+                per supplier with that supplier's own stock code.
+            </p>
+        </field>
+    </record>
+
+    <record id="menu_vuma_supplier_codes" model="ir.ui.menu">
+        <field name="name">Supplier Stock Codes</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_vuma_supplier_codes"/>
+        <field name="sequence">15</field>
+        <field name="group_ids" eval="[(4, ref('purchase.group_purchase_user'))]"/>
+    </record>
+
+</odoo>

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="vuma_picking_slip.Tablet">
+  <div class="o_vuma_picking_tablet">
+
+    <div t-if="state.loading" class="o_vps_center">
+      <i class="fa fa-circle-o-notch fa-spin fa-3x"/>
+      <p>Loading picking slip…</p>
+    </div>
+
+    <div t-elif="state.error" class="o_vps_center o_vps_error">
+      <i class="fa fa-exclamation-triangle fa-3x"/>
+      <p t-out="state.error"/>
+      <button class="btn btn-primary o_vps_btn" t-on-click="backToList">
+        All slips
+      </button>
+    </div>
+
+    <t t-else="">
+
+      <header class="o_vps_header">
+        <div class="o_vps_header_left">
+          <button class="btn btn-link o_vps_back" t-on-click="backToList">
+            <i class="fa fa-arrow-left"/> All slips
+          </button>
+          <div>
+            <h1 t-out="state.slip.name"/>
+            <div class="o_vps_meta">
+              <span t-out="state.slip.date"/>
+              <span t-if="state.slip.user_id">
+                · <span t-out="state.slip.user_id[1]"/>
+              </span>
+              <span t-attf-class="badge {{ state.slip.state === 'done' ? 'text-bg-success' : state.slip.state === 'in_progress' ? 'text-bg-warning' : 'text-bg-secondary' }}"
+                    t-out="stateLabel"/>
+            </div>
+          </div>
+        </div>
+        <div class="o_vps_header_actions">
+          <button class="btn btn-secondary o_vps_btn" t-on-click="openForm">
+            <i class="fa fa-list"/> Details
+          </button>
+          <button class="btn btn-secondary o_vps_btn" t-on-click="printPdf">
+            <i class="fa fa-print"/> Print PDF
+          </button>
+          <button t-if="state.slip.state !== 'done'"
+                  class="btn btn-success o_vps_btn"
+                  t-on-click="finish"
+                  t-att-disabled="state.saving">
+            <i class="fa fa-check"/> Finish
+          </button>
+          <button t-else=""
+                  class="btn btn-warning o_vps_btn"
+                  t-on-click="reopen">
+            <i class="fa fa-undo"/> Reopen
+          </button>
+        </div>
+      </header>
+
+      <section class="o_vps_progress_card">
+        <div class="o_vps_progress_text">
+          <strong t-out="pickedCount"/> of
+          <strong t-out="state.lines.length"/> lines picked
+          <span t-if="shortCount" class="o_vps_short">
+            · <t t-out="shortCount"/> short
+          </span>
+          <span t-if="state.saving" class="o_vps_saving">
+            <i class="fa fa-circle-o-notch fa-spin"/> Saving…
+          </span>
+        </div>
+        <div class="progress o_vps_progress">
+          <div t-attf-class="progress-bar {{ progress === 100 ? 'bg-success' : '' }}"
+               t-attf-style="width: {{ progress }}%"/>
+        </div>
+      </section>
+
+      <div class="o_vps_toolbar">
+        <button t-if="state.slip.state !== 'done'"
+                class="btn btn-outline-primary o_vps_btn"
+                t-on-click="markAll"
+                t-att-disabled="state.saving">
+          <i class="fa fa-check-square-o"/> Mark all picked
+        </button>
+        <span t-if="state.slip.note" class="o_vps_note" t-out="state.slip.note"/>
+      </div>
+
+      <main class="o_vps_lines">
+        <div t-if="not state.lines.length" class="o_vps_center">
+          <p>This picking slip has no product lines.</p>
+        </div>
+
+        <article t-foreach="state.lines" t-as="line" t-key="line.id"
+                 t-attf-class="o_vps_line {{ line.is_picked ? 'o_vps_line--picked' : '' }} {{ this.isShort(line) ? 'o_vps_line--short' : '' }}">
+          <div class="o_vps_line_top">
+            <div class="o_vps_product">
+              <h2 t-out="line.product_id[1]"/>
+              <div class="o_vps_product_meta">
+                <span t-if="line.product_barcode">
+                  <i class="fa fa-barcode"/> <span t-out="line.product_barcode"/>
+                </span>
+                <span t-if="line.source_label">
+                  <i class="fa fa-map-marker"/> <span t-out="line.source_label"/>
+                </span>
+                <span t-if="line.source_company_id">
+                  <i class="fa fa-building"/> <span t-out="line.source_company_id[1]"/>
+                </span>
+              </div>
+            </div>
+            <div class="o_vps_demand">
+              <span class="o_vps_demand_label">Ordered</span>
+              <span class="o_vps_demand_value" t-out="this.formatQty(line.demand_qty)"/>
+              <span class="o_vps_uom" t-out="line.product_uom_id[1]"/>
+            </div>
+          </div>
+
+          <div class="o_vps_line_bottom">
+            <div class="o_vps_stepper">
+              <button class="btn o_vps_step"
+                      t-on-click="() => this.changeQty(line, -1)"
+                      t-att-disabled="state.slip.state === 'done'"
+                      aria-label="Decrease picked quantity">
+                <i class="fa fa-minus"/>
+              </button>
+              <input type="number"
+                     class="o_vps_qty_input"
+                     min="0"
+                     step="1"
+                     inputmode="decimal"
+                     t-att-value="line.picked_qty"
+                     t-att-disabled="state.slip.state === 'done'"
+                     t-on-change="(ev) => this.onQtyChange(line, ev)"/>
+              <button class="btn o_vps_step"
+                      t-on-click="() => this.changeQty(line, 1)"
+                      t-att-disabled="state.slip.state === 'done'"
+                      aria-label="Increase picked quantity">
+                <i class="fa fa-plus"/>
+              </button>
+              <span class="o_vps_uom" t-out="line.product_uom_id[1]"/>
+            </div>
+
+            <div class="o_vps_line_state">
+              <span t-if="this.isShort(line)" class="o_vps_short">
+                Short by <strong t-out="this.formatQty(this.remaining(line))"/>
+              </span>
+              <button t-attf-class="btn o_vps_pick {{ line.is_picked ? 'btn-success' : 'btn-outline-success' }}"
+                      t-on-click="() => this.togglePicked(line)"
+                      t-att-disabled="state.slip.state === 'done'">
+                <i t-attf-class="fa {{ line.is_picked ? 'fa-check-circle' : 'fa-circle-o' }}"/>
+                <span t-out="line.is_picked ? 'Picked' : 'Tap to pick'"/>
+              </button>
+            </div>
+          </div>
+        </article>
+      </main>
+
+      <footer class="o_vps_footer">
+        <span>No stock is reserved or moved by this slip.</span>
+        <span t-if="state.slip.finished_by_id">
+          Finished by <t t-out="state.slip.finished_by_id[1]"/>
+        </span>
+      </footer>
+
+    </t>
+  </div>
+</t>
+
+</templates>

@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Debtor rating -->
+    <record id="view_debtor_rating_list" model="ir.ui.view">
+        <field name="name">vuma.debtor.rating.list</field>
+        <field name="model">vuma.debtor.rating</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="date"/>
+                <field name="avg_days_late"/>
+                <field name="overdue_ratio" widget="percentage"/>
+                <field name="utilisation" widget="percentage"/>
+                <field name="score"/>
+                <field name="rating" widget="badge"/>
+                <field name="override_rating" widget="badge"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_debtor_rating_form" model="ir.ui.view">
+        <field name="name">vuma.debtor.rating.form</field>
+        <field name="model">vuma.debtor.rating</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_compute" string="Calculate Rating" type="object"
+                            class="btn-secondary" invisible="state == 'confirmed'"/>
+                    <button name="action_confirm" string="Confirm Rating" type="object"
+                            class="btn-primary" invisible="state == 'confirmed'"
+                            groups="vuma_retail_ops.group_vuma_debtors,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="date"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                        <group>
+                            <field name="score"/>
+                            <field name="rating"/>
+                            <field name="override_rating"/>
+                            <field name="override_reason"
+                                   invisible="not override_rating"/>
+                        </group>
+                    </group>
+                    <group string="Score Breakdown">
+                        <group>
+                            <field name="avg_days_late"/>
+                            <field name="overdue_ratio"/>
+                            <field name="utilisation"/>
+                        </group>
+                        <group>
+                            <field name="failed_payment_ratio"/>
+                            <field name="return_dispute_ratio"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_debtor_rating" model="ir.actions.act_window">
+        <field name="name">Debtor Ratings</field>
+        <field name="res_model">vuma.debtor.rating</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Statement wizard -->
+    <record id="view_statement_wizard_form" model="ir.ui.view">
+        <field name="name">vuma.statement.wizard.form</field>
+        <field name="model">vuma.statement.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="company_ids" widget="many2many_tags"/>
+                        <field name="include_zero"/>
+                        <field name="only_overdue"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print" string="Print Statement" type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_statement_wizard" model="ir.actions.act_window">
+        <field name="name">Debtor Statement</field>
+        <field name="res_model">vuma.statement.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Dunning letter -->
+    <record id="view_dunning_letter_list" model="ir.ui.view">
+        <field name="name">vuma.dunning.letter.list</field>
+        <field name="model">vuma.dunning.letter</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="date"/>
+                <field name="letter_type"/>
+                <field name="amount_overdue" sum="Overdue"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_dunning_letter_form" model="ir.ui.view">
+        <field name="name">vuma.dunning.letter.form</field>
+        <field name="model">vuma.dunning.letter</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_body" string="Generate Body"
+                            type="object" class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_print" string="Print Letter" type="object"/>
+                    <button name="action_mark_sent" string="Mark Sent" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="date"/>
+                            <field name="letter_type"/>
+                            <field name="amount_overdue"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="sent_date" readonly="1"/>
+                            <field name="sent_by_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="body"/>
+                    <field name="notes"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_dunning_letter" model="ir.actions.act_window">
+        <field name="name">Debtor Letters</field>
+        <field name="res_model">vuma.dunning.letter</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Debtor form -->
+    <record id="view_debtor_form_list" model="ir.ui.view">
+        <field name="name">vuma.debtor.form.list</field>
+        <field name="model">vuma.debtor.form</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="form_type"/>
+                <field name="date"/>
+                <field name="requested_credit_limit"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_debtor_form_form" model="ir.ui.view">
+        <field name="name">vuma.debtor.form.form</field>
+        <field name="model">vuma.debtor.form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="form_type"/>
+                            <field name="date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="requested_by_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
+                            <field name="second_approved_by_id" readonly="1"/>
+                            <field name="second_approved_date" readonly="1"/>
+                            <field name="requested_credit_limit"
+                                   invisible="form_type != 'credit_application'"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Banking details" invisible="form_type != 'bank_change'">
+                        <field name="bank_name"/>
+                        <field name="bank_account"/>
+                        <field name="branch_code"/>
+                        <field name="account_holder"/>
+                    </group>
+                    <group string="Address change" invisible="form_type != 'address_change'">
+                        <field name="requested_street"/>
+                        <field name="requested_city"/>
+                        <field name="requested_zip"/>
+                    </group>
+                    <group>
+                        <field name="attachment_filename" invisible="1"/>
+                        <field name="attachment" filename="attachment_filename"/>
+                        <field name="notes"/>
+                        <field name="rejection_reason" invisible="state != 'rejected'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_debtor_form" model="ir.actions.act_window">
+        <field name="name">Debtor Forms</field>
+        <field name="res_model">vuma.debtor.form</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Collection task -->
+    <record id="view_collection_task_list" model="ir.ui.view">
+        <field name="name">vuma.collection.task.list</field>
+        <field name="model">vuma.collection.task</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'broken'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="invoice_id"/>
+                <field name="amount_due" sum="Due"/>
+                <field name="promised_date"/>
+                <field name="promised_amount"/>
+                <field name="owner_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_collection_task_form" model="ir.ui.view">
+        <field name="name">vuma.collection.task.form</field>
+        <field name="model">vuma.collection.task</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_promise" string="Promise to Pay" type="object"
+                            class="btn-primary" invisible="state not in ('open','broken')"/>
+                    <button name="action_kept" string="Promise Kept" type="object"
+                            invisible="state != 'promised'"/>
+                    <button name="action_broken" string="Promise Broken" type="object"
+                            invisible="state != 'promised'"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ('cancelled','kept')"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="invoice_id"/>
+                            <field name="amount_due"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="promised_date"/>
+                            <field name="promised_amount"/>
+                            <field name="owner_id"/>
+                            <field name="last_contact"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="next_action"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_collection_task" model="ir.actions.act_window">
+        <field name="name">Collections Worklist</field>
+        <field name="res_model">vuma.collection.task</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Cashflow forecast -->
+    <record id="view_cashflow_forecast_list" model="ir.ui.view">
+        <field name="name">vuma.cashflow.forecast.list</field>
+        <field name="model">vuma.cashflow.forecast</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="week_start"/>
+                <field name="direction"/>
+                <field name="source"/>
+                <field name="partner_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="reference"/>
+                <field name="due_date"/>
+                <field name="amount" sum="Amount"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_cashflow_forecast" model="ir.actions.act_window">
+        <field name="name">13-Week Cashflow</field>
+        <field name="res_model">vuma.cashflow.forecast</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Rep performance -->
+    <record id="view_rep_performance_list" model="ir.ui.view">
+        <field name="name">vuma.rep.performance.list</field>
+        <field name="model">vuma.rep.performance</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="month"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="order_count" sum="Orders"/>
+                <field name="customer_count"/>
+                <field name="sales_amount" sum="Sales"/>
+                <field name="invoice_amount" sum="Invoiced"/>
+                <field name="collected_amount" sum="Collected"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_rep_performance" model="ir.actions.act_window">
+        <field name="name">Sales Rep Performance</field>
+        <field name="res_model">vuma.rep.performance</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Credit limits: one list, both companies -->
+    <record id="view_partner_vuma_credit_limit_list" model="ir.ui.view">
+        <field name="name">res.partner.vuma.credit.limit.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Credit Limits" create="false">
+                <field name="name" string="Customer"/>
+                <field name="credit_limit"
+                       string="Credit Limit (both companies)" sum="Total Limits"/>
+                <field name="credit" string="Current Exposure" sum="Exposure"/>
+                <field name="vuma_group_credit_limit" string="Group Limit"
+                       sum="Group Limits"/>
+                <field name="vuma_group_exposure" string="Group Exposure"
+                       sum="Group Exposure"/>
+                <field name="vuma_group_overdue" string="Overdue" sum="Overdue"
+                       decoration-danger="vuma_group_overdue &gt; 0"/>
+                <field name="vuma_debtor_rating" string="Rating" widget="badge"/>
+                <field name="vuma_credit_hold" string="On Hold"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_vuma_credit_limits" model="ir.actions.act_window">
+        <field name="name">Credit Limits</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_partner_vuma_credit_limit_list"/>
+        <field name="domain">[('credit_limit', '&gt;', 0)]</field>
+        <field name="context">{'search_default_customer': 1, 'res_partner_search_mode': 'customer'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No customer has a credit limit yet
+            </p>
+            <p>
+                Open a customer, go to <b>Vuma Credit &amp; Links</b> and set
+                <b>Credit Limit (both companies)</b>. The same limit applies in
+                Trade Rite and Siyaya DC.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_debtors" model="ir.ui.menu">
+        <field name="name">Debtors</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="menu_vuma_credit_limits" model="ir.ui.menu">
+        <field name="name">Credit Limits</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_vuma_credit_limits"/>
+        <field name="group_ids" eval="[(4, ref('account.group_account_invoice')),
+                                      (4, ref('account.group_account_readonly'))]"/>
+        <field name="sequence">5</field>
+    </record>
+    <record id="menu_debtor_rating" model="ir.ui.menu">
+        <field name="name">Debtor Ratings</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_debtor_rating"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_statement_wizard" model="ir.ui.menu">
+        <field name="name">Print Statement</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_statement_wizard"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_dunning_letter" model="ir.ui.menu">
+        <field name="name">Debtor Letters</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_dunning_letter"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_debtor_form" model="ir.ui.menu">
+        <field name="name">Debtor Forms</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_debtor_form"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_collection_task" model="ir.ui.menu">
+        <field name="name">Collections Worklist</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_collection_task"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="menu_cashflow_forecast" model="ir.ui.menu">
+        <field name="name">Cashflow Forecast</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_cashflow_forecast"/>
+        <field name="sequence">60</field>
+    </record>
+    <record id="menu_rep_performance" model="ir.ui.menu">
+        <field name="name">Sales Rep Performance</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_rep_performance"/>
+        <field name="sequence">70</field>
+    </record>
+
+</odoo>

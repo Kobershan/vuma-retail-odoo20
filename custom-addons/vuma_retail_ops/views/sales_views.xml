@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Partner credit and linkage -->
+    <record id="view_partner_form_vuma_credit" model="ir.ui.view">
+        <field name="name">res.partner.form.vuma.credit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Vuma Credit &amp; Links" name="vuma_credit">
+                    <div class="text-muted mb-3">
+                        The credit limit is shared by Trade Rite and Siyaya DC:
+                        orders in either company draw on the same limit and the
+                        same customer exposure.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="credit_limit"
+                                   string="Credit Limit (both companies)"/>
+                            <field name="vuma_group_credit_limit"/>
+                            <field name="vuma_group_exposure"/>
+                            <field name="vuma_group_overdue"/>
+                            <field name="vuma_debtor_rating"/>
+                        </group>
+                        <group>
+                            <field name="vuma_popia_consent"/>
+                            <field name="vuma_popia_consent_date"/>
+                            <field name="vuma_account_closed_date"/>
+                            <field name="vuma_credit_override_until"/>
+                            <field name="vuma_credit_override_reason"/>
+                        </group>
+                    </group>
+                    <group string="Linked customers (shared directors, owners or address)">
+                        <field name="vuma_link_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="linked_partner_id"/>
+                                <field name="relation_type"/>
+                                <field name="notes"/>
+                            </list>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Credit limit search: makes "credit" findable from the Contacts search
+         bar and gives the debtors team a quick way to list customers on a
+         limit without opening each contact. -->
+    <record id="view_res_partner_filter_vuma_credit_limit" model="ir.ui.view">
+        <field name="name">res.partner.search.vuma.credit.limit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="credit_limit" string="Credit Limit"/>
+            </xpath>
+            <xpath expr="//filter[@name='inactive']" position="before">
+                <filter name="vuma_has_credit_limit" string="Has a credit limit"
+                        domain="[('credit_limit', '&gt;', 0)]"
+                        groups="account.group_account_invoice,account.group_account_readonly"/>
+                <separator/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- The standard Credit Limits block is company-specific. Vuma keeps one
+         shared limit on the Vuma Credit & Links tab instead, so hide the
+         per-company control to stop one company's slice being edited alone. -->
+    <record id="view_partner_form_vuma_shared_credit_limit" model="ir.ui.view">
+        <field name="name">res.partner.form.vuma.shared.credit.limit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="account.view_partner_property_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='credit_limits']/label[@for='use_partner_credit_limit']"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//group[@name='credit_limits']/div[field[@name='use_partner_credit_limit']]"
+                   position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer change request -->
+    <record id="view_customer_change_list" model="ir.ui.view">
+        <field name="name">vuma.customer.change.request.list</field>
+        <field name="model">vuma.customer.change.request</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="request_type"/>
+                <field name="requested_by_id"/>
+                <field name="requested_credit_limit"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_customer_change_form" model="ir.ui.view">
+        <field name="name">vuma.customer.change.request.form</field>
+        <field name="model">vuma.customer.change.request</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"
+                                   invisible="request_type == 'new_customer'"/>
+                            <field name="request_type"/>
+                            <field name="requested_by_id" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Requested Values">
+                        <group>
+                            <field name="requested_name"/>
+                            <field name="requested_phone"/>
+                            <field name="requested_email"/>
+                            <field name="requested_vat"/>
+                        </group>
+                        <group>
+                            <field name="requested_street"/>
+                            <field name="requested_city"/>
+                            <field name="requested_zip"/>
+                            <field name="requested_credit_limit"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes"/>
+                        <field name="rejection_reason" invisible="state != 'rejected'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_customer_change" model="ir.actions.act_window">
+        <field name="name">Customer Change Requests</field>
+        <field name="res_model">vuma.customer.change.request</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Customer links -->
+    <record id="view_customer_link_list" model="ir.ui.view">
+        <field name="name">vuma.customer.link.list</field>
+        <field name="model">vuma.customer.link</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="partner_id"/>
+                <field name="linked_partner_id"/>
+                <field name="relation_type"/>
+                <field name="notes"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_customer_link" model="ir.actions.act_window">
+        <field name="name">Linked Customers</field>
+        <field name="res_model">vuma.customer.link</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Uplift request -->
+    <record id="view_uplift_request_list" model="ir.ui.view">
+        <field name="name">vuma.uplift.request.list</field>
+        <field name="model">vuma.uplift.request</field>
+        <field name="arch" type="xml">
+            <list decoration-warning="state == 'submitted'">
+                <field name="name"/>
+                <field name="request_date"/>
+                <field name="partner_id"/>
+                <field name="invoice_id"/>
+                <field name="sales_rep_id"/>
+                <field name="total_qty"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-warning="state == 'submitted'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_uplift_request_form" model="ir.ui.view">
+        <field name="name">vuma.uplift.request.form</field>
+        <field name="model">vuma.uplift.request</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit for Approval" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve &amp; Create Pickup"
+                            type="object" class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_view_pickup" string="Open Pickup" type="object"
+                            invisible="not pickup_id"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved,collected"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="invoice_id"/>
+                            <field name="partner_id"/>
+                            <field name="sales_rep_id"/>
+                            <field name="reason"/>
+                        </group>
+                        <group>
+                            <field name="request_date"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="approver_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
+                            <field name="pickup_id" readonly="1"/>
+                            <field name="total_qty"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="invoice_line_id"/>
+                            <field name="invoiced_qty"/>
+                            <field name="quantity"/>
+                            <field name="uom_id" groups="uom.group_uom"/>
+                            <field name="price_unit"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="reason"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                    <group>
+                        <field name="notes"/>
+                        <field name="photo" widget="image"/>
+                        <field name="rejection_reason" invisible="state != 'rejected'"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_uplift_request" model="ir.actions.act_window">
+        <field name="name">Uplift Requests</field>
+        <field name="res_model">vuma.uplift.request</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Sale order checks -->
+    <record id="view_order_form_vuma_checks" model="ir.ui.view">
+        <field name="name">sale.order.form.vuma.checks</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_run_checks" string="Run Order Checks"
+                        type="object" class="btn-secondary"/>
+                <button name="action_vuma_override_credit" string="Owner Credit Override"
+                        type="object" class="btn-danger"
+                        invisible="vuma_check_state != 'blocked'"
+                        groups="vuma_retail_ops.group_vuma_owner"/>
+                <button name="action_vuma_save_revision" string="Save Quote Revision"
+                        type="object"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Vuma Order Check" name="vuma_order_check">
+                    <group>
+                        <group>
+                            <field name="vuma_check_state" readonly="1"/>
+                            <field name="vuma_check_date" readonly="1"/>
+                            <field name="vuma_check_user_id" readonly="1"/>
+                            <field name="vuma_revision_count"/>
+                        </group>
+                        <group>
+                            <field name="vuma_stock_ok"/>
+                            <field name="vuma_credit_ok"/>
+                            <field name="vuma_margin_ok"/>
+                            <field name="vuma_duplicate_ok"/>
+                        </group>
+                    </group>
+                    <field name="vuma_check_notes" readonly="1"/>
+                    <group string="Owner credit override">
+                        <field name="vuma_credit_override_by_id" readonly="1"/>
+                        <field name="vuma_credit_override_until" readonly="1"/>
+                        <field name="vuma_credit_override_reason"/>
+                    </group>
+                    <field name="vuma_revision_ids" readonly="1">
+                        <list>
+                            <field name="revision_no"/>
+                            <field name="date"/>
+                            <field name="user_id"/>
+                            <field name="amount_total"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Consolidated invoice wizard -->
+    <record id="view_consolidated_invoice_wizard_form" model="ir.ui.view">
+        <field name="name">vuma.consolidated.invoice.wizard.form</field>
+        <field name="model">vuma.consolidated.invoice.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="invoice_date"/>
+                    </group>
+                    <group>
+                        <field name="company_ids" widget="many2many_tags"/>
+                        <field name="group_by_town"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_create_invoices" string="Create Invoices"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_consolidated_invoice_wizard" model="ir.actions.act_window">
+        <field name="name">Consolidated Invoicing</field>
+        <field name="res_model">vuma.consolidated.invoice.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Quote revisions -->
+    <record id="view_quote_revision_list" model="ir.ui.view">
+        <field name="name">vuma.quote.revision.list</field>
+        <field name="model">vuma.quote.revision</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="order_id"/>
+                <field name="revision_no"/>
+                <field name="date"/>
+                <field name="user_id"/>
+                <field name="amount_untaxed"/>
+                <field name="amount_total"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_quote_revision" model="ir.actions.act_window">
+        <field name="name">Quote Revisions</field>
+        <field name="res_model">vuma.quote.revision</field>
+        <field name="view_mode">list</field>
+    </record>
+
+
+    <record id="view_order_form_vuma_repeat" model="ir.ui.view">
+        <field name="name">sale.order.form.vuma.repeat</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_repeat_order" string="Repeat Order"
+                        type="object" class="btn-secondary"
+                        groups="vuma_retail_ops.group_vuma_sales_rep,vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_owner"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Standing orders -->
+    <record id="view_standing_order_list" model="ir.ui.view">
+        <field name="name">vuma.standing.order.list</field>
+        <field name="model">vuma.standing.order</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="interval"/>
+                <field name="date_next"/>
+                <field name="user_id"/>
+                <field name="last_generated"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_standing_order_form" model="ir.ui.view">
+        <field name="name">vuma.standing.order.form</field>
+        <field name="model">vuma.standing.order</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate_order" string="Generate Now" type="object"
+                            class="btn-primary" invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title"><h1><field name="name" readonly="1"/></h1></div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="user_id"/>
+                            <field name="note"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_next"/>
+                            <field name="interval"/>
+                            <field name="last_generated" readonly="1"/>
+                            <field name="last_order_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="product_id"/>
+                            <field name="product_uom_qty"/>
+                            <field name="note"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_standing_order" model="ir.actions.act_window">
+        <field name="name">Standing Orders</field>
+        <field name="res_model">vuma.standing.order</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_sales" model="ir.ui.menu">
+        <field name="name">Sales Operations</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_customer_change" model="ir.ui.menu">
+        <field name="name">Customer Changes</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_customer_change"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_customer_link" model="ir.ui.menu">
+        <field name="name">Linked Customers</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_customer_link"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_uplift_request" model="ir.ui.menu">
+        <field name="name">Uplift Requests</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_uplift_request"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_consolidated_invoice" model="ir.ui.menu">
+        <field name="name">Consolidated Invoicing</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_consolidated_invoice_wizard"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_quote_revision" model="ir.ui.menu">
+        <field name="name">Quote Revisions</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_quote_revision"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="menu_standing_order" model="ir.ui.menu">
+        <field name="name">Standing Orders</field>
+        <field name="parent_id" ref="menu_vuma_sales"/>
+        <field name="action" ref="action_standing_order"/>
+        <field name="sequence">60</field>
+    </record>
+
+</odoo>

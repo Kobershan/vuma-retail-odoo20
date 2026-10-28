@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================ report -->
+    <template id="report_consolidated_picking_slip">
+        <t t-call="web.html_container">
+            <t t-set="data" t-value="docs.get_consolidated_picking_data()"/>
+            <t t-set="o" t-value="data.invoices[:1]"/>
+            <t t-set="company" t-value="o.company_id"/>
+            <t t-set="hide_recipient_address" t-value="True"/>
+            <t t-set="layout_document_title" t-value="'Consolidated Picking Slip'"/>
+
+            <t t-call="web.external_layout">
+                <div class="page">
+
+                    <div t-if="data.multi_company" class="alert alert-info" role="alert">
+                        This slip contains goods from more than one company:
+                        <strong t-out="', '.join(data.companies.mapped('name'))"/>.
+                        Pick each line from the company shown in the Company column.
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-7">
+                            <h4 class="mb-2">Invoices on this slip</h4>
+                            <table class="table table-sm table-borderless mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="data.invoices" t-as="invoice">
+                                        <td>
+                                            <span t-out="invoice.name if invoice.name and invoice.name != '/' else 'Draft'"/>
+                                        </td>
+                                        <td t-out="invoice.partner_id.display_name"/>
+                                        <td>
+                                            <span t-field="invoice.invoice_date"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="col-5">
+                            <div class="border rounded p-3 bg-light">
+                                <p class="mb-1">
+                                    <strong>Prepared by:</strong>
+                                    <span t-out="data.prepared_by"/>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>Date:</strong>
+                                    <span t-out="data.today"/>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>Invoices:</strong>
+                                    <span t-out="len(data.invoices)"/>
+                                </p>
+                                <p class="mb-1">
+                                    <strong>Product lines:</strong>
+                                    <span t-out="len(data.lines)"/>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm table-striped o_main_table">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 4%">#</th>
+                                <th>Product</th>
+                                <th t-if="data.has_barcode">Barcode</th>
+                                <th t-if="data.multi_company">Company</th>
+                                <th>Source</th>
+                                <th class="text-end">Quantity</th>
+                                <th>Unit</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data.lines" t-as="line">
+                                <td class="text-center" t-out="line_index + 1"/>
+                                <td t-out="line.product.display_name"/>
+                                <td t-if="data.has_barcode">
+                                    <span t-out="line.product.barcode"/>
+                                </td>
+                                <td t-if="data.multi_company" t-out="line.company.name"/>
+                                <td t-out="line.source_label"/>
+                                <td class="text-end fw-bold" t-out="line.quantity_display"/>
+                                <td t-out="line.uom.name"/>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p class="text-muted small mt-3">
+                        Quantities are added together across every invoice on
+                        this slip. This is a picking list only: no stock has
+                        been reserved or moved.
+                    </p>
+
+                    <div class="row mt-5">
+                        <div class="col-4">
+                            <strong>Picked by</strong>
+                            <div class="border-top mt-4 pt-1 text-muted">Name / signature</div>
+                        </div>
+                        <div class="col-4">
+                            <strong>Checked by</strong>
+                            <div class="border-top mt-4 pt-1 text-muted">Name / signature</div>
+                        </div>
+                        <div class="col-4">
+                            <strong>Date completed</strong>
+                            <div class="border-top mt-4 pt-1 text-muted">Date</div>
+                        </div>
+                    </div>
+
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_consolidated_picking_slip" model="ir.actions.report">
+        <field name="name">Consolidated Picking Slip</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_picking_slip.report_consolidated_picking_slip</field>
+        <field name="print_report_name">'Consolidated Picking Slip'</field>
+    </record>
+
+</odoo>

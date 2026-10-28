@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- =============================================== printable picking slip -->
+    <template id="report_picking_slip">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="company" t-value="o.company_id"/>
+                <t t-set="state_labels" t-value="dict(o._fields['state'].selection)"/>
+                <t t-set="hide_recipient_address" t-value="True"/>
+                <t t-set="layout_document_title" t-value="'Picking Slip'"/>
+
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <div t-if="o.multi_company" class="alert alert-info" role="alert">
+                            This slip contains goods from more than one company:
+                            <strong t-out="', '.join(o.source_company_ids.mapped('name'))"/>.
+                            Pick each line from the company shown in the Company
+                            column.
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-7">
+                                <h2 class="mb-1">Consolidated Picking Slip</h2>
+                                <p class="mb-1">
+                                    <strong t-out="o.name"/>
+                                    <span class="badge text-bg-secondary ms-2"
+                                          t-out="state_labels.get(o.state)"/>
+                                </p>
+                                <p class="mb-1" t-if="o.note" t-out="o.note"/>
+                            </div>
+                            <div class="col-5">
+                                <div class="border rounded p-3 bg-light">
+                                    <p class="mb-1">
+                                        <strong>Prepared by:</strong>
+                                        <span t-out="o.user_id.name"/>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Date:</strong>
+                                        <span t-field="o.date"/>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Invoices:</strong>
+                                        <span t-out="o.invoice_count"/>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Product lines:</strong>
+                                        <span t-out="o.line_count"/>
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>Picked:</strong>
+                                        <span t-out="o.picked_count"/>
+                                        <span t-if="o.short_count">
+                                            (<span t-out="o.short_count"/> short)
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 class="mb-2">Invoices on this slip</h4>
+                        <table class="table table-sm table-borderless mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Customer</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.invoice_ids" t-as="invoice">
+                                    <td>
+                                        <span t-out="invoice.name if invoice.name and invoice.name != '/' else 'Draft'"/>
+                                    </td>
+                                    <td t-out="invoice.partner_id.display_name"/>
+                                    <td>
+                                        <span t-field="invoice.invoice_date"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <table class="table table-sm table-striped o_main_table">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 4%">#</th>
+                                    <th>Product</th>
+                                    <th t-if="any(line.product_barcode for line in o.line_ids)">Barcode</th>
+                                    <th t-if="o.multi_company">Company</th>
+                                    <th>Source</th>
+                                    <th class="text-end">Ordered</th>
+                                    <th class="text-end">Picked</th>
+                                    <th>Unit</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.line_ids" t-as="line"
+                                    t-att-class="'table-warning' if line.is_short else ''">
+                                    <td class="text-center" t-out="line_index + 1"/>
+                                    <td t-out="line.product_id.display_name"/>
+                                    <td t-if="any(l.product_barcode for l in o.line_ids)">
+                                        <span t-out="line.product_barcode"/>
+                                    </td>
+                                    <td t-if="o.multi_company"
+                                        t-out="line.source_company_id.name"/>
+                                    <td t-out="line.source_label"/>
+                                    <td class="text-end" t-out="'%.2f' % line.demand_qty"/>
+                                    <td class="text-end fw-bold" t-out="'%.2f' % line.picked_qty"/>
+                                    <td t-out="line.product_uom_id.name"/>
+                                    <td>
+                                        <span t-if="line.is_short"
+                                              class="badge text-bg-warning">Short</span>
+                                        <span t-elif="line.is_picked"
+                                              class="badge text-bg-success">Picked</span>
+                                        <span t-else=""
+                                              class="badge text-bg-secondary">Pending</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p class="text-muted small mt-3">
+                            Quantities are added together across every invoice on
+                            this slip. The Picked column is what the warehouse
+                            captured on the tablet. This is a picking list only:
+                            no stock has been reserved or moved.
+                        </p>
+
+                        <div class="row mt-5">
+                            <div class="col-4">
+                                <strong>Picked by</strong>
+                                <div class="border-top mt-4 pt-1 text-muted">
+                                    <span t-if="o.finished_by_id"
+                                          t-out="o.finished_by_id.name"/>
+                                    <span t-else="">Name / signature</span>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <strong>Checked by</strong>
+                                <div class="border-top mt-4 pt-1 text-muted">Name / signature</div>
+                            </div>
+                            <div class="col-4">
+                                <strong>Date completed</strong>
+                                <div class="border-top mt-4 pt-1 text-muted">
+                                    <span t-if="o.finished_date">
+                                        <span t-field="o.finished_date"/>
+                                    </span>
+                                    <span t-else="">Date</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_picking_slip" model="ir.actions.report">
+        <field name="name">Picking Slip</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">vuma_picking_slip.report_picking_slip</field>
+        <field name="print_report_name">'Picking Slip - %s' % (object.name or '')</field>
+        <field name="binding_model_id" ref="model_vuma_picking_slip"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

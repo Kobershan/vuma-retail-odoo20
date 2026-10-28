@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================================================== list view -->
+    <record id="view_vuma_delivery_document_list" model="ir.ui.view">
+        <field name="name">vuma.delivery.document.list</field>
+        <field name="model">vuma.delivery.document</field>
+        <field name="arch" type="xml">
+            <list string="Delivery Documents">
+                <field name="name"/>
+                <field name="generated_at"/>
+                <field name="generated_by_id" widget="many2one_avatar_user"/>
+                <field name="invoice_count" string="Invoices"/>
+                <field name="total_weight" sum="Total Weight"/>
+                <field name="weight_uom_name" optional="hide"/>
+                <field name="paid_upfront_amount" sum="Paid Upfront"/>
+                <field name="on_account_amount" sum="On Account"/>
+                <field name="total_value" sum="Total Value"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================================================== form view -->
+    <record id="view_vuma_delivery_document_form" model="ir.ui.view">
+        <field name="name">vuma.delivery.document.form</field>
+        <field name="model">vuma.delivery.document</field>
+        <field name="arch" type="xml">
+            <form string="Delivery Document">
+                <header>
+                    <button name="action_print_pdf" type="object"
+                            string="Print Delivery Document"
+                            class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="invoice_count" widget="statinfo"
+                                   string="Invoices"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="generated_at"/>
+                            <field name="generated_by_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Load">
+                            <label for="total_weight"/>
+                            <div class="o_row">
+                                <field name="total_weight"
+                                       class="oe_inline"/>
+                                <field name="weight_uom_name"
+                                       class="oe_inline" readonly="1"/>
+                            </div>
+                            <field name="total_value"/>
+                            <field name="paid_upfront_amount"/>
+                            <field name="on_account_amount"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Paid Upfront</strong> is the invoice value
+                        already paid (cash or immediate payment) and
+                        <strong>On Account</strong> is the value still owing
+                        on the selected invoices. Part-paid invoices are split
+                        between the two.
+                    </div>
+                    <notebook>
+                        <page string="Invoices on the Truck" name="invoices">
+                            <field name="invoice_ids"
+                                   domain="[('move_type', '=', 'out_invoice'), ('state', '!=', 'cancel')]">
+                                <list create="false">
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="invoice_date"/>
+                                    <field name="payment_state" widget="badge"/>
+                                    <field name="state"/>
+                                    <field name="amount_total" sum="Total"/>
+                                    <field name="amount_residual"
+                                           sum="On Account"/>
+                                    <field name="currency_id"
+                                           column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note"
+                                   placeholder="Anything dispatch or the driver should know about this truck load..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================== search view -->
+    <record id="view_vuma_delivery_document_search" model="ir.ui.view">
+        <field name="name">vuma.delivery.document.search</field>
+        <field name="model">vuma.delivery.document</field>
+        <field name="arch" type="xml">
+            <search string="Delivery Documents">
+                <field name="name" string="Delivery Document"/>
+                <field name="invoice_ids" string="Invoice"/>
+                <field name="generated_by_id"/>
+                <filter name="filter_today" string="Generated Today"
+                        domain="[('generated_at', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
+                <filter name="filter_my_documents" string="Generated by Me"
+                        domain="[('generated_by_id', '=', uid)]"/>
+                <separator/>
+                <group>
+                    <filter name="group_generated_by" string="Generated By"
+                            context="{'group_by': 'generated_by_id'}"/>
+                    <filter name="group_generated_date" string="Generated On"
+                            context="{'group_by': 'generated_at:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ================================================== document actions -->
+    <record id="action_delivery_document" model="ir.actions.act_window">
+        <field name="name">Delivery Documents</field>
+        <field name="res_model">vuma.delivery.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a document for one truck load
+            </p>
+            <p>
+                Select the invoices going on the truck in
+                <strong>Sales &gt; Invoicing &gt; Customer Invoices</strong>
+                and press <strong>Create Delivery Document</strong>.
+            </p>
+        </field>
+    </record>
+
+    <!-- ====================================================== Sales menu -->
+    <menuitem id="menu_delivery_document" name="Delivery Documents"
+              parent="sale.sale_menu_root" action="action_delivery_document"
+              sequence="16"
+              groups="sales_team.group_sale_salesman,stock.group_stock_user"/>
+
+</odoo>

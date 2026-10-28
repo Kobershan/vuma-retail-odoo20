@@ -1,0 +1,704 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Quote comparison -->
+    <record id="view_quote_comparison_list" model="ir.ui.view">
+        <field name="name">vuma.quote.comparison.list</field>
+        <field name="model">vuma.quote.comparison</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="buyer_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="supplier_count"/>
+                <field name="line_count"/>
+                <field name="best_total" sum="Awarded"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'awarded'"
+                       decoration-info="state == 'comparing'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_quote_comparison_form" model="ir.ui.view">
+        <field name="name">vuma.quote.comparison.form</field>
+        <field name="model">vuma.quote.comparison</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_start" string="Start Comparing" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_award" string="Award Selected" type="object"
+                            class="btn-primary" invisible="state != 'comparing'"/>
+                    <button name="action_create_orders" string="Create Purchase Orders"
+                            type="object" class="btn-primary" invisible="state != 'awarded'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,comparing,awarded"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="buyer_id"/>
+                            <field name="rfq_id"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="best_total"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Quotes" name="quotes">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="description"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" groups="uom.group_uom"/>
+                                    <field name="supplier_id"/>
+                                    <field name="unit_price"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="lead_time_days"/>
+                                    <field name="min_qty"/>
+                                    <field name="validity_date"/>
+                                    <field name="subtotal" sum="Total"/>
+                                    <field name="is_awarded"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="Why these suppliers, delivery constraints, negotiated terms..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_quote_comparison" model="ir.actions.act_window">
+        <field name="name">Quote Comparisons</field>
+        <field name="res_model">vuma.quote.comparison</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Supplier claim -->
+    <record id="view_supplier_claim_list" model="ir.ui.view">
+        <field name="name">vuma.supplier.claim.list</field>
+        <field name="model">vuma.supplier.claim</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'rejected'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="supplier_id"/>
+                <field name="claim_type"/>
+                <field name="purchase_id"/>
+                <field name="claimed_amount" sum="Claimed"/>
+                <field name="approved_amount" sum="Approved"/>
+                <field name="state" widget="badge"
+                       decoration-success="state in ('approved','settled')"
+                       decoration-warning="state == 'submitted'"
+                       decoration-danger="state == 'rejected'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_supplier_claim_form" model="ir.ui.view">
+        <field name="name">vuma.supplier.claim.form</field>
+        <field name="model">vuma.supplier.claim</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_reject" string="Reject" type="object"
+                            invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_create_debit_note" string="Create Debit Note"
+                            type="object" class="btn-primary"
+                            invisible="state != 'approved' or debit_note_id"/>
+                    <button name="action_view_debit_note" string="View Debit Note"
+                            type="object" invisible="not debit_note_id"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,approved,settled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="supplier_id"/>
+                            <field name="date"/>
+                            <field name="claim_type"/>
+                            <field name="purchase_id"/>
+                            <field name="picking_id"/>
+                            <field name="bill_id"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="claimed_amount"/>
+                            <field name="approved_amount"/>
+                            <field name="submitted_by_id" readonly="1"/>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="debit_note_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Claim Lines" name="lines">
+                            <field name="line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="description"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" groups="uom.group_uom"/>
+                                    <field name="unit_price"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="claimed_amount" sum="Total"/>
+                                    <field name="received_qty"/>
+                                    <field name="invoiced_qty"/>
+                                    <field name="note"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Evidence" name="evidence">
+                            <group>
+                                <field name="description" placeholder="What went wrong and what did the supplier agree?"/>
+                                <field name="evidence_filename" invisible="1"/>
+                                <field name="evidence" filename="evidence_filename"/>
+                                <field name="rejection_reason" invisible="state != 'rejected'"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_supplier_claim" model="ir.actions.act_window">
+        <field name="name">Supplier Claims</field>
+        <field name="res_model">vuma.supplier.claim</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Supplier agreement -->
+    <record id="view_supplier_agreement_list" model="ir.ui.view">
+        <field name="name">vuma.supplier.agreement.list</field>
+        <field name="model">vuma.supplier.agreement</field>
+        <field name="arch" type="xml">
+            <list decoration-danger="state == 'expired'">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="agreement_type"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="reminder_date"/>
+                <field name="owner_id"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'active'"
+                       decoration-danger="state == 'expired'"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_supplier_agreement_form" model="ir.ui.view">
+        <field name="name">vuma.supplier.agreement.form</field>
+        <field name="model">vuma.supplier.agreement</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" string="Activate" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_expire" string="Mark Expired" type="object"
+                            invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="agreement_type"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="owner_id"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="notice_days"/>
+                            <field name="reminder_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Signed Document" name="document">
+                            <group>
+                                <field name="attachment_filename" invisible="1"/>
+                                <field name="attachment" filename="attachment_filename"/>
+                                <field name="notes"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_supplier_agreement" model="ir.actions.act_window">
+        <field name="name">Supplier Agreements</field>
+        <field name="res_model">vuma.supplier.agreement</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Rebate agreement -->
+    <record id="view_rebate_agreement_list" model="ir.ui.view">
+        <field name="name">vuma.rebate.agreement.list</field>
+        <field name="model">vuma.rebate.agreement</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="rebate_type"/>
+                <field name="rate_percent"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="settlement_frequency"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rebate_agreement_form" model="ir.ui.view">
+        <field name="name">vuma.rebate.agreement.form</field>
+        <field name="model">vuma.rebate.agreement</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_activate" string="Activate" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_create_quarterly_claim"
+                            string="Create Quarterly Claim" type="object"
+                            class="btn-secondary" invisible="state != 'active'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="agreement_id"/>
+                            <field name="rebate_type"/>
+                            <field name="rate_percent"/>
+                            <field name="target_amount"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="settlement_frequency"/>
+                            <field name="claim_count"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Calculation basis, exclusions, proof required..."/>
+                    <field name="accrual_ids" readonly="1">
+                        <list>
+                            <field name="period_start"/>
+                            <field name="period_end"/>
+                            <field name="basis_amount"/>
+                            <field name="amount"/>
+                            <field name="state" widget="badge"/>
+                            <field name="claim_id"/>
+                        </list>
+                    </field>
+                    <field name="claim_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="basis_amount"/>
+                            <field name="claimed_amount"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_rebate_agreement" model="ir.actions.act_window">
+        <field name="name">Rebate Agreements</field>
+        <field name="res_model">vuma.rebate.agreement</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Rebate claim -->
+    <record id="view_rebate_claim_list" model="ir.ui.view">
+        <field name="name">vuma.rebate.claim.list</field>
+        <field name="model">vuma.rebate.claim</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="agreement_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="basis_amount" sum="Basis"/>
+                <field name="claimed_amount" sum="Claimed"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_rebate_claim_form" model="ir.ui.view">
+        <field name="name">vuma.rebate.claim.form</field>
+        <field name="model">vuma.rebate.claim</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_submit" string="Submit" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'submitted'"
+                            groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                    <button name="action_create_credit_note" string="Create Credit Note"
+                            type="object" class="btn-primary"
+                            invisible="state != 'approved' or credit_note_id"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="agreement_id"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="basis_amount"/>
+                            <field name="rate_percent"/>
+                            <field name="claimed_amount"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="approved_amount"/>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="credit_note_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="evidence_filename" invisible="1"/>
+                        <field name="evidence" filename="evidence_filename"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_rebate_claim" model="ir.actions.act_window">
+        <field name="name">Rebate Claims</field>
+        <field name="res_model">vuma.rebate.claim</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Supplier assets -->
+    <record id="view_supplier_asset_list" model="ir.ui.view">
+        <field name="name">vuma.supplier.asset.list</field>
+        <field name="model">vuma.supplier.asset</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="asset_type"/>
+                <field name="serial"/>
+                <field name="location"/>
+                <field name="placement_date"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'in_use'"
+                       decoration-danger="state in ('lost','written_off')"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_supplier_asset_form" model="ir.ui.view">
+        <field name="name">vuma.supplier.asset.form</field>
+        <field name="model">vuma.supplier.asset</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_return" string="Mark Returned" type="object"
+                            invisible="state != 'in_use'"/>
+                    <button name="action_mark_lost" string="Mark Lost" type="object"
+                            invisible="state != 'in_use'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="agreement_id"/>
+                            <field name="asset_type"/>
+                            <field name="serial"/>
+                            <field name="location"/>
+                            <field name="placement_date"/>
+                            <field name="return_date"/>
+                        </group>
+                        <group>
+                            <field name="condition"/>
+                            <field name="value"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="image" widget="image" class="oe_avatar"/>
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_supplier_asset" model="ir.actions.act_window">
+        <field name="name">Supplier Assets</field>
+        <field name="res_model">vuma.supplier.asset</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Scorecard -->
+    <record id="view_supplier_scorecard_list" model="ir.ui.view">
+        <field name="name">vuma.supplier.scorecard.list</field>
+        <field name="model">vuma.supplier.scorecard</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="partner_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="po_count"/>
+                <field name="receipt_count"/>
+                <field name="on_time_count"/>
+                <field name="late_count"/>
+                <field name="fill_rate" widget="percentage"/>
+                <field name="claim_count"/>
+                <field name="claim_amount" sum="Claims"/>
+                <field name="score"/>
+                <field name="grade" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_supplier_scorecard_form" model="ir.ui.view">
+        <field name="name">vuma.supplier.scorecard.form</field>
+        <field name="model">vuma.supplier.scorecard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="score"/>
+                            <field name="grade"/>
+                            <field name="fill_rate"/>
+                            <field name="avg_lead_time"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Delivery">
+                            <field name="po_count"/>
+                            <field name="receipt_count"/>
+                            <field name="on_time_count"/>
+                            <field name="late_count"/>
+                        </group>
+                        <group string="Quality">
+                            <field name="claim_count"/>
+                            <field name="claim_amount"/>
+                        </group>
+                    </group>
+                    <field name="notes" placeholder="Improvement actions agreed with the supplier..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_supplier_scorecard" model="ir.actions.act_window">
+        <field name="name">Supplier Scorecards</field>
+        <field name="res_model">vuma.supplier.scorecard</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_partner': 1}</field>
+    </record>
+
+    <!-- Payment run -->
+    <record id="view_payment_run_list" model="ir.ui.view">
+        <field name="name">vuma.payment.run.list</field>
+        <field name="model">vuma.payment.run</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="journal_id"/>
+                <field name="total_amount" sum="Total"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_payment_run_form" model="ir.ui.view">
+        <field name="name">vuma.payment.run.form</field>
+        <field name="model">vuma.payment.run</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_load_bills" string="Load Due Bills" type="object"
+                            class="btn-secondary" invisible="state != 'draft'"/>
+                    <button name="action_approve" string="Approve" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_create_payments" string="Create Payments"
+                            type="object" class="btn-primary" invisible="state != 'approved'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="date_to"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="journal_id"/>
+                            <field name="payment_method_line_id"/>
+                            <field name="total_amount"/>
+                            <field name="approved_by_id" readonly="1"/>
+                            <field name="approved_date" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="line_ids">
+                        <list editable="bottom">
+                            <field name="move_id"/>
+                            <field name="partner_id"/>
+                            <field name="invoice_date_due"/>
+                            <field name="amount" sum="Selected"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="is_selected"/>
+                            <field name="payment_id" readonly="1"/>
+                        </list>
+                    </field>
+                    <field name="note"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_payment_run" model="ir.actions.act_window">
+        <field name="name">Payment Runs</field>
+        <field name="res_model">vuma.payment.run</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Creditor age analysis -->
+    <record id="view_aged_payable_list" model="ir.ui.view">
+        <field name="name">vuma.aged.payable.list</field>
+        <field name="model">vuma.aged.payable</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0" delete="0">
+                <field name="partner_name"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="invoice_count"/>
+                <field name="bucket_current" sum="Current"/>
+                <field name="bucket_30" sum="1-30"/>
+                <field name="bucket_60" sum="31-60"/>
+                <field name="bucket_90" sum="61-90"/>
+                <field name="bucket_90_plus" sum="90+"/>
+                <field name="outstanding" sum="Total"/>
+                <field name="overdue" sum="Overdue"/>
+                <field name="oldest_due"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_aged_payable" model="ir.actions.act_window">
+        <field name="name">Creditor Age Analysis</field>
+        <field name="res_model">vuma.aged.payable</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- Menus -->
+    <record id="menu_vuma_procurement" model="ir.ui.menu">
+        <field name="name">Procurement</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_quote_comparison" model="ir.ui.menu">
+        <field name="name">Quote Comparisons</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_quote_comparison"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_supplier_claim" model="ir.ui.menu">
+        <field name="name">Supplier Claims</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_supplier_claim"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_supplier_agreement" model="ir.ui.menu">
+        <field name="name">Supplier Agreements</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_supplier_agreement"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_rebate_agreement" model="ir.ui.menu">
+        <field name="name">Rebate Agreements</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_rebate_agreement"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_rebate_claim" model="ir.ui.menu">
+        <field name="name">Rebate Claims</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_rebate_claim"/>
+        <field name="sequence">50</field>
+    </record>
+    <record id="menu_supplier_asset" model="ir.ui.menu">
+        <field name="name">Supplier Assets</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_supplier_asset"/>
+        <field name="sequence">60</field>
+    </record>
+    <record id="menu_supplier_scorecard" model="ir.ui.menu">
+        <field name="name">Supplier Scorecards</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_supplier_scorecard"/>
+        <field name="sequence">70</field>
+    </record>
+    <record id="menu_payment_run" model="ir.ui.menu">
+        <field name="name">Payment Runs</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_payment_run"/>
+        <field name="sequence">80</field>
+    </record>
+    <record id="menu_aged_payable" model="ir.ui.menu">
+        <field name="name">Creditor Age Analysis</field>
+        <field name="parent_id" ref="menu_vuma_procurement"/>
+        <field name="action" ref="action_aged_payable"/>
+        <field name="sequence">90</field>
+    </record>
+
+</odoo>

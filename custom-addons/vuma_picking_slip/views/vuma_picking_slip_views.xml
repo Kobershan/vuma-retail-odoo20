@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================================================== list view -->
+    <record id="view_vuma_picking_slip_list" model="ir.ui.view">
+        <field name="name">vuma.picking.slip.list</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="arch" type="xml">
+            <list string="Picking Slips"
+                  decoration-success="state == 'done'"
+                  decoration-warning="state == 'in_progress'">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="invoice_count" string="Invoices"/>
+                <field name="line_count" string="Lines"/>
+                <field name="picked_count" string="Picked"/>
+                <field name="short_count" string="Short"
+                       decoration-danger="short_count &gt; 0"/>
+                <field name="progress" widget="progressbar"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-success="state == 'done'"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+                <button name="action_open_tablet" type="object"
+                        string="Pick" icon="fa-hand-pointer-o"
+                        class="btn-primary"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ======================================================== form view -->
+    <record id="view_vuma_picking_slip_form" model="ir.ui.view">
+        <field name="name">vuma.picking.slip.form</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="arch" type="xml">
+            <form string="Picking Slip">
+                <header>
+                    <button name="action_open_tablet" type="object"
+                            string="Tablet Picking" class="oe_highlight"
+                            invisible="state == 'done'"/>
+                    <button name="action_print_pdf" type="object"
+                            string="Print PDF"/>
+                    <button name="action_mark_all_picked" type="object"
+                            string="Mark All Picked"
+                            invisible="state == 'done'"/>
+                    <button name="action_finish" type="object"
+                            string="Finish Picking" class="oe_highlight"
+                            invisible="state == 'done'"/>
+                    <button name="action_reopen" type="object"
+                            string="Reopen" invisible="state != 'done'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="invoice_count" widget="statinfo"
+                                   string="Invoices"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="user_id"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                            <field name="multi_company"
+                                   invisible="not multi_company"/>
+                        </group>
+                        <group>
+                            <field name="line_count"/>
+                            <field name="picked_count"/>
+                            <field name="short_count"/>
+                            <field name="progress" widget="progressbar"/>
+                            <field name="finished_by_id"
+                                   invisible="not finished_by_id"/>
+                            <field name="finished_date"
+                                   invisible="not finished_date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Picking Lines" name="lines">
+                            <field name="line_ids" readonly="state == 'done'">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="product_id"/>
+                                    <field name="product_barcode"/>
+                                    <field name="source_company_id"
+                                           groups="base.group_multi_company"
+                                           optional="hide"/>
+                                    <field name="source_label"/>
+                                    <field name="demand_qty" sum="Ordered"/>
+                                    <field name="picked_qty" sum="Picked"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="is_picked"/>
+                                    <field name="is_short"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Invoices" name="invoices">
+                            <field name="invoice_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="partner_id"/>
+                                    <field name="invoice_date"/>
+                                    <field name="state"/>
+                                    <field name="amount_total" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note"
+                                   placeholder="Anything the picker should know about this trip..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ====================================================== search view -->
+    <record id="view_vuma_picking_slip_search" model="ir.ui.view">
+        <field name="name">vuma.picking.slip.search</field>
+        <field name="model">vuma.picking.slip</field>
+        <field name="arch" type="xml">
+            <search string="Picking Slips">
+                <field name="name" string="Picking Slip"/>
+                <field name="invoice_ids" string="Invoice"/>
+                <field name="user_id"/>
+                <filter name="filter_to_pick" string="To Pick"
+                        domain="[('state', 'in', ['draft', 'in_progress'])]"/>
+                <filter name="filter_draft" string="Draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_in_progress" string="Picking"
+                        domain="[('state', '=', 'in_progress')]"/>
+                <filter name="filter_done" string="Done"
+                        domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_my_slips" string="My Slips"
+                        domain="[('user_id', '=', uid)]"/>
+                <group>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_user" string="Prepared By"
+                            context="{'group_by': 'user_id'}"/>
+                    <filter name="group_date" string="Date"
+                            context="{'group_by': 'date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ===================================================== slip actions -->
+    <record id="action_picking_slip" model="ir.actions.act_window">
+        <field name="name">Picking Slips</field>
+        <field name="res_model">vuma.picking.slip</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Turn customer invoices into a picking trip
+            </p>
+            <p>
+                Select the invoices for one trip in
+                <strong>Sales &gt; Invoicing &gt; Customer Invoices</strong>
+                and press <strong>Create Picking Slip</strong>.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_picking_slip_tablet" model="ir.actions.client">
+        <field name="name">Tablet Picking</field>
+        <field name="tag">vuma_picking_slip.tablet</field>
+    </record>
+
+    <!-- ====================================================== Sales menu -->
+    <menuitem id="menu_picking_slip" name="Picking Slips"
+              parent="sale.sale_menu_root" action="action_picking_slip"
+              sequence="15"
+              groups="sales_team.group_sale_salesman,stock.group_stock_user"/>
+
+</odoo>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Keep debtor and creditor populations apart.
+
+        A partner field on a customer document must only offer debtors, and a
+        partner field on a supplier document must only offer suppliers.  The
+        domains below are evaluated against the current record, so the same
+        account.move or stock.picking form filters correctly when its type
+        changes.
+    -->
+
+    <!-- Requests for quotation: vendor only. -->
+    <record id="view_purchase_order_form_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">purchase.order.form.vuma.partner.domain</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="domain">[('supplier_rank', '&gt;', 0)]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Quotations and sales orders: debtor only. -->
+    <record id="view_sale_order_form_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">sale.order.form.vuma.partner.domain</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="domain">[('customer_rank', '&gt;', 0)]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        Customer invoices, credit notes and receipts offer debtors; vendor
+        bills, refunds and receipts offer suppliers.  Journal entries stay
+        unrestricted because their partner can be either.
+    -->
+    <record id="view_move_form_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">account.move.form.vuma.partner.domain</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id'][@widget='res_partner_many2one']"
+                   position="attributes">
+                <attribute name="domain">[('customer_rank', '&gt;', 0)] if move_type in ('out_invoice', 'out_refund', 'out_receipt') else [('supplier_rank', '&gt;', 0)] if move_type in ('in_invoice', 'in_refund', 'in_receipt') else []</attribute>
+                <attribute name="context">{'res_partner_search_mode': 'customer' if move_type in ('out_invoice', 'out_refund', 'out_receipt') else 'supplier' if move_type in ('in_invoice', 'in_refund', 'in_receipt') else False, 'show_address': 1, 'default_is_company': True, 'show_identifier': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer and vendor payments are separate fields in the same form. -->
+    <record id="view_account_payment_form_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">account.payment.form.vuma.partner.domain</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+            <!-- First field is the one shown for customer payments, second
+                 for vendor payments (see account.view_account_payment_form). -->
+            <xpath expr="(//field[@name='partner_id'])[1]" position="attributes">
+                <attribute name="domain">[('customer_rank', '&gt;', 0)]</attribute>
+                <attribute name="context">{'default_is_company': True, 'res_partner_search_mode': 'customer'}</attribute>
+            </xpath>
+            <xpath expr="(//field[@name='partner_id'])[2]" position="attributes">
+                <attribute name="domain">[('supplier_rank', '&gt;', 0)]</attribute>
+                <attribute name="context">{'default_is_company': True, 'res_partner_search_mode': 'supplier'}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!--
+        Goods receiving (incoming transfers) takes a supplier.  Deliveries and
+        internal transfers keep the standard behaviour because their partner is
+        usually a customer or one of the customer's delivery contacts.
+    -->
+    <record id="view_picking_form_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">stock.picking.form.vuma.partner.domain</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="domain">[('supplier_rank', '&gt;', 0)] if picking_type_code == 'incoming' else []</attribute>
+                <attribute name="context">{'res_partner_search_mode': 'supplier' if picking_type_code == 'incoming' else False, 'default_is_company': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- The same rule for the editable transfer list (multi-edit). -->
+    <record id="vpicktree_vuma_partner_domain" model="ir.ui.view">
+        <field name="name">stock.picking.list.vuma.partner.domain</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="domain">[('supplier_rank', '&gt;', 0)] if picking_type_code == 'incoming' else []</attribute>
+                <attribute name="context">{'res_partner_search_mode': 'supplier' if picking_type_code == 'incoming' else False, 'default_is_company': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

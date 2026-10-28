@@ -1,0 +1,350 @@
+/**
+ * Tablet picking screen.
+ *
+ * The target device is a 10" warehouse tablet, often held in one hand. Rows
+ * therefore use large type, 56px+ controls and generous spacing; on a narrow
+ * phone the quantity block moves below the product name.
+ */
+
+.o_vuma_picking_tablet {
+    min-height: 100%;
+    padding: 20px clamp(14px, 3vw, 40px) 40px;
+    background: #f4f6f8;
+    color: #1f2933;
+
+    .o_vps_center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        min-height: 55vh;
+        text-align: center;
+        color: #52606d;
+        font-size: 1.15rem;
+    }
+
+    .o_vps_error {
+        color: #a61b1b;
+    }
+
+    .o_vps_header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px 24px;
+        margin-bottom: 18px;
+    }
+
+    .o_vps_header_left {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .o_vps_back {
+        margin-top: 2px;
+        padding-left: 0;
+        color: #52606d;
+        font-size: 1rem;
+        white-space: nowrap;
+    }
+
+    .o_vps_header h1 {
+        margin: 0;
+        font-size: clamp(1.7rem, 3vw, 2.4rem);
+        line-height: 1.15;
+        font-weight: 700;
+    }
+
+    .o_vps_meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        margin-top: 8px;
+        color: #616e7c;
+        font-size: 1rem;
+    }
+
+    .o_vps_header_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .o_vps_btn {
+        min-height: 56px;
+        padding: 12px 20px;
+        font-size: 1.05rem;
+        font-weight: 600;
+        border-radius: 10px;
+    }
+
+    .o_vps_progress_card,
+    .o_vps_line,
+    .o_vps_toolbar {
+        background: #fff;
+        border: 1px solid #d9e2ec;
+        border-radius: 14px;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+    }
+
+    .o_vps_progress_card {
+        padding: 16px 20px;
+        margin-bottom: 14px;
+    }
+
+    .o_vps_progress_text {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 1.05rem;
+        color: #334e68;
+    }
+
+    .o_vps_progress {
+        height: 16px;
+        border-radius: 999px;
+        background: #e4e7eb;
+    }
+
+    .o_vps_progress .progress-bar {
+        background: #2f80ed;
+        transition: width 0.25s ease;
+    }
+
+    .o_vps_saving {
+        margin-left: auto;
+        color: #829ab1;
+        font-size: 0.95rem;
+    }
+
+    .o_vps_toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px;
+        margin-bottom: 18px;
+    }
+
+    .o_vps_note {
+        color: #52606d;
+        font-size: 1rem;
+    }
+
+    .o_vps_lines {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .o_vps_line {
+        padding: 20px;
+        border-left: 6px solid #bcccdc;
+        transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .o_vps_line--picked {
+        border-left-color: #2e8540;
+        background: #f7fbf7;
+    }
+
+    .o_vps_line--short {
+        border-left-color: #d97706;
+        background: #fffaf0;
+    }
+
+    .o_vps_line_top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px 24px;
+    }
+
+    .o_vps_product {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    .o_vps_product h2 {
+        margin: 0;
+        font-size: clamp(1.3rem, 2.6vw, 1.8rem);
+        line-height: 1.2;
+        font-weight: 700;
+    }
+
+    .o_vps_product_meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 18px;
+        margin-top: 8px;
+        color: #627d98;
+        font-size: 0.95rem;
+    }
+
+    .o_vps_demand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        white-space: nowrap;
+        color: #334e68;
+    }
+
+    .o_vps_demand_label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #829ab1;
+    }
+
+    .o_vps_demand_value {
+        font-size: 1.4rem;
+        font-weight: 700;
+    }
+
+    .o_vps_uom {
+        color: #627d98;
+        font-size: 0.95rem;
+    }
+
+    .o_vps_line_bottom {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px 20px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #e4e7eb;
+    }
+
+    .o_vps_stepper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .o_vps_step {
+        width: 60px;
+        height: 60px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #9fb3c8;
+        border-radius: 12px;
+        background: #fff;
+        color: #243b53;
+        font-size: 1.25rem;
+    }
+
+    .o_vps_step:active {
+        background: #e4e7eb;
+    }
+
+    .o_vps_qty_input {
+        width: 120px;
+        height: 60px;
+        padding: 4px 10px;
+        border: 2px solid #9fb3c8;
+        border-radius: 12px;
+        background: #fff;
+        color: #102a43;
+        font-size: 1.55rem;
+        font-weight: 700;
+        text-align: center;
+    }
+
+    .o_vps_qty_input:focus {
+        outline: none;
+        border-color: #2f80ed;
+        box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.18);
+    }
+
+    .o_vps_line_state {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+        margin-left: auto;
+    }
+
+    .o_vps_pick {
+        min-width: 210px;
+        min-height: 60px;
+        padding: 12px 22px;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .o_vps_short {
+        color: #b45309;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .o_vps_footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 24px;
+        color: #829ab1;
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_vuma_picking_tablet {
+        padding: 12px 10px 28px;
+
+        .o_vps_header_actions,
+        .o_vps_btn {
+            width: 100%;
+        }
+
+        .o_vps_header_actions .o_vps_btn {
+            flex: 1 1 auto;
+        }
+
+        .o_vps_line {
+            padding: 16px;
+        }
+
+        .o_vps_demand {
+            width: 100%;
+        }
+
+        .o_vps_line_bottom {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .o_vps_stepper {
+            justify-content: space-between;
+        }
+
+        .o_vps_qty_input {
+            flex: 1 1 auto;
+            width: auto;
+        }
+
+        .o_vps_line_state {
+            flex-direction: column;
+            align-items: stretch;
+            margin-left: 0;
+        }
+
+        .o_vps_pick {
+            width: 100%;
+        }
+    }
+}

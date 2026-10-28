@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Separate contact lists.
+
+        The Contacts app used to expose one combined address book. Vuma works
+        with distinct populations, so the app now offers a list per population:
+        customers, suppliers and employees. Each is a normal res.partner list
+        with an explicit domain, so records that are both a customer and a
+        supplier still appear in both lists.
+    -->
+
+    <record id="action_vuma_contacts_customers" model="ir.actions.act_window">
+        <field name="name">Customers</field>
+        <field name="path">vuma-customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('customer_rank', '&gt;', 0)]</field>
+        <field name="context">{'res_partner_search_mode': 'customer',
+                              'default_is_company': True,
+                              'default_customer_rank': 1}</field>
+        <field name="search_view_id" ref="base.view_res_partner_filter"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a customer
+            </p>
+            <p>
+                Every customer account lives here. Open a record to see its
+                Customer 360 tab with billing, delivery, credit and history.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_vuma_contacts_suppliers" model="ir.actions.act_window">
+        <field name="name">Suppliers</field>
+        <field name="path">vuma-suppliers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('supplier_rank', '&gt;', 0)]</field>
+        <field name="context">{'res_partner_search_mode': 'supplier',
+                              'default_is_company': True,
+                              'default_supplier_rank': 1}</field>
+        <field name="search_view_id" ref="base.view_res_partner_filter"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a supplier
+            </p>
+            <p>
+                Every supplier account lives here, with its contacts and
+                purchasing history.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_vuma_contacts_employees" model="ir.actions.act_window">
+        <field name="name">Employees</field>
+        <field name="path">vuma-employee-contacts</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('employee', '=', True)]</field>
+        <field name="context">{'default_employee': True}</field>
+        <field name="search_view_id" ref="base.view_res_partner_filter"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No employee contacts yet
+            </p>
+            <p>
+                Contacts marked as employees appear here. Use the HR app to
+                manage the employee records themselves.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_vuma_contacts_customers"
+              name="Customers"
+              parent="contacts.menu_contacts"
+              action="action_vuma_contacts_customers"
+              sequence="3"/>
+
+    <menuitem id="menu_vuma_contacts_suppliers"
+              name="Suppliers"
+              parent="contacts.menu_contacts"
+              action="action_vuma_contacts_suppliers"
+              sequence="4"/>
+
+    <menuitem id="menu_vuma_contacts_employees"
+              name="Employees"
+              parent="contacts.menu_contacts"
+              action="action_vuma_contacts_employees"
+              sequence="5"/>
+
+</odoo>

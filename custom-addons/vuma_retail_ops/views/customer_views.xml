@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Customer 360.
+
+        The page is inserted before the standard Contacts page so that opening
+        a customer from the Customers list (double-click) lands on the customer
+        profile, not on the generic contact page. It is hidden for suppliers
+        and other non-customer contacts.
+    -->
+    <record id="view_partner_form_vuma_customer" model="ir.ui.view">
+        <field name="name">res.partner.form.vuma.customer</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!-- The email is in the header of the standard form. Make it
+                 mandatory there for customers as well as for portal users. -->
+            <xpath expr="//field[@name='email'][1]" position="attributes">
+                <attribute name="required">user_ids or vuma_is_customer</attribute>
+            </xpath>
+
+            <!-- The standard Contacts page forced itself to be the opening
+                 page. Give that role to the Customer page instead. -->
+            <xpath expr="//notebook/page[@name='contact_addresses']" position="attributes">
+                <attribute name="autofocus"/>
+            </xpath>
+
+            <xpath expr="//notebook/page[@name='contact_addresses']" position="before">
+                <page string="Customer" name="vuma_customer"
+                      autofocus="autofocus"
+                      invisible="not vuma_is_customer">
+                    <field name="vuma_is_customer" invisible="1"/>
+                    <div class="alert alert-warning" role="alert" invisible="email">
+                        <strong>Email is mandatory.</strong>
+                        Capture the customer's email address before saving.
+                    </div>
+
+                    <group>
+                        <group string="Billing Details" name="vuma_billing">
+                            <div class="text-muted">
+                                Account contact and the address invoices are
+                                sent to. Email is captured at the top of this
+                                form and is mandatory for a customer.
+                            </div>
+                            <field name="phone" widget="phone"/>
+                            <field name="vat"/>
+                            <field name="ref" string="Account Reference"/>
+                            <field name="street" string="Street Address"
+                                   placeholder="e.g. 12 Samora Machel Avenue"/>
+                            <field name="vuma_building_name"
+                                   string="Building / Business Park"
+                                   placeholder="e.g. Eastgate Business Park"/>
+                            <field name="vuma_unit_number"
+                                   string="Unit / Suite / Floor"
+                                   placeholder="e.g. Unit 12 or 3rd Floor"/>
+                            <field name="street2" string="Suburb / Street 2"
+                                   placeholder="e.g. Harare Central"/>
+                            <field name="city" string="City / Town"
+                                   placeholder="e.g. Harare"/>
+                            <field name="state_id" string="Province / State"
+                                   options="{'no_open': True}"
+                                   domain="[('country_id', '=', country_id)]"/>
+                            <field name="zip" string="Postal Code"
+                                   placeholder="e.g. 00263"/>
+                            <field name="country_id" string="Country"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                        <group string="Delivery Details" name="vuma_delivery">
+                            <div class="text-muted">
+                                The person and primary address goods are
+                                delivered to. Add further addresses under
+                                Delivery Addresses below.
+                            </div>
+                            <field name="vuma_delivery_contact_name"
+                                   string="Delivery Contact"/>
+                            <field name="vuma_delivery_contact_phone"
+                                   string="Delivery Phone" widget="phone"/>
+                            <field name="vuma_delivery_window"
+                                   string="Preferred Delivery Time"
+                                   placeholder="e.g. weekdays 08:00-16:00"/>
+                            <field name="vuma_delivery_instructions"
+                                   string="Delivery Instructions"
+                                   placeholder="Gate code, receiving bay, special handling..."/>
+                            <field name="vuma_delivery_street"
+                                   string="Street Address"
+                                   placeholder="e.g. 12 Samora Machel Avenue"/>
+                            <field name="vuma_delivery_building_name"
+                                   string="Building / Business Park"
+                                   placeholder="e.g. Eastgate Business Park"/>
+                            <field name="vuma_delivery_unit_number"
+                                   string="Unit / Suite / Floor"
+                                   placeholder="e.g. Unit 12 or 3rd Floor"/>
+                            <field name="vuma_delivery_street2"
+                                   string="Suburb / Street 2"
+                                   placeholder="e.g. Harare Central"/>
+                            <field name="vuma_delivery_city"
+                                   string="City / Town"
+                                   placeholder="e.g. Harare"/>
+                            <field name="vuma_delivery_state_id"
+                                   string="Province / State"
+                                   options="{'no_open': True}"
+                                   domain="[('country_id', '=', vuma_delivery_country_id)]"/>
+                            <field name="vuma_delivery_zip"
+                                   string="Postal Code"
+                                   placeholder="e.g. 00263"/>
+                            <field name="vuma_delivery_country_id"
+                                   string="Country"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Account Rating" name="vuma_rating">
+                            <field name="vuma_account_rating" widget="badge"/>
+                            <field name="vuma_debtor_rating" readonly="1"
+                                   widget="badge"/>
+                            <button name="action_vuma_use_calculated_rating"
+                                    type="object" string="Use Calculated Rating"
+                                    class="btn-link"
+                                    invisible="not vuma_debtor_rating"/>
+                            <field name="vuma_rating_notes"
+                                   placeholder="Why the account has this rating..."/>
+                        </group>
+                        <group string="Groups &amp; Discount" name="vuma_groups">
+                            <field name="vuma_customer_group_ids"
+                                   widget="many2many_tags"/>
+                            <field name="vuma_discount_percent"/>
+                            <div class="text-muted">
+                                The discount is applied to new quotation and order
+                                lines. It can still be changed per line.
+                            </div>
+                        </group>
+                    </group>
+
+                    <group string="Credit Terms" name="vuma_credit_terms">
+                        <group>
+                            <field name="property_payment_term_id"
+                                   string="Payment Terms (all companies)"/>
+                            <field name="credit_limit"
+                                   string="Credit Limit (both companies)"/>
+                            <field name="vuma_group_credit_limit"/>
+                            <field name="vuma_group_exposure"/>
+                            <field name="vuma_group_overdue"/>
+                        </group>
+                        <group>
+                            <field name="vuma_credit_hold" readonly="1"/>
+                            <field name="vuma_credit_override_until"/>
+                            <field name="vuma_credit_override_reason"/>
+                            <field name="vuma_credit_terms_note"
+                                   placeholder="Agreed credit terms and conditions..."/>
+                        </group>
+                    </group>
+
+                    <group string="Statements" name="vuma_statements">
+                        <group>
+                            <field name="vuma_statement_auto"/>
+                            <field name="vuma_statement_next_date"
+                                   required="vuma_statement_auto"/>
+                            <field name="vuma_statement_last_sent" readonly="1"/>
+                        </group>
+                        <group>
+                            <button name="action_vuma_send_statement"
+                                    type="object"
+                                    string="Send Statement Now"
+                                    class="btn-secondary"
+                                    confirm="Email the previous month's statement to this customer now?"/>
+                            <div class="text-muted">
+                                Automatic statements cover the previous calendar
+                                month and are emailed on the next statement date.
+                                Only accounts with a balance are emailed.
+                            </div>
+                        </group>
+                    </group>
+
+                    <separator string="Contacts"/>
+                    <div class="text-muted mb-2">
+                        Capture every person the business deals with. Email is
+                        mandatory for each contact.
+                    </div>
+                    <field name="vuma_contact_ids" nolabel="1"
+                           invisible="not vuma_is_customer"
+                           context="{'default_type': 'contact'}">
+                        <list editable="bottom">
+                            <field name="name" required="1"/>
+                            <field name="function" string="Job Title"/>
+                            <field name="email" widget="email" required="1"/>
+                            <field name="phone" widget="phone"/>
+                            <field name="comment" string="Notes"/>
+                        </list>
+                    </field>
+
+                    <separator string="Delivery Addresses"/>
+                    <div class="text-muted mb-2">
+                        The first address here is the primary delivery address
+                        shown under Delivery Details. Add every other place goods
+                        are delivered, with its full street address.
+                    </div>
+                    <field name="vuma_delivery_address_ids" nolabel="1"
+                           invisible="not vuma_is_customer"
+                           context="{'default_type': 'delivery'}">
+                        <list editable="bottom" default_order="id">
+                            <field name="name" string="Label"
+                                   placeholder="e.g. Main store"/>
+                            <field name="street" string="Street Address"
+                                   placeholder="e.g. 12 Samora Machel Avenue"/>
+                            <field name="vuma_building_name"
+                                   string="Building / Business Park"
+                                   placeholder="e.g. Eastgate Business Park"/>
+                            <field name="vuma_unit_number"
+                                   string="Unit / Suite / Floor"
+                                   placeholder="e.g. Unit 12 or 3rd Floor"/>
+                            <field name="street2" string="Suburb / Street 2"
+                                   placeholder="e.g. Harare Central"/>
+                            <field name="city" string="City / Town"
+                                   placeholder="e.g. Harare"/>
+                            <field name="zip" string="Postal Code"
+                                   placeholder="e.g. 00263"/>
+                            <field name="state_id" string="Province / State"
+                                   options="{'no_open': True}"
+                                   domain="[('country_id', '=', country_id)]"/>
+                            <field name="country_id" string="Country"
+                                   options="{'no_open': True, 'no_create': True}"/>
+                            <field name="phone" widget="phone"/>
+                        </list>
+                    </field>
+
+                    <separator string="Payment History"/>
+                    <div class="text-muted mb-2">
+                        Every invoice, credit note and customer payment on the
+                        account, with a running balance. Click a row to open the
+                        document.
+                    </div>
+                    <field name="vuma_history_ids" nolabel="1" readonly="1">
+                        <list default_order="date desc, id desc"
+                              create="false" delete="false" edit="false">
+                            <field name="date"/>
+                            <field name="document_type" widget="badge"/>
+                            <field name="name"/>
+                            <field name="reference" optional="show"/>
+                            <field name="due_date"/>
+                            <field name="total" sum="Total"/>
+                            <field name="residual" sum="Outstanding"/>
+                            <field name="debit" optional="hide"/>
+                            <field name="credit" optional="hide"/>
+                            <field name="balance"/>
+                            <field name="state" widget="badge"/>
+                            <field name="company_id" optional="hide"
+                                   groups="base.group_multi_company"/>
+                            <field name="currency_id" column_invisible="1"/>
+                            <field name="source" column_invisible="1"/>
+                            <field name="source_id" column_invisible="1"/>
+                            <button name="action_open_document" type="object"
+                                    icon="fa-external-link" title="Open document"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_vuma_view_invoices" type="object"
+                        class="oe_stat_button" icon="fa-file-text-o"
+                        invisible="not vuma_is_customer">
+                    <field name="vuma_invoice_count" widget="statinfo"
+                           string="Invoices"/>
+                </button>
+                <button name="action_vuma_view_payments" type="object"
+                        class="oe_stat_button" icon="fa-money"
+                        invisible="not vuma_is_customer">
+                    <field name="vuma_payment_count" widget="statinfo"
+                           string="Payments"/>
+                </button>
+                <button name="action_vuma_view_history" type="object"
+                        class="oe_stat_button" icon="fa-history"
+                        invisible="not vuma_is_customer">
+                    <field name="vuma_outstanding_balance" widget="statinfo"
+                           string="Balance"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer list: show the account rating, groups and exposure at a glance -->
+    <record id="view_partner_tree_vuma_customer" model="ir.ui.view">
+        <field name="name">res.partner.list.vuma.customer</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='display_name']" position="after">
+                <field name="vuma_account_rating" optional="show"
+                       widget="badge"/>
+                <field name="vuma_customer_group_ids" optional="hide"
+                       widget="many2many_tags"/>
+                <field name="vuma_discount_percent" optional="hide"/>
+                <field name="vuma_outstanding_balance" optional="hide"
+                       sum="Outstanding"/>
+                <field name="vuma_statement_auto" optional="hide"/>
+                <field name="vuma_statement_next_date" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_res_partner_filter_vuma_customer" model="ir.ui.view">
+        <field name="name">res.partner.search.vuma.customer</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="vuma_customer_group_ids" string="Customer Group"
+                       filter_domain="[('vuma_customer_group_ids', 'in', self)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='inactive']" position="before">
+                <filter name="vuma_customer_a_rating" string="Rating A"
+                        domain="[('vuma_account_rating', '=', 'a')]"/>
+                <filter name="vuma_customer_has_discount" string="Has a discount"
+                        domain="[('vuma_discount_percent', '&gt;', 0)]"/>
+                <filter name="vuma_customer_statements" string="Send statements"
+                        domain="[('vuma_statement_auto', '=', True)]"/>
+                <separator/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter name="vuma_group_by_rating" string="Account Rating"
+                        context="{'group_by': 'vuma_account_rating'}"/>
+                <filter name="vuma_group_by_customer_group" string="Customer Group"
+                        context="{'group_by': 'vuma_customer_group_ids'}"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Customer groups -->
+    <record id="view_vuma_customer_group_list" model="ir.ui.view">
+        <field name="name">vuma.customer.group.list</field>
+        <field name="model">vuma.customer.group</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="discount_percent"/>
+                <field name="partner_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vuma_customer_group_form" model="ir.ui.view">
+        <field name="name">vuma.customer.group.form</field>
+        <field name="model">vuma.customer.group</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Group name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="code"/>
+                            <field name="sequence"/>
+                            <field name="discount_percent"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                            <field name="partner_count"/>
+                        </group>
+                    </group>
+                    <field name="description"/>
+                    <separator string="Customers"/>
+                    <field name="partner_ids" nolabel="1"
+                           domain="[('customer_rank', '&gt;', 0)]">
+                        <list>
+                            <field name="name"/>
+                            <field name="email"/>
+                            <field name="phone"/>
+                            <field name="vuma_account_rating" widget="badge"/>
+                            <field name="vuma_outstanding_balance"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_vuma_customer_group" model="ir.actions.act_window">
+        <field name="name">Customer Groups</field>
+        <field name="res_model">vuma.customer.group</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create customer groups
+            </p>
+            <p>
+                Groups can carry a suggested discount and are used to segment
+                customers for reporting, pricing and account management.
+            </p>
+        </field>
+    </record>
+
+    <!-- Statement schedule list -->
+    <record id="view_partner_vuma_statement_schedule_list" model="ir.ui.view">
+        <field name="name">res.partner.vuma.statement.schedule.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Statement Schedule" create="false">
+                <field name="name" string="Customer"/>
+                <field name="email" widget="email"/>
+                <field name="vuma_statement_auto"/>
+                <field name="vuma_statement_next_date"/>
+                <field name="vuma_statement_last_sent"/>
+                <field name="vuma_outstanding_balance" sum="Outstanding"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_vuma_statement_schedule" model="ir.actions.act_window">
+        <field name="name">Statement Schedule</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_partner_vuma_statement_schedule_list"/>
+        <field name="domain">[('customer_rank', '&gt;', 0)]</field>
+        <field name="context">{'res_partner_search_mode': 'customer'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No customers yet
+            </p>
+            <p>
+                Set the next statement date on a customer's Customer tab to
+                include it in the automatic statement run.
+            </p>
+        </field>
+    </record>
+
+    <!-- Read-only account history -->
+    <record id="view_vuma_customer_history_list" model="ir.ui.view">
+        <field name="name">vuma.customer.history.list</field>
+        <field name="model">vuma.customer.history</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false">
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="document_type" widget="badge"/>
+                <field name="name"/>
+                <field name="reference"/>
+                <field name="due_date"/>
+                <field name="total" sum="Total"/>
+                <field name="residual" sum="Outstanding"/>
+                <field name="balance"/>
+                <field name="state" widget="badge"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="source" column_invisible="1"/>
+                <field name="source_id" column_invisible="1"/>
+                <button name="action_open_document" type="object"
+                        icon="fa-external-link" title="Open document"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_vuma_customer_history" model="ir.actions.act_window">
+        <field name="name">Customer Account History</field>
+        <field name="res_model">vuma.customer.history</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'create': False, 'delete': False}</field>
+    </record>
+
+    <record id="menu_vuma_customer_groups" model="ir.ui.menu">
+        <field name="name">Customer Groups</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_vuma_customer_group"/>
+        <field name="sequence">15</field>
+    </record>
+
+    <record id="menu_vuma_customer_history" model="ir.ui.menu">
+        <field name="name">Customer History</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_vuma_customer_history"/>
+        <field name="sequence">16</field>
+    </record>
+
+    <record id="menu_vuma_statement_schedule" model="ir.ui.menu">
+        <field name="name">Statement Schedule</field>
+        <field name="parent_id" ref="menu_vuma_debtors"/>
+        <field name="action" ref="action_vuma_statement_schedule"/>
+        <field name="sequence">17</field>
+    </record>
+
+</odoo>

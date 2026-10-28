@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_purchase_order_form_vuma_approval" model="ir.ui.view">
+        <field name="name">purchase.order.form.vuma.approval</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_submit_approval" string="Submit for Vuma Approval"
+                        type="object" class="btn-secondary"
+                        invisible="vuma_approval_state not in ('pending','rejected')"/>
+                <button name="action_vuma_approve" string="Approve (Vuma)"
+                        type="object" class="btn-primary"
+                        invisible="vuma_approval_state != 'pending'"
+                        groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                <button name="action_vuma_reject" string="Reject (Vuma)"
+                        type="object" class="btn-danger"
+                        invisible="vuma_approval_state != 'pending'"
+                        groups="vuma_retail_ops.group_vuma_ops_manager,vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Vuma Approval" name="vuma_approval">
+                    <group>
+                        <group>
+                            <field name="vuma_approval_state" readonly="1"/>
+                            <field name="vuma_approval_level" readonly="1"/>
+                            <field name="vuma_second_approval_required" readonly="1"/>
+                            <field name="vuma_is_emergency"/>
+                            <field name="vuma_emergency_reason"
+                                   invisible="not vuma_is_emergency"/>
+                            <button name="action_vuma_emergency" type="object"
+                                    string="Record Emergency Purchase"
+                                    invisible="not vuma_is_emergency"/>
+                            <field name="vuma_emergency_deadline" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="vuma_approved_by_id" readonly="1"/>
+                            <field name="vuma_approved_date" readonly="1"/>
+                            <field name="vuma_second_approved_by_id" readonly="1"/>
+                            <field name="vuma_second_approved_date" readonly="1"/>
+                            <field name="vuma_approval_note"/>
+                            <field name="vuma_rejection_reason"
+                                   invisible="vuma_approval_state != 'rejected'"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_form_vuma_credit" model="ir.ui.view">
+        <field name="name">account.move.form.vuma.credit</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_vuma_approve_credit" string="Approve Credit Note"
+                        type="object" class="btn-primary"
+                        invisible="move_type not in ('out_refund','in_refund') or vuma_credit_approval_state not in ('pending','rejected')"
+                        groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+                <button name="action_vuma_reject_credit" string="Reject Credit Note"
+                        type="object" class="btn-danger"
+                        invisible="move_type not in ('out_refund','in_refund') or vuma_credit_approval_state != 'pending'"
+                        groups="vuma_retail_ops.group_vuma_finance_manager,vuma_retail_ops.group_vuma_owner"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Vuma Credit Approval" name="vuma_credit_approval"
+                      invisible="move_type not in ('out_refund','in_refund')">
+                    <group>
+                        <group>
+                            <field name="vuma_credit_approval_state" readonly="1"/>
+                            <field name="vuma_credit_approval_level" readonly="1"/>
+                            <field name="vuma_credit_approved_by_id" readonly="1"/>
+                            <field name="vuma_credit_approved_date" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="vuma_credit_rejection_reason"/>
+                            <field name="vuma_credit_override_reason"/>
+                            <field name="vuma_supplier_claim_id" readonly="1"/>
+                            <field name="vuma_rebate_claim_id" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_audit_log_list" model="ir.ui.view">
+        <field name="name">vuma.audit.log.list</field>
+        <field name="model">vuma.audit.log</field>
+        <field name="arch" type="xml">
+            <list expand="0">
+                <field name="date"/>
+                <field name="user_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="model"/>
+                <field name="res_name"/>
+                <field name="action"/>
+                <field name="field_name"/>
+                <field name="old_value" optional="hide"/>
+                <field name="new_value" optional="hide"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_audit_log_form" model="ir.ui.view">
+        <field name="name">vuma.audit.log.form</field>
+        <field name="model">vuma.audit.log</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="user_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="action"/>
+                        </group>
+                        <group>
+                            <field name="model"/>
+                            <field name="res_id"/>
+                            <field name="res_name"/>
+                            <field name="field_name"/>
+                        </group>
+                    </group>
+                    <group string="Values">
+                        <field name="old_value" nolabel="1"/>
+                        <field name="new_value" nolabel="1"/>
+                        <field name="note" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="view_audit_log_search" model="ir.ui.view">
+        <field name="name">vuma.audit.log.search</field>
+        <field name="model">vuma.audit.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="model"/>
+                <field name="res_name"/>
+                <field name="user_id"/>
+                <field name="note"/>
+                <filter name="approvals" string="Approvals" domain="[('action','in',('approve','reject','override'))]"/>
+                <filter name="group_model" string="Model" context="{'group_by':'model'}"/>
+                <filter name="group_user" string="User" context="{'group_by':'user_id'}"/>
+                <filter name="group_date" string="Date" context="{'group_by':'date:day'}"/>
+            </search>
+        </field>
+    </record>
+    <record id="action_audit_log" model="ir.actions.act_window">
+        <field name="name">Audit Log</field>
+        <field name="res_model">vuma.audit.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'group_by': 'date:day'}</field>
+    </record>
+
+    <record id="menu_vuma_root" model="ir.ui.menu">
+        <field name="name">Vuma Retail</field>
+        <field name="sequence">4</field>
+        <field name="web_icon">base,static/description/icon.png</field>
+    </record>
+    <record id="menu_vuma_config" model="ir.ui.menu">
+        <field name="name">Configuration &amp; Audit</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">100</field>
+    </record>
+    <record id="menu_audit_log" model="ir.ui.menu">
+        <field name="name">Audit Log</field>
+        <field name="parent_id" ref="menu_vuma_config"/>
+        <field name="action" ref="action_audit_log"/>
+        <field name="sequence">10</field>
+    </record>
+
+</odoo>

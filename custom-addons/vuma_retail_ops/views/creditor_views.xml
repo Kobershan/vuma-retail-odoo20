@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="menu_vuma_creditors" model="ir.ui.menu">
+        <field name="name">Creditors</field>
+        <field name="parent_id" ref="menu_vuma_root"/>
+        <field name="sequence">60</field>
+    </record>
+    <record id="menu_creditor_claims" model="ir.ui.menu">
+        <field name="name">Supplier Claims</field>
+        <field name="parent_id" ref="menu_vuma_creditors"/>
+        <field name="action" ref="action_supplier_claim"/>
+        <field name="sequence">10</field>
+    </record>
+    <record id="menu_creditor_agreements" model="ir.ui.menu">
+        <field name="name">Supplier Agreements</field>
+        <field name="parent_id" ref="menu_vuma_creditors"/>
+        <field name="action" ref="action_supplier_agreement"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_creditor_rebates" model="ir.ui.menu">
+        <field name="name">Rebate Claims</field>
+        <field name="parent_id" ref="menu_vuma_creditors"/>
+        <field name="action" ref="action_rebate_claim"/>
+        <field name="sequence">30</field>
+    </record>
+    <record id="menu_creditor_payment_run" model="ir.ui.menu">
+        <field name="name">Payment Runs</field>
+        <field name="parent_id" ref="menu_vuma_creditors"/>
+        <field name="action" ref="action_payment_run"/>
+        <field name="sequence">40</field>
+    </record>
+    <record id="menu_creditor_age" model="ir.ui.menu">
+        <field name="name">Age Analysis</field>
+        <field name="parent_id" ref="menu_vuma_creditors"/>
+        <field name="action" ref="action_aged_payable"/>
+        <field name="sequence">50</field>
+    </record>
+</odoo>
