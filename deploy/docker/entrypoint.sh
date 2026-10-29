@@ -48,4 +48,11 @@ chmod 600 "$RENDERED"
 # finds them already present and leaves our values alone.
 export ODOO_RC="$RENDERED"
 
-exec /entrypoint.sh odoo -c "$RENDERED"
+# Anything the caller passes after the service command (e.g.
+# `docker compose run odoo odoo -d vuma_retail -u mymodule --stop-after-init`)
+# is forwarded to Odoo, so module upgrades work without editing this file.
+# "odoo" itself is dropped: the stock entrypoint already inserts it.
+if [ "${1:-}" = "odoo" ]; then
+    shift
+fi
+exec /entrypoint.sh odoo -c "$RENDERED" "$@"

@@ -65,6 +65,12 @@ services:
       # before the files exist and it logs FileNotFoundError for them.
       # Read-only so a stray write can never corrupt the shipped bundle.
       - ./deploy/bundle/filestore:/seed-filestore:ro
+      # Custom addons come from the host directory so a deploy is just
+      # scp + restart. A bind mount is REQUIRED here, not optional: the
+      # official image declares /mnt/extra-addons as a VOLUME, so the
+      # container mounts an anonymous volume over it and neither
+      # `docker cp` nor `docker commit` can ever update the code.
+      - ./custom-addons:/mnt/extra-addons
     healthcheck:
       # python3, not curl: curl is not installed in the Odoo image.
       test: ["CMD-SHELL", "python3 -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:8069/web/login', timeout=5)\""]
