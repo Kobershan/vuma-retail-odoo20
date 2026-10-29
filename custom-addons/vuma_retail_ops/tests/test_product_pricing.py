@@ -410,3 +410,125 @@ class VumaProductPricingTest(TransactionCase):
         self.assertEqual(product.vuma_vat_box, '[2]')
         self.assertAlmostEqual(product.vuma_selling_inc_vat, 120.0, places=2)
         self.assertAlmostEqual(product.list_price, 120.0, places=2)
+
+    # ------------------------- settings costing methods & landed cost capture
+
+    def test_settings_costing_methods_recalculate_all_goods(self):
+        # 3 batches:
+        #   2026-01-01: 100 units @ R1000
+        #   2026-02-01:   1 unit  @ R100
+        #   2026-03-01:   1 unit  @ R1
+        product = self._product('Multi-Method Item', tax=self.tax_excluded)
+        product.write({
+            'vuma_cost_line_ids': [
+                Command.create({
+                    'date': '2026-01-01',
+                    'quantity': 100.0,
+                    'unit_price': 1000.0,
+                }),
+                Command.create({
+                    'date': '2026-02-01',
+                    'quantity': 1.0,
+                    'unit_price': 100.0,
+                }),
+                Command.create({
+                    'date': '2026-03-01',
+                    'quantity': 1.0,
+                    'unit_price': 1.0,
+                }),
+            ],
+            'vuma_markup_percent': 10.0,
+        })
+        # 1. Default = Weighted Average: (100000 + 100 + 1) / 102 = 981.38
+        self.assertAlmostEqual(product.vuma_gross_cost, 981.38, places=2)
+        self.assertAlmostEqual(product.standard_price, 981.38, places=2)
+
+        # 2. Switch Settings to Simple Average: (1000 + 100 + 1) / 3 = 367.00
+        settings = self.env['res.config.settings'].create({
+            'vuma_costing_method': 'simple_average',
+        })
+        settings.execute()
+        self.assertAlmostEqual(product.vuma_gross_cost, 367.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 367.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 403.7, places=2)
+
+        # 3. Switch Settings to Log Average (Geometric Mean):
+        #    exp((ln(1000) + ln(100) + ln(1)) / 3) = (1000 * 100 * 1)^(1/3) = 46.42
+        self.company.write({'vuma_costing_method': 'log_average'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 46.42, places=2)
+        self.assertAlmostEqual(product.standard_price, 46.42, places=2)
+
+        # 4. Switch Settings to FIFO (Oldest batch = 2026-01-01 @ R1000.00)
+        self.company.write({'vuma_costing_method': 'fifo'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 1000.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 1000.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 1100.0, places=2)
+
+        # 5. Switch Settings to LIFO (Latest batch = 2026-03-01 @ R1.00)
+        self.company.write({'vuma_costing_method': 'lifo'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 1.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 1.0, places=2)
+
+        # 6. Switch Settings to Median Cost (Middle of [1, 100, 1000] = R100.00)
+        self.company.write({'vuma_costing_method': 'median_cost'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 100.0, places=2)
+
+        # 7. Switch Settings to Highest Cost (R1000.00) and Lowest Cost (R1.00)
+        self.company.write({'vuma_costing_method': 'highest_cost'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 1000.0, places=2)
+        self.company.write({'vuma_costing_method': 'lowest_cost'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 1.0, places=2)
+
+        # Restore default Weighted Average
+        self.company.write({'vuma_costing_method': 'weighted_average'})
+        self.assertAlmostEqual(product.vuma_gross_cost, 981.38, places=2)
+
+    def test_all_landed_cost_components_captured_and_controlled_by_settings(self):
+        product = self._product('Imported Generator', tax=self.tax_included)
+        product.write({
+            'vuma_gross_cost': 1000.0,
+            'vuma_transport_cost': 50.0,
+            'vuma_import_duty_percent': 10.0,  # -> R100.00 import duty
+            'vuma_shipping_cost': 80.0,
+            'vuma_clearance_cost': 30.0,
+            'vuma_insurance_cost': 15.0,
+            'vuma_packaging_cost': 10.0,
+            'vuma_handling_cost': 5.0,
+            'vuma_levy_cost': 4.0,
+            'vuma_fx_bank_cost': 3.0,
+            'vuma_other_landed_cost': 3.0,
+            'vuma_markup_percent': 20.0,
+        })
+        # Import Duty Cost = 10% of 1000 = 100.0
+        self.assertAlmostEqual(product.vuma_import_duty_cost, 100.0, places=2)
+        # Additional landed costs = 50 + 100 + 80 + 30 + 15 + 10 + 5 + 4 + 3 + 3 = 300.0
+        self.assertAlmostEqual(
+            product.vuma_additional_landed_cost, 300.0, places=2)
+        # Nett Cost = 1000 + 300 = 1300.0
+        self.assertAlmostEqual(product.vuma_nett_cost, 1300.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 1300.0, places=2)
+        # 20% markup on 1300 -> 1560 ex VAT, 1794 incl 15% VAT
+        self.assertAlmostEqual(product.vuma_selling_ex_vat, 1560.0, places=2)
+        self.assertAlmostEqual(product.vuma_selling_inc_vat, 1794.0, places=2)
+        self.assertAlmostEqual(product.list_price, 1794.0, places=2)
+
+        # Toggling Transport or Import Duty off in Settings excludes it from
+        # Nett Cost while keeping the captured figures on the product intact.
+        self.company.write({
+            'vuma_cost_include_transport': False,
+            'vuma_cost_include_import_duty': False,
+        })
+        self.assertAlmostEqual(product.vuma_transport_cost, 50.0, places=2)
+        self.assertAlmostEqual(product.vuma_import_duty_cost, 100.0, places=2)
+        self.assertAlmostEqual(
+            product.vuma_additional_landed_cost, 150.0, places=2)
+        self.assertAlmostEqual(product.vuma_nett_cost, 1150.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 1150.0, places=2)
+
+        # Re-enabling them in Settings restores the full landed cost.
+        self.company.write({
+            'vuma_cost_include_transport': True,
+            'vuma_cost_include_import_duty': True,
+        })
+        self.assertAlmostEqual(product.vuma_nett_cost, 1300.0, places=2)
+        self.assertAlmostEqual(product.standard_price, 1300.0, places=2)

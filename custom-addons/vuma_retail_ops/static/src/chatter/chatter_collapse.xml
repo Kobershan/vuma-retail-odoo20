@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Chatter')]" position="attributes">
+            <attribute name="t-att-class">{ 'overflow-auto o-scrollbar-thin': this.webChatterProps.isChatterAside and !this.state.isChatterCollapsed, 'o-chatter-disabled': this.thread().id === false, 'o-vuma-chatter-collapsed': this.state.isChatterCollapsed, 'o-vuma-log-collapsed': !this.state.showLogMessages }</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o-mail-Chatter-top')]" position="before">
+            <div t-if="this.state.isChatterCollapsed"
+                 class="o-vuma-Chatter-collapsedBar d-print-none"
+                 t-on-click="this.toggleChatterCollapsed"
+                 title="Expand Activity &amp; Vuma Bot Log">
+                <button type="button"
+                        class="btn btn-sm btn-link o-vuma-Chatter-expandBtn p-0"
+                        aria-label="Expand Log">
+                    <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-left' : 'fa-chevron-down'"/>
+                </button>
+                <span class="o-vuma-Chatter-collapsedLabel">Activity &amp; Log</span>
+                <span t-if="this.logMessageCount"
+                      class="badge rounded-pill text-bg-secondary o-vuma-Chatter-collapsedBadge"
+                      t-out="this.logMessageCount"/>
+            </div>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="inside">
+            <button type="button"
+                    class="btn btn-link px-1 o-vuma-Chatter-collapseBtn"
+                    t-on-click="this.toggleChatterCollapsed"
+                    title="Collapse Activity &amp; Vuma Bot Log"
+                    aria-label="Collapse Activity &amp; Vuma Bot Log">
+                <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-right' : 'fa-chevron-up'"/>
+            </button>
+        </xpath>
+
+        <xpath expr="//Thread" position="replace">
+            <t t-else="">
+                <div class="o-vuma-LogHeader d-flex pt-2 px-2 cursor-pointer fw-bold user-select-none"
+                     t-on-click="this.toggleLogMessages"
+                     title="Toggle Activity &amp; Vuma Bot Log">
+                    <hr class="flex-grow-1 fs-3 my-auto"/>
+                    <div class="d-flex align-items-center px-3">
+                        <i class="oi oi-fw me-1" t-att-data-icon="this.state.showLogMessages ? 'arrow_drop_down' : 'arrow_right'"/>
+                        <span>Activity &amp; Log</span>
+                        <span t-if="this.logMessageCount"
+                              class="badge rounded-pill ms-2"
+                              t-att-class="this.state.showLogMessages ? 'text-bg-light border text-muted' : 'text-bg-secondary'"
+                              t-out="this.logMessageCount"/>
+                    </div>
+                    <hr class="flex-grow-1 fe-3 my-auto"/>
+                </div>
+                <Thread t-if="this.state.showLogMessages"
+                        thread="this.state.thread"
+                        t-key="this.state.thread.localId"
+                        order="'desc'"
+                        scrollRef="this.rootRef"
+                        jumpPresent="this.state.jumpThreadPresent"/>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

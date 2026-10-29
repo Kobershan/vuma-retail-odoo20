@@ -1,32 +1,42 @@
 # -*- coding: utf-8 -*-
 """Spreadsheet pricing on the product profile.
 
-A buyer prices an item the way a spreadsheet does it -- seven numbers that
+A buyer prices an item the way a spreadsheet does it -- a base supplier cost,
+any landed costs that sit on top of it, and four markup / selling figures that
 lean on each other::
 
-    Gross Cost      typed by hand
-    Transport Cost  typed by hand (zero when transport is inside the cost)
-    Nett Cost       = Gross Cost + Transport Cost
-    Markup %        one of these four is typed, the
-    Markup Value    other three are worked out from it
-    Selling ex VAT  :
-    Selling inc VAT :
+    Gross Cost              typed by hand, or driven by Cost Price Points
+    + Transport Cost        local road freight / delivery per unit
+    + Import Duty Cost      customs tariff (% of gross cost or Rand per unit)
+    + Shipping Cost         international sea / air freight per unit
+    + Clearing Cost         customs clearing, forwarding & port charges
+    + Insurance Cost        transit / marine insurance per unit
+    + Packaging Cost        cartons, labelling, pallets & repackaging
+    + Handling Cost         offloading, warehousing & cold storage
+    + Levies & Excise       excise, environmental & statutory levies
+    + FX & Bank Charges     forex spread, LC & bank charges
+    + Other Landed Cost     any other landed cost per unit
+    -----------------------------------------------------------------------
+    = Nett Cost             Gross Cost + all included additional landed costs
+      Markup %              one of these four is typed, the
+      Markup Value          other three are worked out from it
+      Selling ex VAT        :
+      Selling inc VAT       :
 
-The three cost lines are fixed: Nett Cost is always gross plus transport.
 Off that nett cost, exactly one of the markup / selling figures is a
 *constant* (the cell the user typed last) and the other three are the
 *formulas*.  ``vuma_pricing_driver`` remembers which one is the constant, so
-changing the gross cost later moves every figure except the one the buyer
-pinned -- which is exactly how the same sheet behaves in Excel.
+changing any cost later moves every figure except the one the buyer pinned --
+which is exactly how the same sheet behaves in Excel.
 
-Two of the seven then feed Odoo's own price fields on save:
+Two of the figures then feed Odoo's own price fields on save:
 
 * **Selling incl VAT** -> *Sales Price* (``list_price``), so labels, pricelists,
   POS and quotations all pick the shelf price up.  When the product's taxes are
   not included in the price, the VAT-exclusive figure is written instead, so
   Odoo never taxes a price twice;
 * **Nett Cost** -> *Cost* (``standard_price``), so margins and stock valuation
-  follow the landed cost.
+  follow the full landed cost.
 
 The VAT percentage is read from the product's own sales taxes rather than
 typed, so the inclusive price on the tab always agrees with what an invoice
@@ -44,11 +54,29 @@ PRICING_FIELDS = (
     'vuma_selling_inc_vat',
 )
 
-#: The two inputs that define the nett cost.
+#: Every landed / ancillary cost component that can sit on top of Gross Cost,
+#: paired with the company setting that controls whether it is folded into the
+#: product's Nett Cost.
+LANDED_COST_COMPONENTS = (
+    ('vuma_transport_cost', 'vuma_cost_include_transport'),
+    ('vuma_import_duty_cost', 'vuma_cost_include_import_duty'),
+    ('vuma_shipping_cost', 'vuma_cost_include_shipping'),
+    ('vuma_clearance_cost', 'vuma_cost_include_clearance'),
+    ('vuma_insurance_cost', 'vuma_cost_include_insurance'),
+    ('vuma_packaging_cost', 'vuma_cost_include_packaging'),
+    ('vuma_handling_cost', 'vuma_cost_include_handling'),
+    ('vuma_levy_cost', 'vuma_cost_include_levy'),
+    ('vuma_fx_bank_cost', 'vuma_cost_include_fx_bank'),
+    ('vuma_other_landed_cost', 'vuma_cost_include_other'),
+)
+
+ADDITIONAL_COST_FIELDS = tuple(field for field, _ in LANDED_COST_COMPONENTS)
+
+#: All inputs that define the nett cost.
 COST_FIELDS = (
     'vuma_gross_cost',
-    'vuma_transport_cost',
-)
+    'vuma_import_duty_percent',
+) + ADDITIONAL_COST_FIELDS
 
 #: Everything whose change means the solved figures may be out of date.
 PRICING_TRIGGER_FIELDS = PRICING_FIELDS + COST_FIELDS + (
@@ -66,17 +94,68 @@ class ProductTemplate(models.Model):
 
     vuma_gross_cost = fields.Float(
         string='Gross Cost', digits='Product Price', default=0.0,
-        help='What the supplier charges for one unit, before transport is '
-             'added.')
+        help='What the supplier charges for one unit, before transport, '
+             'import duty and other landed costs are added.')
     vuma_transport_cost = fields.Float(
         string='Transport Cost', digits='Product Price', default=0.0,
-        help='Delivery landed on one unit. Leave at zero when transport is '
-             'already inside the gross cost.')
+        help='Local road freight, courier or delivery landed on one unit. '
+             'Leave at zero when transport is already inside the gross cost.')
+    vuma_import_duty_percent = fields.Float(
+        string='Import Duty %', digits=(16, 4), min_display_digits=2,
+        default=0.0,
+        help='Customs tariff as a percentage of Gross Cost. Typing a '
+             'percentage here works out Import Duty Cost automatically; '
+             'or leave at 0 and type the Rand duty directly below.')
+    vuma_import_duty_cost = fields.Float(
+        string='Import Duty Cost', digits='Product Price', default=0.0,
+        help='Customs tariff / import duty landed on one unit.')
+    vuma_shipping_cost = fields.Float(
+        string='International Shipping Cost', digits='Product Price',
+        default=0.0,
+        help='Ocean or air freight, container and bunker charges per unit.')
+    vuma_clearance_cost = fields.Float(
+        string='Clearing & Forwarding Cost', digits='Product Price',
+        default=0.0,
+        help='Customs clearing agent fees, port/harbour charges, wharfage '
+             'and bill-of-entry costs per unit.')
+    vuma_insurance_cost = fields.Float(
+        string='Transit & Marine Insurance', digits='Product Price',
+        default=0.0,
+        help='Goods-in-transit or marine insurance per unit.')
+    vuma_packaging_cost = fields.Float(
+        string='Packaging & Labelling Cost', digits='Product Price',
+        default=0.0,
+        help='Cartons, shrink-wrap, pallets, barcoding or repackaging cost '
+             'per unit.')
+    vuma_handling_cost = fields.Float(
+        string='Handling & Storage Cost', digits='Product Price',
+        default=0.0,
+        help='Offloading, palletising, warehousing or cold-storage cost '
+             'per unit.')
+    vuma_levy_cost = fields.Float(
+        string='Excise & Statutory Levies', digits='Product Price',
+        default=0.0,
+        help='Excise duty, environmental levy, sugar/carbon/plastic/tyre '
+             'levy or NRCS/SABS compliance levy per unit.')
+    vuma_fx_bank_cost = fields.Float(
+        string='FX & Bank Charges', digits='Product Price', default=0.0,
+        help='Foreign exchange spread, letter of credit or bank commission '
+             'per unit.')
+    vuma_other_landed_cost = fields.Float(
+        string='Other Landed Cost', digits='Product Price', default=0.0,
+        help='Any other landed cost per unit (inspection, testing, finance '
+             'or sundry charges).')
+    vuma_additional_landed_cost = fields.Float(
+        string='Total Additional Costs', digits='Product Price',
+        compute='_compute_vuma_nett_cost', store=True,
+        help='Sum of all enabled landed costs (transport, import duty, '
+             'shipping, clearing, insurance, packaging, handling, levies, '
+             'FX/bank and other costs) added on top of Gross Cost.')
     vuma_nett_cost = fields.Float(
         string='Nett Cost', digits='Product Price',
         compute='_compute_vuma_nett_cost', store=True,
-        help='Gross Cost + Transport Cost. Every figure below is worked out '
-             'from this number.')
+        help='Gross Cost plus all included landed costs. Every markup and '
+             'selling figure below is worked out from this number.')
     vuma_vat_percent = fields.Float(
         string='VAT %', digits='Product Price',
         compute='_compute_vuma_vat_percent',
@@ -108,9 +187,15 @@ class ProductTemplate(models.Model):
 
     # ------------------------------------------------------------------ maths
 
-    @api.depends('vuma_gross_cost', 'vuma_transport_cost')
+    @api.depends(
+        'vuma_gross_cost',
+        'vuma_import_duty_percent',
+        *ADDITIONAL_COST_FIELDS,
+    )
     def _compute_vuma_nett_cost(self):
         for template in self:
+            template.vuma_additional_landed_cost = (
+                template._vuma_additional_cost_value())
             template.vuma_nett_cost = template._vuma_nett_cost_value()
 
     @api.depends('taxes_id', 'taxes_id.amount')
@@ -118,15 +203,66 @@ class ProductTemplate(models.Model):
         for template in self:
             template.vuma_vat_percent = template._vuma_vat_percent_value()
 
-    def _vuma_nett_cost_value(self):
-        """Gross cost plus transport cost, read live.
+    def _vuma_base_gross_cost_value(self):
+        """The gross supplier cost per unit before additional landed costs."""
+        self.ensure_one()
+        return self.vuma_gross_cost or 0.0
 
-        Computed from the two inputs instead of ``vuma_nett_cost`` so that an
+    def _vuma_additional_cost_value(self):
+        """Sum of every additional landed cost component enabled in Settings."""
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        total = 0.0
+        for field_name, flag_name in LANDED_COST_COMPONENTS:
+            if getattr(company, flag_name, True):
+                total += self[field_name] or 0.0
+        return total
+
+    def _vuma_nett_cost_value(self):
+        """Gross cost plus all enabled landed costs, read live.
+
+        Computed from the live inputs instead of ``vuma_nett_cost`` so that an
         onchange, which can run before the stored field is recomputed, never
         solves a pricing chain from a stale cost.
         """
         self.ensure_one()
-        return (self.vuma_gross_cost or 0.0) + (self.vuma_transport_cost or 0.0)
+        return (
+            self._vuma_base_gross_cost_value()
+            + self._vuma_additional_cost_value()
+        )
+
+    def _vuma_sync_import_duty_from_percent(self, vals=None):
+        """When Import Duty % is set, work out Import Duty Cost from Gross Cost."""
+        vals = vals or {}
+        for template in self:
+            if (
+                'vuma_import_duty_cost' in vals
+                and 'vuma_import_duty_percent' not in vals
+            ):
+                # User explicitly supplied a Rand duty amount.
+                gross = template._vuma_base_gross_cost_value()
+                pct = template.vuma_import_duty_percent or 0.0
+                if pct and gross:
+                    implied = template._vuma_round_pricing_field(
+                        'vuma_import_duty_cost', gross * pct / 100.0)
+                    if float_compare(
+                            template.vuma_import_duty_cost or 0.0,
+                            implied, precision_digits=4):
+                        template.with_context(**{
+                            SOLVE_CONTEXT_KEY: True,
+                        }).write({'vuma_import_duty_percent': 0.0})
+                continue
+            pct = template.vuma_import_duty_percent or 0.0
+            if pct > 0.0:
+                gross = template._vuma_base_gross_cost_value()
+                duty = template._vuma_round_pricing_field(
+                    'vuma_import_duty_cost', gross * pct / 100.0)
+                if float_compare(
+                        template.vuma_import_duty_cost or 0.0,
+                        duty, precision_digits=4):
+                    template.with_context(**{
+                        SOLVE_CONTEXT_KEY: True,
+                    }).write({'vuma_import_duty_cost': duty})
 
     def _vuma_company_taxes(self):
         """Sales taxes for this item's company (or the active company).
@@ -335,6 +471,12 @@ class ProductTemplate(models.Model):
         if driver:
             vals = dict(vals, vuma_pricing_driver=driver)
         res = super().write(vals)
+        if any(name in vals for name in (
+                'vuma_gross_cost',
+                'vuma_import_duty_percent',
+                'vuma_import_duty_cost')):
+            self._vuma_sync_import_duty_from_percent(vals)
+            self._compute_vuma_nett_cost()
         if any(name in vals for name in PRICING_FIELDS):
             # One of the four figures came in on its own: it is the new pin.
             self._vuma_solve_pricing(vals)
@@ -354,6 +496,12 @@ class ProductTemplate(models.Model):
                 vals['vuma_pricing_driver'] = driver
         templates = super().create(vals_list)
         for template, vals in zip(templates, vals_list):
+            if any(name in vals for name in (
+                    'vuma_gross_cost',
+                    'vuma_import_duty_percent',
+                    'vuma_import_duty_cost')):
+                template._vuma_sync_import_duty_from_percent(vals)
+                template._compute_vuma_nett_cost()
             if any(name in vals for name in PRICING_FIELDS):
                 template._vuma_solve_pricing(vals)
             elif 'list_price' in vals:
@@ -366,7 +514,19 @@ class ProductTemplate(models.Model):
 
     # ------------------------------------------------------------- onchange
 
-    @api.onchange('vuma_gross_cost', 'vuma_transport_cost')
+    @api.onchange('vuma_gross_cost', 'vuma_import_duty_percent')
+    def _onchange_vuma_gross_or_duty_percent(self):
+        for template in self:
+            if (template.vuma_import_duty_percent or 0.0) > 0.0:
+                gross = template._vuma_base_gross_cost_value()
+                template.vuma_import_duty_cost = (
+                    template._vuma_round_pricing_field(
+                        'vuma_import_duty_cost',
+                        gross * template.vuma_import_duty_percent / 100.0))
+        self._compute_vuma_nett_cost()
+        self._vuma_solve_onchange()
+
+    @api.onchange(*ADDITIONAL_COST_FIELDS)
     def _onchange_vuma_pricing_costs(self):
         self._compute_vuma_nett_cost()
         self._vuma_solve_onchange()

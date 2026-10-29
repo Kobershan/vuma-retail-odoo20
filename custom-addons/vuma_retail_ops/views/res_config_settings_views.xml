@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_vuma_costing" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.vuma.costing</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="45"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Vuma Retail"
+                     string="Vuma Retail"
+                     name="vuma_retail_ops">
+                    <block title="Product Costing Method (All Goods)"
+                           name="vuma_costing_method_setting_container">
+                        <setting id="vuma_costing_method_setting"
+                                 string="How to Cost All Goods"
+                                 company_dependent="1"
+                                 help="Choose the formula used to calculate Gross Cost Excl VAT from a product's Cost Price Points across all goods. Saving automatically updates all products using the company default.">
+                            <div class="content-group mt8">
+                                <field name="vuma_costing_method"
+                                       class="w-100"
+                                       required="1"/>
+                                <div class="text-muted small mt8">
+                                    <ul class="mb-2 ps-3">
+                                        <li><b>Weighted Average (by Volume / Quantity):</b> Total Spent ÷ Total Units (e.g. 100 @ R1,000 + 1 @ R1 = R990.11).</li>
+                                        <li><b>Average Price (Simple Arithmetic Average):</b> Unweighted average of all batch unit prices.</li>
+                                        <li><b>Log Average (Logarithmic / Geometric Mean):</b> Dampens extreme single-invoice spikes.</li>
+                                        <li><b>Volume-Weighted Log Average:</b> Geometric mean weighted by quantity bought at each price.</li>
+                                        <li><b>FIFO (First In, First Out):</b> Uses the oldest batch's unit price.</li>
+                                        <li><b>LIFO (Last In, First Out):</b> Uses the latest / most recent batch's unit price.</li>
+                                        <li><b>Moving Average (Last 3 Batches Weighted):</b> Rolling volume-weighted average of the 3 newest batches.</li>
+                                        <li><b>Median Cost:</b> Middle price point when sorted from lowest to highest.</li>
+                                        <li><b>Harmonic Average:</b> Equal-spend rate average across batches.</li>
+                                        <li><b>Highest / Replacement Cost:</b> Highest batch price for conservative margin protection.</li>
+                                        <li><b>Lowest Cost:</b> Lowest batch price.</li>
+                                        <li><b>Manual / Standard Fixed Cost:</b> Type Gross Cost directly; keep price points for reference only.</li>
+                                    </ul>
+                                </div>
+                                <div class="mt8">
+                                    <button name="action_vuma_recalculate_all_costs"
+                                            type="object"
+                                            string="Recalculate All Product Costs Now"
+                                            class="btn btn-secondary"
+                                            icon="fa-calculator"/>
+                                </div>
+                            </div>
+                        </setting>
+                    </block>
+
+                    <block title="Landed &amp; Ancillary Costs Included in Product Cost"
+                           name="vuma_landed_cost_components_container">
+                        <setting id="vuma_landed_transport_setting"
+                                 string="Transport &amp; Local Freight Cost"
+                                 company_dependent="1"
+                                 help="Capture road freight, delivery or courier cost per unit and fold it into Nett Cost.">
+                            <field name="vuma_cost_include_transport"/>
+                        </setting>
+                        <setting id="vuma_landed_import_duty_setting"
+                                 string="Import Duty / Customs Tariff"
+                                 company_dependent="1"
+                                 help="Capture SARS customs tariff / import duty (% of Gross Cost or Rand per unit) and fold it into Nett Cost.">
+                            <field name="vuma_cost_include_import_duty"/>
+                        </setting>
+                        <setting id="vuma_landed_shipping_setting"
+                                 string="International Shipping (Sea / Air Freight)"
+                                 company_dependent="1"
+                                 help="Capture ocean or air freight, container and bunker charges per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_shipping"/>
+                        </setting>
+                        <setting id="vuma_landed_clearance_setting"
+                                 string="Customs Clearing &amp; Forwarding"
+                                 company_dependent="1"
+                                 help="Capture clearing agent fees, port/harbour charges, wharfage and bill of entry costs per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_clearance"/>
+                        </setting>
+                        <setting id="vuma_landed_insurance_setting"
+                                 string="Transit &amp; Marine Insurance"
+                                 company_dependent="1"
+                                 help="Capture goods-in-transit or marine insurance per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_insurance"/>
+                        </setting>
+                        <setting id="vuma_landed_packaging_setting"
+                                 string="Packaging, Labelling &amp; Repackaging"
+                                 company_dependent="1"
+                                 help="Capture cartons, shrink-wrap, pallets, barcoding or co-packing cost per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_packaging"/>
+                        </setting>
+                        <setting id="vuma_landed_handling_setting"
+                                 string="Handling, Warehousing &amp; Cold Storage"
+                                 company_dependent="1"
+                                 help="Capture offloading, palletising, depot storage or cold-chain cost per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_handling"/>
+                        </setting>
+                        <setting id="vuma_landed_levy_setting"
+                                 string="Excise, Environmental &amp; Statutory Levies"
+                                 company_dependent="1"
+                                 help="Capture excise/sin tax, sugar/carbon/plastic/tyre levy or NRCS/SABS compliance levy per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_levy"/>
+                        </setting>
+                        <setting id="vuma_landed_fx_bank_setting"
+                                 string="Foreign Exchange &amp; Bank / LC Charges"
+                                 company_dependent="1"
+                                 help="Capture forex spread, letter of credit or bank commission on imports per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_fx_bank"/>
+                        </setting>
+                        <setting id="vuma_landed_other_setting"
+                                 string="Other Landed / Sundry Costs"
+                                 company_dependent="1"
+                                 help="Capture inspection, quality testing, finance or any other landed cost per unit as part of Nett Cost.">
+                            <field name="vuma_cost_include_other"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_vuma_costing_settings" model="ir.actions.act_window">
+        <field name="name">Costing &amp; Pricing Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="context">{'module': 'vuma_retail_ops', 'bin_size': False}</field>
+    </record>
+
+    <record id="menu_vuma_costing_settings" model="ir.ui.menu">
+        <field name="name">Costing &amp; Pricing Settings</field>
+        <field name="parent_id" ref="menu_vuma_config"/>
+        <field name="action" ref="action_vuma_costing_settings"/>
+        <field name="sequence">5</field>
+    </record>
+
+</odoo>

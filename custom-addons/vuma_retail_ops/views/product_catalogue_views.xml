@@ -267,16 +267,21 @@
                         Price the item the way you would on a spreadsheet:
                         enter the <strong>Cost Price Points</strong> below (or
                         type a single <strong>Gross Cost</strong> directly),
-                        add a <strong>Transport Cost</strong> if there is one,
+                        capture <strong>Transport Cost</strong>,
+                        <strong>Import Duty</strong> and any other landed costs,
                         choose the <strong>VAT Treatment</strong>, then fill in
                         <b>any one</b> of Markup %, Markup Value, Selling Excl
                         VAT or Selling Incl VAT. The other three fill
-                        themselves in, and stay filled in when the cost
+                        themselves in, and stay filled in when any cost
                         changes. <b>Saving updates the product's Sales Price,
                         Cost and Sales Tax</b>.
                     </div>
                     <group>
-                        <group string="Cost Price Excl VAT" name="vuma_pricing_cost">
+                        <group string="Cost Price Excl VAT &amp; Landed Costs"
+                               name="vuma_pricing_cost">
+                            <field name="vuma_costing_method"/>
+                            <field name="vuma_effective_costing_method_label"
+                                   invisible="not vuma_cost_line_count"/>
                             <field name="vuma_gross_cost"
                                    string="Gross Cost Excl VAT"
                                    widget="monetary"
@@ -285,28 +290,31 @@
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                             <field name="vuma_transport_cost" widget="monetary"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_import_duty_percent"/>
+                            <field name="vuma_import_duty_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_shipping_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_clearance_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_insurance_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_packaging_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_handling_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_levy_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_fx_bank_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_other_landed_cost" widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_additional_landed_cost"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                             <field name="vuma_nett_cost" widget="monetary"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"
                                    class="fw-bold"/>
-                            <field name="vuma_weighted_cost"
-                                   string="Weighted Average Cost"
-                                   widget="monetary"
-                                   invisible="not vuma_gross_cost_driven"
-                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
-                            <field name="vuma_cost_total_qty"
-                                   invisible="not vuma_gross_cost_driven"/>
-                            <field name="vuma_cost_total_value"
-                                   widget="monetary"
-                                   invisible="not vuma_gross_cost_driven"
-                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
-                            <field name="vuma_cost_low"
-                                   widget="monetary"
-                                   invisible="not vuma_gross_cost_driven"
-                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
-                            <field name="vuma_cost_high"
-                                   widget="monetary"
-                                   invisible="not vuma_gross_cost_driven"
-                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                         </group>
                         <group string="VAT, Markup &amp; Selling Price"
                                name="vuma_pricing_selling">
@@ -322,26 +330,90 @@
                             <field name="vuma_selling_inc_vat" widget="monetary"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"
                                    class="fw-bold"/>
+                            <separator string="Costing Method Figures (From Price Points)"
+                                       invisible="not vuma_cost_line_count"/>
+                            <field name="vuma_calculated_cost"
+                                   string="Cost by Selected Method"
+                                   widget="monetary"
+                                   class="fw-bold"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_weighted_cost"
+                                   string="Weighted Average Cost"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_simple_avg_cost"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_log_avg_cost"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_fifo_cost"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_lifo_cost"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_total_qty"
+                                   invisible="not vuma_cost_line_count"/>
+                            <field name="vuma_cost_total_value"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_low"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="vuma_cost_high"
+                                   widget="monetary"
+                                   invisible="not vuma_cost_line_count"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                         </group>
                     </group>
 
-                    <separator string="How Cost Price Excl VAT is Worked Out (Weighted by Volume)"/>
+                    <separator string="How Cost Price Excl VAT is Worked Out (Batch Price Points)"/>
                     <div class="text-muted small mb-2">
-                        List each batch bought at a different price point. The
-                        cost is weighted by volume (<b>Total Spent ÷ Total
-                        Units</b>), not a simple average of the prices — for
-                        example, 100 items at R1,000 and 1 item at R1 gives
-                        R100,001 ÷ 101 = <b>R990.11</b> per unit (not R500.50).
-                        When price points are listed here, their weighted
-                        average feeds <b>Gross Cost Excl VAT</b> above.
+                        List each batch bought at a different price point. By
+                        default the cost is weighted by volume (<b>Total Spent ÷
+                        Total Units</b>) — e.g. 100 items at R1,000 and 1 item
+                        at R1 gives R100,001 ÷ 101 = <b>R990.11</b> per unit
+                        (not R500.50). You can switch the costing formula for
+                        all goods in <b>Settings</b> (or per item above) between
+                        <b>Weighted Average</b>, <b>Average Price</b>,
+                        <b>Log Average</b>, <b>Volume-Weighted Log Average</b>,
+                        <b>FIFO</b>, <b>LIFO</b>, <b>Moving Average</b>,
+                        <b>Median</b>, <b>Harmonic Average</b>, <b>Highest</b>,
+                        <b>Lowest</b>, or <b>Manual</b>.
                     </div>
                     <field name="vuma_cost_line_ids">
                         <list editable="bottom">
                             <field name="sequence" widget="handle"/>
                             <field name="date" optional="show"/>
                             <field name="supplier_id" optional="show"/>
+                            <field name="reference" optional="show"/>
                             <field name="quantity" sum="Total Units"/>
                             <field name="unit_price"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="transport_cost"
+                                   optional="show"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="import_duty_cost"
+                                   optional="show"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="other_cost"
+                                   optional="hide"
+                                   widget="monetary"
+                                   options="{'currency_field': 'currency_id', 'field_digits': True}"/>
+                            <field name="effective_unit_price"
+                                   optional="show"
                                    widget="monetary"
                                    options="{'currency_field': 'currency_id', 'field_digits': True}"/>
                             <field name="subtotal"
@@ -353,8 +425,10 @@
                     </field>
 
                     <div class="text-muted small mt-2">
-                        Markup is on the <b>nett cost</b>: 30% means the item
-                        sells for the nett cost plus 30% of it. Marking the
+                        Markup is on the <b>nett cost</b> (Gross Cost plus all
+                        included landed costs such as Transport, Import Duty,
+                        Shipping, Clearing, Insurance, Packaging, Handling,
+                        Levies and FX/Bank charges). Marking the
                         <b>VAT Treatment</b> (Standard Rated, Zero Rated, Zero
                         Rated Export or VAT Exempt) sets the product's sales
                         tax so orders and invoices automatically charge the
