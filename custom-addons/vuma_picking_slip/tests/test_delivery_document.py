@@ -245,6 +245,109 @@ class TestDeliveryDocument(TransactionCase):
                          'vuma_picking_slip.report_delivery_document')
         self.assertEqual(action['context']['active_ids'], document.ids)
 
+    # ------------------------------------------------------------- pallets
+    def test_pallet_line_weight_is_quantity_times_weight_per_pallet(self):
+        document = self._document(self.invoice_one)
+        pallet = self.env['vuma.delivery.pallet'].create({
+            'document_id': document.id,
+            'name': 'Widgets on one pallet',
+            'quantity': 3.0,
+            'weight_per_pallet': 40.0,
+        })
+
+        self.assertAlmostEqual(pallet.line_weight, 120.0)
+
+    def test_document_totals_sum_every_pallet_line(self):
+        document = self._document(self.invoice_one)
+        self.env['vuma.delivery.pallet'].create([
+            {'document_id': document.id, 'name': 'Widget pallets',
+             'quantity': 3.0, 'weight_per_pallet': 40.0},
+            {'document_id': document.id, 'name': 'Bolt pallets',
+             'quantity': 2.0, 'weight_per_pallet': 25.0},
+        ])
+
+        self.assertAlmostEqual(document.total_pallet_quantity, 5.0)
+        self.assertAlmostEqual(document.total_pallet_weight, 3 * 40.0 + 2 * 25.0)
+
+    def test_pallet_weight_is_not_added_to_the_goods_weight(self):
+        document = self._document(self.invoice_one | self.invoice_two)
+        self.env['vuma.delivery.pallet'].create({
+            'document_id': document.id, 'name': 'Mixed pallets',
+            'quantity': 4.0, 'weight_per_pallet': 100.0,
+        })
+
+        # Goods weight stays the invoiced-product weight alone: the pallet
+        # lines describe the same physical goods, so folding them in would
+        # double-count the load.
+        self.assertAlmostEqual(document.total_weight, 10.5)
+        self.assertAlmostEqual(document.total_pallet_weight, 400.0)
+
+    def test_editing_or_removing_a_pallet_recalculates_the_totals(self):
+        document = self._document(self.invoice_one)
+        pallet = self.env['vuma.delivery.pallet'].create({
+            'document_id': document.id, 'name': 'One pallet',
+            'quantity': 1.0, 'weight_per_pallet': 90.0,
+        })
+        self.assertAlmostEqual(document.total_pallet_quantity, 1.0)
+        self.assertAlmostEqual(document.total_pallet_weight, 90.0)
+
+        pallet.write({'quantity': 2.0, 'weight_per_pallet': 95.0})
+        self.assertAlmostEqual(document.total_pallet_quantity, 2.0)
+        self.assertAlmostEqual(document.total_pallet_weight, 190.0)
+
+        pallet.unlink()
+        self.assertAlmostEqual(document.total_pallet_quantity, 0.0)
+        self.assertAlmostEqual(document.total_pallet_weight, 0.0)
+
+    def test_pallet_lines_are_cascaded_when_the_document_is_deleted(self):
+        document = self._document(self.invoice_one)
+        self.env['vuma.delivery.pallet'].create({
+            'document_id': document.id, 'name': 'Doomed pallet',
+            'quantity': 1.0, 'weight_per_pallet': 10.0,
+        })
+
+        document.unlink()
+
+        self.assertFalse(self.env['vuma.delivery.pallet'].search(
+            [('name', '=', 'Doomed pallet')]))
+
+    def test_report_shows_pallets_with_quantity_and_weight(self):
+        # Both invoices: the goods weigh 10.5 kg, so the figure is easy to
+        # tell apart from the 620 kg of pallets below.
+        document = self._document(self.invoice_one | self.invoice_two)
+        document.write({'pallet_ids': [Command.create({
+            'name': 'Cola 2L -- Shoprite',
+            'quantity': 4.0,
+            'weight_per_pallet': 155.0,
+        })]})
+
+        html = self._render(document)
+
+        self.assertIn('Pallets', html)
+        self.assertIn('Cola 2L -- Shoprite', html)
+        self.assertIn('155.0', html)
+        # The pallet total: 4 x 155 = 620 kg, shown on its own row and in
+        # the KPI strip.
+        self.assertIn('620', html)
+        # The goods weight is still shown separately at 10.5 kg -- pallet
+        # weight is never folded into it.
+        self.assertIn('10.50', html)
+        self.assertIn('Total Weight', html)
+        # The KPI strip widens to five cells once pallets are present.
+        self.assertIn('kpi has-pallets', html)
+
+    def test_report_has_no_pallet_section_when_none_are_entered(self):
+        document = self._document(self.invoice_one)
+
+        html = self._render(document)
+
+        # The section, its column heading and the KPI cell all stay hidden.
+        self.assertNotIn('Weight per Pallet', html)
+        self.assertNotIn('Pallets', html)
+        # The CSS rule for the widened KPI strip is always in the stylesheet,
+        # so assert the class is not actually applied to the table.
+        self.assertNotIn('kpi has-pallets', html)
+
     # --------------------------------------------------------------- report
     def test_report_shows_load_weight_and_financial_split(self):
         self._pay(self.invoice_one)
@@ -272,6 +375,16 @@ class TestDeliveryDocument(TransactionCase):
             view_type='list')
         self.assertIn('action_create_delivery_document', view['arch'])
         self.assertIn('Create Delivery Document', view['arch'])
+
+    def test_document_form_has_an_editable_pallets_tab(self):
+        view = self.env['vuma.delivery.document'].get_view(
+            view_id=self.env.ref(
+                'vuma_picking_slip.view_vuma_delivery_document_form').id,
+            view_type='form')
+        self.assertIn('Pallets', view['arch'])
+        self.assertIn('pallet_ids', view['arch'])
+        self.assertIn('weight_per_pallet', view['arch'])
+        self.assertIn('total_pallet_quantity', view['arch'])
 
     def test_document_is_listed_under_sales(self):
         menu = self.env.ref('vuma_picking_slip.menu_delivery_document')

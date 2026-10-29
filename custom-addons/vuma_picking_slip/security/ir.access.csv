@@ -10,4 +10,8 @@ vuma_picking_slip_line_company_rule,Picking slip line multi-company,vuma.picking
 access_vuma_delivery_document_salesman,Delivery document salesman,vuma.delivery.document,sales_team.group_sale_salesman,crud,
 access_vuma_delivery_document_stock,Delivery document stock user,vuma.delivery.document,stock.group_stock_user,crud,
 access_vuma_delivery_document_invoice,Delivery document invoice user,vuma.delivery.document,account.group_account_invoice,crud,
+access_vuma_delivery_pallet_salesman,Delivery pallet salesman,vuma.delivery.pallet,sales_team.group_sale_salesman,crud,
+access_vuma_delivery_pallet_stock,Delivery pallet stock user,vuma.delivery.pallet,stock.group_stock_user,crud,
+access_vuma_delivery_pallet_invoice,Delivery pallet invoice user,vuma.delivery.pallet,account.group_account_invoice,crud,
 vuma_delivery_document_company_rule,Delivery document multi-company,vuma.delivery.document,,crud,"[('company_id', 'in', company_ids)]"
+vuma_delivery_pallet_company_rule,Delivery pallet multi-company,vuma.delivery.pallet,,crud,"[('company_id', 'in', company_ids)]"

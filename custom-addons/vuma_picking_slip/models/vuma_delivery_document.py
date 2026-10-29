@@ -5,10 +5,17 @@ Select the customer invoices that are going on the truck and the document
 presents the load in the terms dispatch and the cash office care about:
 
 * how much the goods weigh (product weight x quantity on every invoice);
+* how many pallets went on the truck, and how much each weighs (the pallet
+  lines dispatch types in on the document -- see ``vuma.delivery.pallet``);
 * when the document was generated and by whom;
 * how much of the selected invoice value was paid upfront and how much is
   still on account;
 * the total selling value of the goods on the truck.
+
+The pallet lines are deliberately kept separate from the goods weight:
+``total_weight`` stays the weight of the invoiced products alone, so a
+pallet line can never double-count goods that are already weighed. The
+printed sheet shows both figures side by side.
 
 Like the consolidated picking slip, this is a document only. It never
 reserves, moves or posts anything.
@@ -72,6 +79,20 @@ class VumaDeliveryDocument(models.Model):
         currency_field='currency_id',
         help='Selling value of the goods on the truck: the total of the '
              'selected customer invoices, including tax.')
+    pallet_ids = fields.One2many(
+        'vuma.delivery.pallet', 'document_id', string='Pallets',
+        help='Pallets loaded on this truck, typed in by dispatch: how many '
+             'pallets and how much each one weighs. Kept separate from the '
+             'goods weight so palletised goods are never counted twice.')
+    total_pallet_quantity = fields.Float(
+        string='Pallets', compute='_compute_pallet_totals', store=True,
+        digits='Product Unit',
+        help='Total number of pallets entered on this document.')
+    total_pallet_weight = fields.Float(
+        string='Pallet Weight', compute='_compute_pallet_totals', store=True,
+        digits='Stock Weight',
+        help='Total weight of the pallets entered on this document, in the '
+             'weight unit configured for products.')
     note = fields.Text(string='Notes')
 
     @api.depends('invoice_ids', 'invoice_ids.state')
@@ -138,6 +159,20 @@ class VumaDeliveryDocument(models.Model):
             ._get_weight_uom_name_from_ir_config_parameter()
         for document in self:
             document.weight_uom_name = uom_name
+
+    @api.depends(
+        'pallet_ids',
+        'pallet_ids.quantity',
+        'pallet_ids.weight_per_pallet',
+        'pallet_ids.line_weight',
+    )
+    def _compute_pallet_totals(self):
+        """Sum the manual pallet lines: count and weight of the pallets."""
+        for document in self:
+            document.total_pallet_quantity = sum(
+                document.pallet_ids.mapped('quantity'))
+            document.total_pallet_weight = sum(
+                document.pallet_ids.mapped('line_weight'))
 
     def _get_delivery_invoices(self):
         """The selected records that belong on a delivery document."""
@@ -207,3 +242,64 @@ class VumaDeliveryDocument(models.Model):
             'view_mode': 'list,form',
             'domain': [('id', 'in', self.invoice_ids.ids)],
         }
+
+
+class VumaDeliveryPallet(models.Model):
+    """One pallet line on a delivery document.
+
+    Dispatch types these in by hand: the truck's real load is counted in
+    pallets, and the pallet weight is what the scale says -- product weights
+    in the catalogue are often blank, so the invoice-derived weight cannot be
+    trusted to tell dispatch how heavy the truck is.
+
+    A line is quantity x weight per pallet. It never touches ``total_weight``
+    (the invoiced-goods weight): the two figures describe different things and
+    the printed sheet shows them side by side.
+    """
+    _name = 'vuma.delivery.pallet'
+    _description = 'Delivery Document Pallet'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(default=10)
+    document_id = fields.Many2one(
+        'vuma.delivery.document', string='Delivery Document',
+        required=True, ondelete='cascade', index=True)
+    company_id = fields.Many2one(
+        related='document_id.company_id', store=True, index=True)
+    name = fields.Char(
+        string='Pallet', required=True,
+        help='What this pallet carries, for example "Cola 2L -- Shoprite" '
+             'or "Empty pallets -- return".')
+    quantity = fields.Float(
+        string='Quantity', required=True, default=1.0,
+        digits='Product Unit',
+        help='Number of pallets on this line.')
+    weight_per_pallet = fields.Float(
+        string='Weight per Pallet', digits='Stock Weight',
+        help='Weight of one pallet, in the weight unit configured for '
+             'products. Leave at zero when the pallets are not weighed.')
+    line_weight = fields.Float(
+        string='Line Weight', compute='_compute_line_weight', store=True,
+        digits='Stock Weight',
+        help='Quantity x weight per pallet.')
+
+    @api.depends('quantity', 'weight_per_pallet')
+    def _compute_line_weight(self):
+        for pallet in self:
+            pallet.line_weight = (pallet.quantity or 0.0) * \
+                (pallet.weight_per_pallet or 0.0)
+
+    def get_pallet_lines(self):
+        """Pallet lines in print order, with quantities pre-formatted."""
+        lines = [
+            SimpleNamespace(
+                name=pallet.name,
+                quantity=pallet.quantity,
+                quantity_display=_format_quantity(pallet.quantity),
+                weight_per_pallet=pallet.weight_per_pallet,
+                line_weight=pallet.line_weight,
+                line_weight_display=_format_quantity(pallet.line_weight),
+            )
+            for pallet in self
+        ]
+        return lines

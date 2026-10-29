@@ -22,6 +22,7 @@
 
                     .dd .kpi td { background: #f8fafc; border: 1px solid #e5e7eb;
                                   padding: 8px 12px; width: 25%; }
+                    .dd .kpi.has-pallets td { width: 20%; }
                     .dd .kpi .k-lbl { font-size: 7pt; font-weight: 700; color: #6b7280;
                                       text-transform: uppercase; letter-spacing: 1px; }
                     .dd .kpi .k-val { font-size: 12pt; font-weight: 700; color: #111827; }
@@ -81,13 +82,29 @@
                             </div>
                         </div>
 
-                        <table class="kpi" cellspacing="0" cellpadding="0" style="width: 100%;">
+                        <!-- t-att-class replaces the static class entirely in
+                             server-side QWeb (ir_qweb assigns attrs[name] with
+                             no class merging), so the whole class string lives
+                             in the expression. -->
+                        <table t-att-class="'kpi has-pallets' if o.pallet_ids else 'kpi'"
+                               cellspacing="0" cellpadding="0" style="width: 100%;">
                             <tr>
                                 <td>
                                     <div class="k-lbl">Total Weight</div>
                                     <div class="k-val">
                                         <span t-field="o.total_weight"/>
                                         <span t-out="o.weight_uom_name"/>
+                                    </div>
+                                </td>
+                                <td t-if="o.pallet_ids">
+                                    <div class="k-lbl">Pallets</div>
+                                    <div class="k-val">
+                                        <span t-field="o.total_pallet_quantity"/>
+                                        <span style="font-size: 7.5pt; font-weight: 400; color: #6b7280;">
+                                            &#215;
+                                            <span t-field="o.total_pallet_weight"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </span>
                                     </div>
                                 </td>
                                 <td>
@@ -182,6 +199,46 @@
                             </tbody>
                         </table>
 
+                        <t t-if="o.pallet_ids">
+                            <div class="sec-title">Pallets</div>
+                            <table class="grid" cellspacing="0" cellpadding="0">
+                                <thead>
+                                    <tr>
+                                        <th>Pallet</th>
+                                        <th class="num">Quantity</th>
+                                        <th class="num">Weight per Pallet</th>
+                                        <th class="num">Line Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.pallet_ids.get_pallet_lines()"
+                                        t-as="pallet">
+                                        <td t-out="pallet.name"/>
+                                        <td class="num" t-out="pallet.quantity_display"/>
+                                        <td class="num">
+                                            <span t-out="pallet.weight_per_pallet"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                        <td class="num">
+                                            <strong t-out="pallet.line_weight_display"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-top: 2px solid #111827;">
+                                        <td><strong>Total</strong></td>
+                                        <td class="num">
+                                            <strong t-field="o.total_pallet_quantity"/>
+                                        </td>
+                                        <td/>
+                                        <td class="num">
+                                            <strong t-field="o.total_pallet_weight"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+
                         <div t-if="o.note" class="note-box" style="margin-top: 12px;">
                             <strong>Notes</strong><br/>
                             <span t-out="o.note"/>
@@ -191,6 +248,12 @@
                             Quantities and weights are consolidated across every invoice
                             on this document. This document records what was loaded onto
                             the truck: it reserves, moves and posts nothing.
+                            <t t-if="o.pallet_ids">
+                                <strong>Total Weight</strong> covers the invoiced goods
+                                only; the <strong>Pallets</strong> section lists the
+                                pallets counted on the truck and their weight, which is
+                                not included in Total Weight.
+                            </t>
                         </p>
 
                         <table style="width: 100%; margin-top: 10px;" cellspacing="0" cellpadding="0">

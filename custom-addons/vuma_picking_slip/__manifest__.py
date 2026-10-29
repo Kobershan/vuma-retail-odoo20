@@ -1,6 +1,6 @@
 {
     'name': 'Vuma Consolidated Picking Slip',
-    'version': '1.3.0',
+    'version': '1.4.0',
     'category': 'Sales/Sales',
     'summary': 'Turn selected customer invoices into one consolidated picking '
                'slip or a delivery document for the truck.',
@@ -47,6 +47,11 @@ truck load. It records:
 
 * every invoice loaded on the truck;
 * the total weight of all products on those invoices;
+* the pallets on the truck -- how many, and how much each weighs -- typed
+  in by dispatch on the document's **Pallets** tab (product weights in the
+  catalogue are often blank, so the pallet weight is the figure the scale
+  gives; it is shown separately from the goods weight so nothing is counted
+  twice);
 * the date/time the document was generated and the user who generated it;
 * the invoice value already paid upfront (cash) and the value still on
   account;

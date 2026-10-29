@@ -13,6 +13,8 @@
                 <field name="invoice_count" string="Invoices"/>
                 <field name="total_weight" sum="Total Weight"/>
                 <field name="weight_uom_name" optional="hide"/>
+                <field name="total_pallet_quantity" sum="Pallets" optional="show"/>
+                <field name="total_pallet_weight" sum="Pallet Weight" optional="show"/>
                 <field name="paid_upfront_amount" sum="Paid Upfront"/>
                 <field name="on_account_amount" sum="On Account"/>
                 <field name="total_value" sum="Total Value"/>
@@ -61,6 +63,18 @@
                                 <field name="weight_uom_name"
                                        class="oe_inline" readonly="1"/>
                             </div>
+                            <label for="total_pallet_quantity"/>
+                            <div class="o_row">
+                                <field name="total_pallet_quantity"
+                                       class="oe_inline"/>
+                            </div>
+                            <label for="total_pallet_weight"/>
+                            <div class="o_row">
+                                <field name="total_pallet_weight"
+                                       class="oe_inline"/>
+                                <field name="weight_uom_name"
+                                       class="oe_inline" readonly="1"/>
+                            </div>
                             <field name="total_value"/>
                             <field name="paid_upfront_amount"/>
                             <field name="on_account_amount"/>
@@ -90,6 +104,26 @@
                                            column_invisible="1"/>
                                 </list>
                             </field>
+                        </page>
+                        <page string="Pallets" name="pallets">
+                            <field name="pallet_ids">
+                                <list editable="bottom" create="true"
+                                      delete="true">
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"
+                                           placeholder="e.g. Cola 2L -- Shoprite"/>
+                                    <field name="quantity" sum="Total"/>
+                                    <field name="weight_per_pallet"/>
+                                    <field name="line_weight" sum="Total Weight"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-2" role="alert">
+                                Count the pallets physically loaded and enter
+                                how much each one weighs. The totals appear
+                                under <strong>Load</strong> and on the printed
+                                document. This is separate from the product
+                                weight, which only covers the invoiced goods.
+                            </div>
                         </page>
                         <page string="Notes" name="notes">
                             <field name="note"
