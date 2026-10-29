@@ -1,4 +1,5 @@
 import { Chatter } from "@mail/chatter/web_portal_project/chatter";
+import { onMounted, onPatched } from "@odoo/owl";
 import { browser } from "@web/core/browser/browser";
 import { patch } from "@web/core/utils/patch";
 
@@ -7,7 +8,11 @@ const LOG_STORAGE_KEY = "vuma.chatter.logCollapsed";
 
 function readFlag(key, fallback = false) {
     try {
-        return browser.localStorage?.getItem(key) === "1";
+        const raw = browser.localStorage?.getItem(key);
+        if (raw === null || raw === undefined) {
+            return fallback;
+        }
+        return raw === "1";
     } catch {
         return fallback;
     }
@@ -28,6 +33,28 @@ patch(Chatter.prototype, {
             isChatterCollapsed: readFlag(PANEL_STORAGE_KEY, false),
             showLogMessages: !readFlag(LOG_STORAGE_KEY, false),
         });
+        onMounted(() => this._syncVumaCollapseClasses());
+        onPatched(() => this._syncVumaCollapseClasses());
+    },
+
+    _syncVumaCollapseClasses() {
+        try {
+            const rootEl = this.rootRef?.el;
+            if (!rootEl) {
+                return;
+            }
+            const collapsed = Boolean(this.state.isChatterCollapsed);
+            const container = rootEl.closest(".o-mail-Form-chatter, .o-mail-ChatterContainer");
+            if (container) {
+                container.classList.toggle("o-vuma-aside-collapsed", collapsed);
+            }
+            const formView = rootEl.closest(".o_form_view");
+            if (formView) {
+                formView.classList.toggle("o-vuma-form-chatter-collapsed", collapsed);
+            }
+        } catch {
+            /* never break rendering */
+        }
     },
 
     get logMessageCount() {
@@ -41,6 +68,7 @@ patch(Chatter.prototype, {
     toggleChatterCollapsed() {
         this.state.isChatterCollapsed = !this.state.isChatterCollapsed;
         writeFlag(PANEL_STORAGE_KEY, this.state.isChatterCollapsed);
+        this._syncVumaCollapseClasses();
     },
 
     toggleLogMessages() {

@@ -16,20 +16,21 @@
                         aria-label="Expand Log">
                     <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-left' : 'fa-chevron-down'"/>
                 </button>
-                <span class="o-vuma-Chatter-collapsedLabel">Activity &amp; Log</span>
+                <span class="o-vuma-Chatter-collapsedLabel">Show Log</span>
                 <span t-if="this.logMessageCount"
                       class="badge rounded-pill text-bg-secondary o-vuma-Chatter-collapsedBadge"
                       t-out="this.logMessageCount"/>
             </div>
         </xpath>
 
-        <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="inside">
+        <xpath expr="//button[hasclass('o-mail-Chatter-sendMessage')]" position="before">
             <button type="button"
-                    class="btn btn-link px-1 o-vuma-Chatter-collapseBtn"
+                    class="btn btn-secondary text-nowrap o-vuma-Chatter-collapseBtn"
                     t-on-click="this.toggleChatterCollapsed"
-                    title="Collapse Activity &amp; Vuma Bot Log"
-                    aria-label="Collapse Activity &amp; Vuma Bot Log">
-                <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-right' : 'fa-chevron-up'"/>
+                    title="Collapse side log so more of the form can be seen"
+                    aria-label="Collapse side log">
+                <i class="fa me-1" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-right' : 'fa-chevron-up'"/>
+                <span>Hide Log</span>
             </button>
         </xpath>
 

@@ -1,22 +1,54 @@
 // Collapsible Chatter / Vuma Bot Activity Log
+// Lets the user collapse the side log into a slim rail so the Product, Sales,
+// Finance / Invoice or Customer form fills the screen width.
 
-// 1. When the side chatter is collapsed, shrink the right column into a slim rail
-//    and let the form sheet expand across the freed-up width.
+// 1. Give the main form sheet full available width in side-by-side layout.
+.o_form_view.o_xxl_form_view {
+    .o_form_sheet_bg {
+        flex: 1 1 auto !important;
+        max-width: none !important;
+    }
+
+    .o_form_sheet {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .o-mail-Form-chatter.o-aside {
+        flex: 0 0 clamp(340px, 28vw, 460px);
+        width: clamp(340px, 28vw, 460px);
+        max-width: 460px;
+        border-left: 1px solid rgba(0, 0, 0, 0.08);
+        transition: width 0.16s ease, min-width 0.16s ease, max-width 0.16s ease, flex-basis 0.16s ease;
+    }
+}
+
+// 2. When the side chatter is collapsed, shrink the right column into a 42px
+//    vertical rail and let the form sheet expand across the freed-up width.
+.o_form_view.o-vuma-form-chatter-collapsed .o_form_sheet_bg,
 .o_form_sheet_bg:has(+ .o-mail-Form-chatter.o-aside:has(.o-vuma-chatter-collapsed)) {
-    max-width: calc(100% - 44px) !important;
+    max-width: calc(100% - 42px) !important;
+    width: calc(100% - 42px) !important;
+    flex: 1 1 calc(100% - 42px) !important;
+
+    .o_form_sheet {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
 }
 
+.o-mail-Form-chatter.o-aside.o-vuma-aside-collapsed,
 .o-mail-Form-chatter.o-aside:has(.o-vuma-chatter-collapsed) {
-    width: 44px !important;
-    min-width: 44px !important;
-    max-width: 44px !important;
-    flex-grow: 0 !important;
-    flex-basis: 44px !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    flex: 0 0 42px !important;
     padding: 0 !important;
-    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    border-left: 1px solid rgba(0, 0, 0, 0.12);
+    background-color: #f8fafc;
 }
 
-// 2. Hide the normal topbar & content when the chatter panel is collapsed.
+// 3. Hide the normal topbar & content when the chatter panel is collapsed.
 .o-mail-Chatter.o-vuma-chatter-collapsed {
     > .o-mail-Chatter-top,
     > .o-mail-Chatter-content {
@@ -24,17 +56,17 @@
     }
 }
 
-// 3. Collapsed bar styling (vertical rail when docked on the side, horizontal bar when at the bottom).
+// 4. Collapsed bar styling (vertical rail when docked on the side, horizontal bar when at the bottom).
 .o-vuma-Chatter-collapsedBar {
     display: flex;
     align-items: center;
     cursor: pointer;
     user-select: none;
-    color: #374151;
+    color: #1f2937;
     transition: background-color 0.15s ease;
 
     &:hover {
-        background-color: rgba(0, 0, 0, 0.04);
+        background-color: rgba(0, 0, 0, 0.06);
     }
 }
 
@@ -43,15 +75,15 @@
     justify-content: flex-start;
     width: 100%;
     height: 100%;
-    min-height: 240px;
-    padding: 12px 4px;
+    min-height: 280px;
+    padding: 14px 4px;
     gap: 10px;
 
     .o-vuma-Chatter-collapsedLabel {
         writing-mode: vertical-rl;
         text-orientation: mixed;
         font-size: 0.78rem;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
     }
@@ -63,8 +95,9 @@
     gap: 8px;
     width: 100%;
     padding: 8px 14px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 6px;
+    background-color: #f8fafc;
 
     .o-vuma-Chatter-collapsedLabel {
         font-size: 0.85rem;
@@ -74,11 +107,7 @@
 
 .o-vuma-Chatter-collapseBtn,
 .o-vuma-Chatter-expandBtn {
-    color: #4b5563;
-
-    &:hover {
-        color: #111827;
-    }
+    font-weight: 600;
 }
 
 .o-vuma-LogHeader {
