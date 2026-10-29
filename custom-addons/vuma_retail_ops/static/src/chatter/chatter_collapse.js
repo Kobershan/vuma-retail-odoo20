@@ -39,18 +39,26 @@ patch(Chatter.prototype, {
 
     _syncVumaCollapseClasses() {
         try {
-            const rootEl = this.rootRef?.el;
+            const rootEl =
+                typeof this.rootRef === "function"
+                    ? this.rootRef()
+                    : this.rootRef?.el;
             if (!rootEl) {
                 return;
             }
             const collapsed = Boolean(this.state.isChatterCollapsed);
-            const container = rootEl.closest(".o-mail-Form-chatter, .o-mail-ChatterContainer");
+            const container = rootEl.closest(
+                ".o-mail-Form-chatter, .o-mail-ChatterContainer"
+            );
             if (container) {
                 container.classList.toggle("o-vuma-aside-collapsed", collapsed);
             }
             const formView = rootEl.closest(".o_form_view");
             if (formView) {
-                formView.classList.toggle("o-vuma-form-chatter-collapsed", collapsed);
+                formView.classList.toggle(
+                    "o-vuma-form-chatter-collapsed",
+                    collapsed
+                );
             }
         } catch {
             /* never break rendering */

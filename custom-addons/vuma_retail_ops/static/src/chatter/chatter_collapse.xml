@@ -3,7 +3,7 @@
 
     <t t-inherit="mail.Chatter" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('o-mail-Chatter')]" position="attributes">
-            <attribute name="t-att-class">{ 'overflow-auto o-scrollbar-thin': this.webChatterProps.isChatterAside and !this.state.isChatterCollapsed, 'o-chatter-disabled': this.thread().id === false, 'o-vuma-chatter-collapsed': this.state.isChatterCollapsed, 'o-vuma-log-collapsed': !this.state.showLogMessages }</attribute>
+            <attribute name="t-att-class">{ 'overflow-auto o-scrollbar-thin': this.webChatterProps.isChatterAside &amp;&amp; !this.state.isChatterCollapsed, 'o-chatter-disabled': this.thread().id === false, 'o-vuma-chatter-collapsed': this.state.isChatterCollapsed, 'o-vuma-log-collapsed': !this.state.showLogMessages }</attribute>
         </xpath>
 
         <xpath expr="//div[hasclass('o-mail-Chatter-top')]" position="before">
@@ -12,11 +12,11 @@
                  t-on-click="this.toggleChatterCollapsed"
                  title="Expand Activity &amp; Vuma Bot Log">
                 <button type="button"
-                        class="btn btn-sm btn-link o-vuma-Chatter-expandBtn p-0"
+                        class="btn btn-secondary btn-sm o-vuma-Chatter-expandBtn"
                         aria-label="Expand Log">
-                    <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-left' : 'fa-chevron-down'"/>
+                    <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-chevron-left' : 'fa-chevron-down'"/>
                 </button>
-                <span class="o-vuma-Chatter-collapsedLabel">Show Log</span>
+                <span class="o-vuma-Chatter-collapsedLabel">Log</span>
                 <span t-if="this.logMessageCount"
                       class="badge rounded-pill text-bg-secondary o-vuma-Chatter-collapsedBadge"
                       t-out="this.logMessageCount"/>
@@ -25,12 +25,21 @@
 
         <xpath expr="//button[hasclass('o-mail-Chatter-sendMessage')]" position="before">
             <button type="button"
-                    class="btn btn-secondary text-nowrap o-vuma-Chatter-collapseBtn"
+                    class="btn btn-secondary o-vuma-Chatter-collapseBtn"
                     t-on-click="this.toggleChatterCollapsed"
-                    title="Collapse side log so more of the form can be seen"
+                    title="Collapse side log"
                     aria-label="Collapse side log">
-                <i class="fa me-1" t-att-class="this.webChatterProps.isChatterAside ? 'fa-angle-double-right' : 'fa-chevron-up'"/>
-                <span>Hide Log</span>
+                <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-chevron-right' : 'fa-chevron-up'"/>
+            </button>
+        </xpath>
+
+        <xpath expr="//div[hasclass('o-mail-Chatter-topbar')]" position="inside">
+            <button type="button"
+                    class="btn btn-link px-2 o-vuma-Chatter-collapseBtn"
+                    t-on-click="this.toggleChatterCollapsed"
+                    title="Collapse side log"
+                    aria-label="Collapse side log">
+                <i class="fa" t-att-class="this.webChatterProps.isChatterAside ? 'fa-chevron-right' : 'fa-chevron-up'"/>
             </button>
         </xpath>
 
