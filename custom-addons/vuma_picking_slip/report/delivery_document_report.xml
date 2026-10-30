@@ -28,6 +28,8 @@
                     .dd .kpi .k-val { font-size: 12pt; font-weight: 700; color: #111827; }
                     .dd .kpi .k-val.pos { color: #15803d; }
                     .dd .kpi .k-val.neg { color: #b45309; }
+                    .dd .kpi .k-sub { font-size: 7.5pt; color: #6b7280;
+                                      line-height: 1.4; }
 
                     .dd table.grid { width: 100%; border-collapse: collapse; }
                     .dd table.grid thead th { background: #111827; color: #ffffff;
@@ -90,21 +92,27 @@
                                cellspacing="0" cellpadding="0" style="width: 100%;">
                             <tr>
                                 <td>
-                                    <div class="k-lbl">Total Weight</div>
+                                    <div class="k-lbl">Load Weight</div>
                                     <div class="k-val">
-                                        <span t-field="o.total_weight"/>
+                                        <span t-field="o.total_load_weight"/>
                                         <span t-out="o.weight_uom_name"/>
+                                    </div>
+                                    <!-- Catalogue weights are often blank, so
+                                         show how the figure is made up. -->
+                                    <div class="k-sub" t-if="o.pallet_ids">
+                                        goods <span t-field="o.total_weight"/>
+                                        + pallets
+                                        <span t-field="o.total_pallet_weight"/>
                                     </div>
                                 </td>
                                 <td t-if="o.pallet_ids">
                                     <div class="k-lbl">Pallets</div>
                                     <div class="k-val">
                                         <span t-field="o.total_pallet_quantity"/>
-                                        <span style="font-size: 7.5pt; font-weight: 400; color: #6b7280;">
-                                            &#215;
-                                            <span t-field="o.total_pallet_weight"/>
-                                            <span t-out="o.weight_uom_name"/>
-                                        </span>
+                                    </div>
+                                    <div class="k-sub">
+                                        <span t-field="o.total_pallet_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
                                     </div>
                                 </td>
                                 <td>
@@ -249,10 +257,11 @@
                             on this document. This document records what was loaded onto
                             the truck: it reserves, moves and posts nothing.
                             <t t-if="o.pallet_ids">
-                                <strong>Total Weight</strong> covers the invoiced goods
-                                only; the <strong>Pallets</strong> section lists the
-                                pallets counted on the truck and their weight, which is
-                                not included in Total Weight.
+                                <strong>Load Weight</strong> is the goods weight plus the
+                                pallet weight, so both are counted exactly once. Product
+                                weights in the catalogue are often blank, which is why the
+                                <strong>Pallets</strong> section lets dispatch record what
+                                the scale actually says.
                             </t>
                         </p>
 

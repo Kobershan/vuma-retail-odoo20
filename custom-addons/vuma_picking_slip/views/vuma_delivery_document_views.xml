@@ -11,7 +11,8 @@
                 <field name="generated_at"/>
                 <field name="generated_by_id" widget="many2one_avatar_user"/>
                 <field name="invoice_count" string="Invoices"/>
-                <field name="total_weight" sum="Total Weight"/>
+                <field name="total_load_weight" sum="Load Weight"/>
+                <field name="total_weight" sum="Goods Weight" optional="hide"/>
                 <field name="weight_uom_name" optional="hide"/>
                 <field name="total_pallet_quantity" sum="Pallets" optional="show"/>
                 <field name="total_pallet_weight" sum="Pallet Weight" optional="show"/>
@@ -56,7 +57,14 @@
                             <field name="currency_id" invisible="1"/>
                         </group>
                         <group string="Load">
-                            <label for="total_weight"/>
+                            <label for="total_load_weight"/>
+                            <div class="o_row">
+                                <field name="total_load_weight"
+                                       class="oe_inline"/>
+                                <field name="weight_uom_name"
+                                       class="oe_inline" readonly="1"/>
+                            </div>
+                            <label for="total_weight" string="of which goods"/>
                             <div class="o_row">
                                 <field name="total_weight"
                                        class="oe_inline"/>
@@ -114,15 +122,18 @@
                                            placeholder="e.g. Cola 2L -- Shoprite"/>
                                     <field name="quantity" sum="Total"/>
                                     <field name="weight_per_pallet"/>
-                                    <field name="line_weight" sum="Total Weight"/>
+                                    <field name="line_weight" sum="Pallet Weight"/>
                                 </list>
                             </field>
                             <div class="alert alert-info mt-2" role="alert">
                                 Count the pallets physically loaded and enter
-                                how much each one weighs. The totals appear
-                                under <strong>Load</strong> and on the printed
-                                document. This is separate from the product
-                                weight, which only covers the invoiced goods.
+                                how much each one weighs.
+                                <strong>Load Weight</strong> (under
+                                <strong>Load</strong>, and on the printed
+                                document) adds these pallets to the invoiced
+                                goods weight, so both are counted once. Product
+                                weights in the catalogue are often blank, which
+                                is why the pallet figure matters.
                             </div>
                         </page>
                         <page string="Notes" name="notes">

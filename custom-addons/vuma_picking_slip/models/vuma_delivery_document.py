@@ -12,10 +12,13 @@ presents the load in the terms dispatch and the cash office care about:
   still on account;
 * the total selling value of the goods on the truck.
 
-The pallet lines are deliberately kept separate from the goods weight:
-``total_weight`` stays the weight of the invoiced products alone, so a
-pallet line can never double-count goods that are already weighed. The
-printed sheet shows both figures side by side.
+The pallet lines are kept apart from the goods weight so the two
+components can always be read side by side: ``total_weight`` stays the
+weight of the invoiced products alone. ``total_load_weight`` is the sum
+of the two -- the weight actually on the truck -- and is the headline
+figure on the printed sheet. Product weights in the catalogue are often
+blank, so in practice the load weight is usually just the pallet weight
+that dispatch weighed at the scale.
 
 Like the consolidated picking slip, this is a document only. It never
 reserves, moves or posts anything.
@@ -85,14 +88,23 @@ class VumaDeliveryDocument(models.Model):
              'pallets and how much each one weighs. Kept separate from the '
              'goods weight so palletised goods are never counted twice.')
     total_pallet_quantity = fields.Float(
-        string='Pallets', compute='_compute_pallet_totals', store=True,
+        string='Pallet Count', compute='_compute_pallet_totals', store=True,
         digits='Product Unit',
-        help='Total number of pallets entered on this document.')
+        help='Total number of pallets entered on this document. Labelled '
+             '"Pallet Count" rather than "Pallets" so it cannot clash with '
+             'the label of the pallet_ids line list.')
     total_pallet_weight = fields.Float(
         string='Pallet Weight', compute='_compute_pallet_totals', store=True,
         digits='Stock Weight',
         help='Total weight of the pallets entered on this document, in the '
              'weight unit configured for products.')
+    total_load_weight = fields.Float(
+        string='Load Weight', compute='_compute_load_weight', store=True,
+        digits='Stock Weight',
+        help='The weight actually sitting on the truck: the invoiced-goods '
+             'weight plus the pallet weight. Product weights in the '
+             'catalogue are often blank, so in practice this is usually the '
+             'pallet weight -- the figure the scale gives dispatch.')
     note = fields.Text(string='Notes')
 
     @api.depends('invoice_ids', 'invoice_ids.state')
@@ -174,6 +186,18 @@ class VumaDeliveryDocument(models.Model):
             document.total_pallet_weight = sum(
                 document.pallet_ids.mapped('line_weight'))
 
+    @api.depends('total_weight', 'total_pallet_weight')
+    def _compute_load_weight(self):
+        """The weight on the truck: goods weight plus pallet weight.
+
+        With no pallet lines this equals ``total_weight``. When pallets are
+        entered it becomes the figure dispatch actually needs, because the
+        catalogue product weights are usually blank.
+        """
+        for document in self:
+            document.total_load_weight = (document.total_weight or 0.0) + \
+                (document.total_pallet_weight or 0.0)
+
     def _get_delivery_invoices(self):
         """The selected records that belong on a delivery document."""
         return self.invoice_ids.filtered(
@@ -253,8 +277,8 @@ class VumaDeliveryPallet(models.Model):
     trusted to tell dispatch how heavy the truck is.
 
     A line is quantity x weight per pallet. It never touches ``total_weight``
-    (the invoiced-goods weight): the two figures describe different things and
-    the printed sheet shows them side by side.
+    (the invoiced-goods weight): the two components stay readable side by
+    side, and the document adds them once into ``total_load_weight``.
     """
     _name = 'vuma.delivery.pallet'
     _description = 'Delivery Document Pallet'
