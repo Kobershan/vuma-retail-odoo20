@@ -1,6 +1,6 @@
 {
     'name': 'Vuma Consolidated Picking Slip',
-    'version': '1.5.0',
+    'version': '1.6.0',
     'category': 'Sales/Sales',
     'summary': 'Turn selected customer invoices into one consolidated picking '
                'slip or a delivery document for the truck.',
@@ -48,10 +48,16 @@ truck load. It records:
 * every invoice loaded on the truck;
 * the total weight of all products on those invoices;
 * the pallets on the truck -- how many, and how much each weighs -- typed
-  in by dispatch on the document's **Pallets** tab. Product weights in the
-  catalogue are often blank, so the pallet weight is the figure the scale
-  actually gives; **Load Weight** (goods weight + pallet weight) is the
-  headline weight on the printed sheet, so both are counted exactly once;
+  in by dispatch on the document's **Pallets** tab;
+* the cardboard boxes on the truck -- how many, and how much each weighs --
+  typed in on the document's **Boxes** tab;
+* **Load Weight**, the headline figure on the printed sheet: goods weight +
+  box weight + pallet weight, each counted exactly once. Product weights in
+  the catalogue are often blank, so most of that figure comes from the box
+  and pallet lines dispatch weighed at the scale;
+* which vehicle from the fleet carries the load, and who is on the truck: a
+  driver plus at most two helpers, all three picked from employees, so one
+  truck never carries more than three people;
 * the date/time the document was generated and the user who generated it;
 * the invoice value already paid upfront (cash) and the value still on
   account;
@@ -63,7 +69,7 @@ the document before it is printed.
 """,
     'author': 'Vuma Retail',
     'license': 'LGPL-3',
-    'depends': ['account', 'stock', 'sale_management'],
+    'depends': ['account', 'fleet', 'hr', 'sale_management', 'stock'],
     'data': [
         'security/ir.access.csv',
         'data/ir_sequence.xml',

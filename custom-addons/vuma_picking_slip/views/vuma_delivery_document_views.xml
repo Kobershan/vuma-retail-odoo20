@@ -16,6 +16,10 @@
                 <field name="weight_uom_name" optional="hide"/>
                 <field name="total_pallet_quantity" sum="Pallets" optional="show"/>
                 <field name="total_pallet_weight" sum="Pallet Weight" optional="show"/>
+                <field name="total_box_quantity" sum="Boxes" optional="show"/>
+                <field name="total_box_weight" sum="Box Weight" optional="show"/>
+                <field name="vehicle_id" optional="hide"/>
+                <field name="driver_id" optional="hide"/>
                 <field name="paid_upfront_amount" sum="Paid Upfront"/>
                 <field name="on_account_amount" sum="On Account"/>
                 <field name="total_value" sum="Total Value"/>
@@ -71,6 +75,18 @@
                                 <field name="weight_uom_name"
                                        class="oe_inline" readonly="1"/>
                             </div>
+                            <label for="total_box_quantity"/>
+                            <div class="o_row">
+                                <field name="total_box_quantity"
+                                       class="oe_inline"/>
+                            </div>
+                            <label for="total_box_weight"/>
+                            <div class="o_row">
+                                <field name="total_box_weight"
+                                       class="oe_inline"/>
+                                <field name="weight_uom_name"
+                                       class="oe_inline" readonly="1"/>
+                            </div>
                             <label for="total_pallet_quantity"/>
                             <div class="o_row">
                                 <field name="total_pallet_quantity"
@@ -86,6 +102,22 @@
                             <field name="total_value"/>
                             <field name="paid_upfront_amount"/>
                             <field name="on_account_amount"/>
+                        </group>
+                    </group>
+                    <group string="Truck and Crew">
+                        <group>
+                            <field name="vehicle_id"
+                                   options="{'no_create': True}"/>
+                            <field name="driver_id"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group>
+                            <!-- The driver is excluded so the same person
+                                 cannot be counted twice on one truck. -->
+                            <field name="helper_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   domain="[('id', '!=', driver_id)]"/>
+                            <field name="crew_count"/>
                         </group>
                     </group>
                     <div class="alert alert-info" role="alert">
@@ -130,10 +162,33 @@
                                 how much each one weighs.
                                 <strong>Load Weight</strong> (under
                                 <strong>Load</strong>, and on the printed
-                                document) adds these pallets to the invoiced
-                                goods weight, so both are counted once. Product
-                                weights in the catalogue are often blank, which
-                                is why the pallet figure matters.
+                                document) is
+                                <em>goods + boxes + pallets</em>, each counted
+                                exactly once. Product weights in the catalogue
+                                are often blank, which is why the pallet figure
+                                matters.
+                            </div>
+                        </page>
+                        <page string="Boxes" name="boxes">
+                            <field name="box_ids">
+                                <list editable="bottom" create="true"
+                                      delete="true">
+                                    <field name="sequence" column_invisible="1"/>
+                                    <field name="name"
+                                           placeholder="e.g. Soap -- 12 per carton"/>
+                                    <field name="quantity" sum="Total"/>
+                                    <field name="weight_per_box"/>
+                                    <field name="line_weight" sum="Box Weight"/>
+                                </list>
+                            </field>
+                            <div class="alert alert-info mt-2" role="alert">
+                                Count the cardboard boxes physically loaded
+                                and enter how much each one weighs.
+                                <strong>Load Weight</strong> (under
+                                <strong>Load</strong>, and on the printed
+                                document) is
+                                <em>goods + boxes + pallets</em>, each counted
+                                exactly once.
                             </div>
                         </page>
                         <page string="Notes" name="notes">

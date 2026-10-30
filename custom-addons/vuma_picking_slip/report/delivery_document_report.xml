@@ -22,7 +22,10 @@
 
                     .dd .kpi td { background: #f8fafc; border: 1px solid #e5e7eb;
                                   padding: 8px 12px; width: 25%; }
-                    .dd .kpi.has-pallets td { width: 20%; }
+                    /* One extra cell makes a fifth, two make a sixth, so
+                       every cell has to give up some width. */
+                    .dd .kpi.has-pallets td, .dd .kpi.has-boxes td { width: 20%; }
+                    .dd .kpi.has-both td { width: 16.66%; }
                     .dd .kpi .k-lbl { font-size: 7pt; font-weight: 700; color: #6b7280;
                                       text-transform: uppercase; letter-spacing: 1px; }
                     .dd .kpi .k-val { font-size: 12pt; font-weight: 700; color: #111827; }
@@ -30,6 +33,13 @@
                     .dd .kpi .k-val.neg { color: #b45309; }
                     .dd .kpi .k-sub { font-size: 7.5pt; color: #6b7280;
                                       line-height: 1.4; }
+
+                    .dd .crew td { background: #f8fafc; border: 1px solid #e5e7eb;
+                                   padding: 8px 12px; vertical-align: top; }
+                    .dd .crew .c-lbl { font-size: 7pt; font-weight: 700; color: #6b7280;
+                                       text-transform: uppercase; letter-spacing: 1px; }
+                    .dd .crew .c-val { font-size: 10pt; font-weight: 700;
+                                       color: #111827; line-height: 1.35; }
 
                     .dd table.grid { width: 100%; border-collapse: collapse; }
                     .dd table.grid thead th { background: #111827; color: #ffffff;
@@ -88,7 +98,7 @@
                              server-side QWeb (ir_qweb assigns attrs[name] with
                              no class merging), so the whole class string lives
                              in the expression. -->
-                        <table t-att-class="'kpi has-pallets' if o.pallet_ids else 'kpi'"
+                        <table t-att-class="'kpi has-both' if (o.pallet_ids and o.box_ids) else ('kpi has-pallets' if o.pallet_ids else ('kpi has-boxes' if o.box_ids else 'kpi'))"
                                cellspacing="0" cellpadding="0" style="width: 100%;">
                             <tr>
                                 <td>
@@ -99,10 +109,26 @@
                                     </div>
                                     <!-- Catalogue weights are often blank, so
                                          show how the figure is made up. -->
-                                    <div class="k-sub" t-if="o.pallet_ids">
+                                    <div class="k-sub" t-if="o.pallet_ids or o.box_ids">
                                         goods <span t-field="o.total_weight"/>
-                                        + pallets
-                                        <span t-field="o.total_pallet_weight"/>
+                                        <t t-if="o.box_ids">
+                                            + boxes
+                                            <span t-field="o.total_box_weight"/>
+                                        </t>
+                                        <t t-if="o.pallet_ids">
+                                            + pallets
+                                            <span t-field="o.total_pallet_weight"/>
+                                        </t>
+                                    </div>
+                                </td>
+                                <td t-if="o.box_ids">
+                                    <div class="k-lbl">Boxes</div>
+                                    <div class="k-val">
+                                        <span t-field="o.total_box_quantity"/>
+                                    </div>
+                                    <div class="k-sub">
+                                        <span t-field="o.total_box_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
                                     </div>
                                 </td>
                                 <td t-if="o.pallet_ids">
@@ -138,6 +164,23 @@
                                               t-options="{'widget': 'monetary',
                                                           'display_currency': o.currency_id}"/>
                                     </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div class="sec-title">Truck and crew</div>
+                        <t t-set="crew_slots" t-value="o.get_crew_slots()"/>
+                        <table class="crew" cellspacing="0" cellpadding="0"
+                               style="width: 100%;">
+                            <tr>
+                                <!-- Vehicle, Driver, then one cell per helper
+                                     actually assigned. The width comes from
+                                     the model: formatting a percentage here
+                                     would hit QWeb's mangling of "%%". -->
+                                <td t-foreach="crew_slots" t-as="slot"
+                                    t-att-style="slot.style">
+                                    <div class="c-lbl" t-out="slot.label"/>
+                                    <div class="c-val" t-out="slot.value"/>
                                 </td>
                             </tr>
                         </table>
@@ -247,6 +290,46 @@
                             </table>
                         </t>
 
+                        <t t-if="o.box_ids">
+                            <div class="sec-title">Cardboard Boxes</div>
+                            <table class="grid" cellspacing="0" cellpadding="0">
+                                <thead>
+                                    <tr>
+                                        <th>Box</th>
+                                        <th class="num">Quantity</th>
+                                        <th class="num">Weight per Box</th>
+                                        <th class="num">Line Weight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="o.box_ids.get_box_lines()"
+                                        t-as="box">
+                                        <td t-out="box.name"/>
+                                        <td class="num" t-out="box.quantity_display"/>
+                                        <td class="num">
+                                            <span t-out="box.weight_per_box"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                        <td class="num">
+                                            <strong t-out="box.line_weight_display"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                    </tr>
+                                    <tr style="border-top: 2px solid #111827;">
+                                        <td><strong>Total</strong></td>
+                                        <td class="num">
+                                            <strong t-field="o.total_box_quantity"/>
+                                        </td>
+                                        <td/>
+                                        <td class="num">
+                                            <strong t-field="o.total_box_weight"/>
+                                            <span t-out="o.weight_uom_name"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+
                         <div t-if="o.note" class="note-box" style="margin-top: 12px;">
                             <strong>Notes</strong><br/>
                             <span t-out="o.note"/>
@@ -256,12 +339,13 @@
                             Quantities and weights are consolidated across every invoice
                             on this document. This document records what was loaded onto
                             the truck: it reserves, moves and posts nothing.
-                            <t t-if="o.pallet_ids">
+                            <t t-if="o.pallet_ids or o.box_ids">
                                 <strong>Load Weight</strong> is the goods weight plus the
-                                pallet weight, so both are counted exactly once. Product
-                                weights in the catalogue are often blank, which is why the
-                                <strong>Pallets</strong> section lets dispatch record what
-                                the scale actually says.
+                                box weight plus the pallet weight, each counted exactly
+                                once. Product weights in the catalogue are often blank,
+                                which is why dispatch weighs the boxes and the pallets in
+                                the sections above: that is what the scale gives, and it
+                                is what the truck actually carries.
                             </t>
                         </p>
 

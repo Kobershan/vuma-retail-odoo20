@@ -7,18 +7,23 @@ presents the load in the terms dispatch and the cash office care about:
 * how much the goods weigh (product weight x quantity on every invoice);
 * how many pallets went on the truck, and how much each weighs (the pallet
   lines dispatch types in on the document -- see ``vuma.delivery.pallet``);
+* how many cardboard boxes went on the truck, and how much each weighs (the
+  box lines dispatch types in -- see ``vuma.delivery.box``);
+* which vehicle from the fleet carries the load, and who is on the truck: a
+  driver plus at most two helpers, all picked from employees;
 * when the document was generated and by whom;
 * how much of the selected invoice value was paid upfront and how much is
   still on account;
 * the total selling value of the goods on the truck.
 
-The pallet lines are kept apart from the goods weight so the two
-components can always be read side by side: ``total_weight`` stays the
-weight of the invoiced products alone. ``total_load_weight`` is the sum
-of the two -- the weight actually on the truck -- and is the headline
-figure on the printed sheet. Product weights in the catalogue are often
-blank, so in practice the load weight is usually just the pallet weight
-that dispatch weighed at the scale.
+The three weight components are kept apart so they can always be read side
+by side: ``total_weight`` is the invoiced products alone, ``total_box_weight``
+is the cardboard boxes and ``total_pallet_weight`` is the pallets.
+``total_load_weight`` adds the three once -- goods + boxes + pallets -- and is
+the headline figure on the printed sheet, because that is what the truck
+actually weighs at the scale. Product weights in the catalogue are often
+blank, so in practice most of the load weight comes from the box and pallet
+lines dispatch weighed.
 
 Like the consolidated picking slip, this is a document only. It never
 reserves, moves or posts anything.
@@ -27,6 +32,7 @@ from collections import OrderedDict
 from types import SimpleNamespace
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 from .account_move import _format_quantity
 
@@ -35,6 +41,10 @@ class VumaDeliveryDocument(models.Model):
     _name = 'vuma.delivery.document'
     _description = 'Delivery Document'
     _order = 'generated_at desc, id desc'
+
+    #: Helpers allowed alongside the driver, so one truck carries at most
+    #: three people (driver + helpers).
+    MAX_HELPERS = 2
 
     name = fields.Char(
         string='Reference', default=lambda self: _('New'),
@@ -98,13 +108,44 @@ class VumaDeliveryDocument(models.Model):
         digits='Stock Weight',
         help='Total weight of the pallets entered on this document, in the '
              'weight unit configured for products.')
+    box_ids = fields.One2many(
+        'vuma.delivery.box', 'document_id', string='Boxes',
+        help='Cardboard boxes loaded on this truck, typed in by dispatch: '
+             'how many boxes and how much each one weighs. Box weight is '
+             'packaging, so it is added to the goods and pallet weights only '
+             'in total_load_weight.')
+    total_box_quantity = fields.Float(
+        string='Box Count', compute='_compute_box_totals', store=True,
+        digits='Product Unit',
+        help='Total number of cardboard boxes entered on this document. '
+             'Labelled "Box Count" rather than "Boxes" so it cannot clash '
+             'with the label of the box_ids line list.')
+    total_box_weight = fields.Float(
+        string='Box Weight', compute='_compute_box_totals', store=True,
+        digits='Stock Weight',
+        help='Total weight of the cardboard boxes entered on this document, '
+             'in the weight unit configured for products.')
     total_load_weight = fields.Float(
         string='Load Weight', compute='_compute_load_weight', store=True,
         digits='Stock Weight',
-        help='The weight actually sitting on the truck: the invoiced-goods '
-             'weight plus the pallet weight. Product weights in the '
-             'catalogue are often blank, so in practice this is usually the '
-             'pallet weight -- the figure the scale gives dispatch.')
+        help='What the truck weighs: invoiced-goods weight + box weight + '
+             'pallet weight, each counted exactly once. Product weights in '
+             'the catalogue are often blank, so in practice most of this '
+             'figure comes from the box and pallet lines dispatch weighed.')
+    vehicle_id = fields.Many2one(
+        'fleet.vehicle', string='Vehicle',
+        help='The vehicle from the fleet that carries this load.')
+    driver_id = fields.Many2one(
+        'hr.employee', string='Driver',
+        help='The employee driving the truck.')
+    helper_ids = fields.Many2many(
+        'hr.employee', 'vuma_delivery_document_helper_rel',
+        'document_id', 'employee_id', string='Helpers',
+        help='Employees riding along to help load and deliver. The driver '
+             'plus at most two helpers: three people on the truck.')
+    crew_count = fields.Integer(
+        string='People on Truck', compute='_compute_crew_count',
+        help='Driver plus helpers. One truck carries at most three people.')
     note = fields.Text(string='Notes')
 
     @api.depends('invoice_ids', 'invoice_ids.state')
@@ -186,17 +227,70 @@ class VumaDeliveryDocument(models.Model):
             document.total_pallet_weight = sum(
                 document.pallet_ids.mapped('line_weight'))
 
-    @api.depends('total_weight', 'total_pallet_weight')
-    def _compute_load_weight(self):
-        """The weight on the truck: goods weight plus pallet weight.
+    @api.depends(
+        'box_ids',
+        'box_ids.quantity',
+        'box_ids.weight_per_box',
+        'box_ids.line_weight',
+    )
+    def _compute_box_totals(self):
+        """Sum the manual box lines: count and weight of the boxes."""
+        for document in self:
+            document.total_box_quantity = sum(
+                document.box_ids.mapped('quantity'))
+            document.total_box_weight = sum(
+                document.box_ids.mapped('line_weight'))
 
-        With no pallet lines this equals ``total_weight``. When pallets are
-        entered it becomes the figure dispatch actually needs, because the
-        catalogue product weights are usually blank.
+    @api.depends(
+        'total_weight',
+        'total_box_weight',
+        'total_pallet_weight',
+    )
+    def _compute_load_weight(self):
+        """The weight on the truck: goods + boxes + pallets, each once.
+
+        The three components are summed exactly once and never merged into
+        one another, so the printed sheet can always show how the figure was
+        built. With no box or pallet lines this equals ``total_weight``.
         """
         for document in self:
-            document.total_load_weight = (document.total_weight or 0.0) + \
+            document.total_load_weight = \
+                (document.total_weight or 0.0) + \
+                (document.total_box_weight or 0.0) + \
                 (document.total_pallet_weight or 0.0)
+
+    @api.depends('driver_id', 'helper_ids')
+    def _compute_crew_count(self):
+        for document in self:
+            document.crew_count = (1 if document.driver_id else 0) + \
+                len(document.helper_ids)
+
+    @api.constrains('helper_ids')
+    def _check_helper_count(self):
+        """One driver and at most two helpers: three people per truck."""
+        for document in self:
+            if len(document.helper_ids) > self.MAX_HELPERS:
+                raise ValidationError(_(
+                    'A truck carries at most three people: the driver plus '
+                    '%(max)s helpers. Document %(document)s has %(found)s '
+                    'helpers.',
+                    max=self.MAX_HELPERS,
+                    document=document.name or _('New'),
+                    found=len(document.helper_ids),
+                ))
+
+    @api.constrains('driver_id', 'helper_ids')
+    def _check_driver_not_also_helper(self):
+        """The same employee must not be counted twice on one truck."""
+        for document in self:
+            if document.driver_id and document.driver_id in document.helper_ids:
+                raise ValidationError(_(
+                    '%(employee)s is the driver of document %(document)s and '
+                    'cannot also be listed as a helper: that would count the '
+                    'same person twice.',
+                    employee=document.driver_id.name,
+                    document=document.name or _('New'),
+                ))
 
     def _get_delivery_invoices(self):
         """The selected records that belong on a delivery document."""
@@ -241,6 +335,31 @@ class VumaDeliveryDocument(models.Model):
         ]
         lines.sort(key=lambda line: line.product.display_name or '')
         return lines
+
+    def get_crew_slots(self):
+        """Vehicle, driver and helpers ready to print side by side.
+
+        Every truck gets a vehicle and a driver row, plus one row per helper
+        actually assigned, so the strip is balanced at two, three or four
+        cells. Each slot carries its own ``style`` because the percentage
+        share depends on how many of them there are.
+
+        The width is formatted here rather than in the template: QWeb
+        corrupts literal ``%%`` in an expression, so a format string built
+        on the template side cannot be used.
+        """
+        self.ensure_one()
+        rows = [
+            ('Vehicle', self.vehicle_id.display_name or '-'),
+            ('Driver', self.driver_id.name or '-'),
+        ]
+        for index, helper in enumerate(self.helper_ids, start=1):
+            rows.append(('Helper %s' % index, helper.name or '-'))
+        style = 'width: %d%%;' % (100 // len(rows))
+        return [
+            SimpleNamespace(label=label, value=value, style=style)
+            for label, value in rows
+        ]
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -325,5 +444,67 @@ class VumaDeliveryPallet(models.Model):
                 line_weight_display=_format_quantity(pallet.line_weight),
             )
             for pallet in self
+        ]
+        return lines
+
+
+class VumaDeliveryBox(models.Model):
+    """One cardboard box line on a delivery document.
+
+    Dispatch types these in by hand: the truck's real load includes the
+    cardboard it is packed in, and the box weight is the packaging tare the
+    scale gives. Product weights in the catalogue are often blank, so without
+    these lines the document would understate what the truck carries.
+
+    A line is quantity x weight per box. It never touches ``total_weight``
+    (the invoiced-goods weight): the components stay readable one by one, and
+    the document adds them once into ``total_load_weight`` alongside the
+    pallet weight.
+    """
+    _name = 'vuma.delivery.box'
+    _description = 'Delivery Document Box'
+    _order = 'sequence, id'
+
+    sequence = fields.Integer(default=10)
+    document_id = fields.Many2one(
+        'vuma.delivery.document', string='Delivery Document',
+        required=True, ondelete='cascade', index=True)
+    company_id = fields.Many2one(
+        related='document_id.company_id', store=True, index=True)
+    name = fields.Char(
+        string='Box', required=True,
+        help='What these boxes carry, for example "Soap -- 12 per carton" '
+             'or "Empty cartons for returns".')
+    quantity = fields.Float(
+        string='Quantity', required=True, default=1.0,
+        digits='Product Unit',
+        help='Number of cardboard boxes on this line.')
+    weight_per_box = fields.Float(
+        string='Weight per Box', digits='Stock Weight',
+        help='Weight of one cardboard box, in the weight unit configured '
+             'for products. Leave at zero when the boxes are not weighed.')
+    line_weight = fields.Float(
+        string='Line Weight', compute='_compute_line_weight', store=True,
+        digits='Stock Weight',
+        help='Quantity x weight per box.')
+
+    @api.depends('quantity', 'weight_per_box')
+    def _compute_line_weight(self):
+        for box in self:
+            box.line_weight = (box.quantity or 0.0) * \
+                (box.weight_per_box or 0.0)
+
+    def get_box_lines(self):
+        """Box lines in print order, with quantities pre-formatted."""
+        lines = [
+            SimpleNamespace(
+                name=box.name,
+                quantity=box.quantity,
+                quantity_display=_format_quantity(box.quantity),
+                weight_per_box=box.weight_per_box,
+                line_weight=box.line_weight,
+                line_weight_display=_format_quantity(box.line_weight),
+            )
+            for box in self
         ]
         return lines
