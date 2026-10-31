@@ -11,3 +11,5 @@ def post_init_hook(env):
     # A fresh installation has not run the upgrade migrations, so seed the
     # stock departments here as well.
     env['vuma.department']._vuma_seed_from_catalogue()
+    # Every internal user starts with every Vuma function granted.
+    env['vuma.function']._vuma_sync_access()

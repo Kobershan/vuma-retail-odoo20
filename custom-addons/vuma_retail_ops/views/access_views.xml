@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ===================== The function catalogue ===================== -->
+    <record id="view_vuma_function_list" model="ir.ui.view">
+        <field name="name">vuma.function.list</field>
+        <field name="model">vuma.function</field>
+        <field name="arch" type="xml">
+            <list string="Vuma Functions">
+                <field name="sequence" widget="handle"/>
+                <field name="category"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="default_allowed"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vuma_function_form" model="ir.ui.view">
+        <field name="name">vuma.function.form</field>
+        <field name="model">vuma.function</field>
+        <field name="arch" type="xml">
+            <form string="Vuma Function">
+                <header>
+                    <button name="action_vuma_sync_all_users" type="object"
+                            string="Sync All Users"
+                            class="btn btn-primary"
+                            help="Create the missing access rows for every internal user. Existing choices are left untouched."/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="category"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="default_allowed"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="What this function lets a person do..."/>
+                    <separator string="Screens Hidden When Revoked"/>
+                    <field name="menu_ids" widget="many2many_tags"
+                           readonly="1"
+                           help="These menus are hidden from a user who does not hold this function."/>
+                    <separator string="Users"/>
+                    <field name="access_ids" readonly="1">
+                        <list>
+                            <field name="user_id"/>
+                            <field name="allowed"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_vuma_function_search" model="ir.ui.view">
+        <field name="name">vuma.function.search</field>
+        <field name="model">vuma.function</field>
+        <field name="arch" type="xml">
+            <search string="Vuma Functions">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="filter_screens" string="Screens"
+                        domain="[('category', '=', 'section')]"/>
+                <filter name="filter_actions" string="Actions"
+                        domain="[('category', '=', 'action')]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived"
+                        domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_category" string="Kind"
+                            context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vuma_function" model="ir.actions.act_window">
+        <field name="name">Vuma Functions</field>
+        <field name="res_model">vuma.function</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ===================== The access table ===================== -->
+    <record id="view_vuma_function_access_list" model="ir.ui.view">
+        <field name="name">vuma.function.access.list</field>
+        <field name="model">vuma.function.access</field>
+        <field name="arch" type="xml">
+            <list string="Function Access" editable="bottom"
+                  create="true" delete="true">
+                <field name="user_id"/>
+                <field name="category"/>
+                <field name="function_id"/>
+                <field name="function_code" optional="show"/>
+                <field name="allowed" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_vuma_function_access_search" model="ir.ui.view">
+        <field name="name">vuma.function.access.search</field>
+        <field name="model">vuma.function.access</field>
+        <field name="arch" type="xml">
+            <search string="Function Access">
+                <field name="user_id"/>
+                <field name="function_id"/>
+                <field name="function_code"/>
+                <filter name="filter_revoked" string="Revoked"
+                        domain="[('allowed', '=', False)]"/>
+                <filter name="filter_granted" string="Granted"
+                        domain="[('allowed', '=', True)]"/>
+                <filter name="filter_screens" string="Screens"
+                        domain="[('category', '=', 'section')]"/>
+                <filter name="filter_actions" string="Actions"
+                        domain="[('category', '=', 'action')]"/>
+                <group>
+                    <filter name="group_user" string="User"
+                            context="{'group_by': 'user_id'}"/>
+                    <filter name="group_category" string="Kind"
+                            context="{'group_by': 'category'}"/>
+                    <filter name="group_function" string="Function"
+                            context="{'group_by': 'function_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_vuma_function_access" model="ir.actions.act_window">
+        <field name="name">Function Access</field>
+        <field name="res_model">vuma.function.access</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'group_by': 'user_id'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Every internal user starts with every function granted.
+            </p>
+            <p>
+                Untick a function to take it away from that person only. Screens
+                disappear from their menu bar; actions are refused by the server.
+            </p>
+        </field>
+    </record>
+
+    <!-- ===================== Menus ===================== -->
+    <record id="menu_vuma_function_access" model="ir.ui.menu">
+        <field name="name">Function Access</field>
+        <field name="parent_id" ref="menu_vuma_config"/>
+        <field name="action" ref="action_vuma_function_access"/>
+        <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+        <field name="sequence">20</field>
+    </record>
+    <record id="menu_vuma_function_catalogue" model="ir.ui.menu">
+        <field name="name">Vuma Functions</field>
+        <field name="parent_id" ref="menu_vuma_config"/>
+        <field name="action" ref="action_vuma_function"/>
+        <field name="group_ids" eval="[(4, ref('base.group_system'))]"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- ===================== The user form tab ===================== -->
+    <record id="view_users_form_vuma_access" model="ir.ui.view">
+        <field name="name">res.users.form.vuma.access</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='access_rights']" position="after">
+                <page name="vuma_access" string="Vuma Access"
+                      groups="base.group_system">
+                    <group>
+                        <group>
+                            <field name="vuma_function_count"/>
+                            <field name="vuma_function_denied_count"/>
+                        </group>
+                        <group>
+                            <div class="text-muted">
+                                Tick a function to let this person use it.
+                                Untick it to take it away. Screens disappear from
+                                the menu bar; actions are refused by the server.
+                                Settings administrators always keep everything.
+                            </div>
+                        </group>
+                    </group>
+                    <div class="d-flex gap-2 mb-2">
+                        <button name="action_vuma_grant_all_functions"
+                                type="object" string="Grant All"
+                                class="btn btn-secondary"/>
+                        <button name="action_vuma_revoke_all_functions"
+                                type="object" string="Revoke All"
+                                class="btn btn-secondary"
+                                confirm="Take every Vuma function away from this user?"/>
+                        <button name="action_vuma_sync_functions"
+                                type="object" string="Create Missing Rows"
+                                class="btn btn-link"/>
+                    </div>
+                    <field name="vuma_function_access_ids" nolabel="1">
+                        <list editable="bottom" create="false" delete="false">
+                            <field name="category"/>
+                            <field name="function_id"/>
+                            <field name="function_code" optional="hide"/>
+                            <field name="allowed" widget="boolean_toggle"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

@@ -7,6 +7,7 @@ from dateutil.relativedelta import relativedelta
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .access_control import vuma_require
 from .approvals import vuma_has_group
 
 
@@ -236,6 +237,8 @@ class VumaCustomerChangeRequest(models.Model):
         return True
 
     def _check_approver(self):
+        vuma_require(self.env, 'action.approve',
+                     _('You are not allowed to approve this change.'))
         if self.request_type in ('bank_details', 'credit_terms'):
             allowed = vuma_has_group(
                 self.env, 'vuma_retail_ops.group_vuma_finance_manager',
@@ -405,6 +408,8 @@ class VumaUpliftRequest(models.Model):
         return True
 
     def _check_approver(self):
+        vuma_require(self.env, 'action.approve',
+                     _('Uplift requests are approved by the operations manager.'))
         if not vuma_has_group(
                 self.env, 'vuma_retail_ops.group_vuma_ops_manager',
                 'vuma_retail_ops.group_vuma_owner', 'base.group_system'):

@@ -5,6 +5,7 @@ import secrets
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .access_control import vuma_require
 from .approvals import vuma_has_group
 
 
@@ -625,6 +626,8 @@ class VumaDeliveryReturn(models.Model):
         return True
 
     def action_approve(self):
+        vuma_require(self.env, 'action.approve',
+                     _('Delivery returns are approved by operations.'))
         if not vuma_has_group(
                 self.env, 'vuma_retail_ops.group_vuma_ops_manager',
                 'vuma_retail_ops.group_vuma_owner', 'base.group_system'):

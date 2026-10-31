@@ -3,6 +3,7 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 
+from .access_control import vuma_require
 from .approvals import vuma_has_group
 
 
@@ -240,6 +241,8 @@ class VumaTripFloat(models.Model):
         return True
 
     def action_close(self):
+        vuma_require(self.env, 'action.close_cash',
+                     _('Closing a trip float is a cash office action.'))
         for rec in self:
             rec.action_reconcile()
             if abs(rec.amount_outstanding) > 0.01:
@@ -365,6 +368,8 @@ class VumaCashSession(models.Model):
         return True
 
     def action_close(self):
+        vuma_require(self.env, 'action.close_cash',
+                     _('Closing the cash session is a cash office action.'))
         for session in self:
             if session.state == 'closed':
                 raise UserError(_('This session is already closed.'))
@@ -467,6 +472,8 @@ class VumaCashException(models.Model):
         return True
 
     def action_write_off(self):
+        vuma_require(self.env, 'action.write_off',
+                     _('Write-off is a finance manager decision.'))
         if not vuma_has_group(
                 self.env, 'vuma_retail_ops.group_vuma_finance_manager',
                 'vuma_retail_ops.group_vuma_owner', 'base.group_system'):

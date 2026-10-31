@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Screens.  Revoking one hides that menu, and everything below it.
+         A child function (Credit Limits, Costing Settings, Audit Log) only has
+         an effect while its parent menu is still granted. -->
+    <record id="function_warehouse" model="vuma.function">
+        <field name="code">section.warehouse</field>
+        <field name="name">Warehouse</field>
+        <field name="category">section</field>
+        <field name="sequence">10</field>
+        <field name="description">Stock counts, cycle count plans and picking slips.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_warehouse')])]"/>
+    </record>
+    <record id="function_procurement" model="vuma.function">
+        <field name="code">section.procurement</field>
+        <field name="name">Procurement</field>
+        <field name="category">section</field>
+        <field name="sequence">20</field>
+        <field name="description">Quote comparisons, supplier claims, agreements, rebates, assets and payment runs.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_procurement')])]"/>
+    </record>
+    <record id="function_sales" model="vuma.function">
+        <field name="code">section.sales</field>
+        <field name="name">Sales Operations</field>
+        <field name="category">section</field>
+        <field name="sequence">30</field>
+        <field name="description">Customer changes, customer links, uplift requests, consolidated invoicing, quote revisions and standing orders.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_sales')])]"/>
+    </record>
+    <record id="function_dispatch" model="vuma.function">
+        <field name="code">section.dispatch</field>
+        <field name="name">Dispatch</field>
+        <field name="category">section</field>
+        <field name="sequence">40</field>
+        <field name="description">Delivery trips, trip expenses, proof of delivery, returns, failures and delivery KPIs.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_dispatch')])]"/>
+    </record>
+    <record id="function_debtors" model="vuma.function">
+        <field name="code">section.debtors</field>
+        <field name="name">Debtors</field>
+        <field name="category">section</field>
+        <field name="sequence">50</field>
+        <field name="description">Debtor ratings, statements, letters, forms, collections worklist and cashflow forecast.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_debtors')])]"/>
+    </record>
+    <record id="function_credit_limits" model="vuma.function">
+        <field name="code">section.credit_limits</field>
+        <field name="name">Credit Limits (screen)</field>
+        <field name="category">section</field>
+        <field name="sequence">51</field>
+        <field name="description">The Credit Limits list under Debtors. Needs Debtors to be granted as well.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_credit_limits')])]"/>
+    </record>
+    <record id="function_creditors" model="vuma.function">
+        <field name="code">section.creditors</field>
+        <field name="name">Creditors</field>
+        <field name="category">section</field>
+        <field name="sequence">60</field>
+        <field name="description">Creditor claims, agreements, rebates, payment runs and age analysis.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_creditors')])]"/>
+    </record>
+    <record id="function_accounting" model="vuma.function">
+        <field name="code">section.accounting</field>
+        <field name="name">Accounting</field>
+        <field name="category">section</field>
+        <field name="sequence">70</field>
+        <field name="description">Fixed assets, budgets, tax packs, tax periods, tax ledger, bank imports and exceptions.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_accounting')])]"/>
+    </record>
+    <record id="function_cash" model="vuma.function">
+        <field name="code">section.cash</field>
+        <field name="name">Cash Office</field>
+        <field name="category">section</field>
+        <field name="sequence">80</field>
+        <field name="description">Cash receipts, trip floats, cash-up sessions and cash exceptions.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_cash')])]"/>
+    </record>
+    <record id="function_reports" model="vuma.function">
+        <field name="code">section.reports</field>
+        <field name="name">Reports</field>
+        <field name="category">section</field>
+        <field name="sequence">90</field>
+        <field name="description">Delivery KPIs, cashflow, sales rep performance, exception dashboard and creditor age analysis.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_reports')])]"/>
+    </record>
+    <record id="function_configuration" model="vuma.function">
+        <field name="code">section.configuration</field>
+        <field name="name">Configuration &amp; Audit</field>
+        <field name="category">section</field>
+        <field name="sequence">100</field>
+        <field name="description">The Configuration and Audit menu, including this access table.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_config')])]"/>
+    </record>
+    <record id="function_costing_settings" model="vuma.function">
+        <field name="code">section.costing_settings</field>
+        <field name="name">Costing &amp; Pricing Settings</field>
+        <field name="category">section</field>
+        <field name="sequence">110</field>
+        <field name="description">The company costing method and the landed-cost components folded into Nett Cost.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_vuma_costing_settings')])]"/>
+    </record>
+    <record id="function_audit_log" model="vuma.function">
+        <field name="code">section.audit_log</field>
+        <field name="name">Audit Log (screen)</field>
+        <field name="category">section</field>
+        <field name="sequence">120</field>
+        <field name="description">The Audit Log list under Configuration &amp; Audit.</field>
+        <field name="menu_ids" eval="[(6, 0, [ref('menu_audit_log')])]"/>
+    </record>
+
+    <!-- Actions.  Revoking one makes the server refuse the operation. -->
+    <record id="function_action_approve" model="vuma.function">
+        <field name="code">action.approve</field>
+        <field name="name">Approve or reject documents</field>
+        <field name="category">action</field>
+        <field name="sequence">200</field>
+        <field name="description">Purchase orders, credit requests, customer changes, stock counts, claims, returns and deliveries. Approving and rejecting share this switch because both change the outcome of a request.</field>
+    </record>
+    <record id="function_action_price_edit" model="vuma.function">
+        <field name="code">action.price_edit</field>
+        <field name="name">Change selling prices</field>
+        <field name="category">action</field>
+        <field name="sequence">210</field>
+        <field name="description">Write a Sales Price on a product, including through the spreadsheet Pricing tab.</field>
+    </record>
+    <record id="function_action_credit_limit" model="vuma.function">
+        <field name="code">action.credit_limit</field>
+        <field name="name">Change customer credit limits</field>
+        <field name="category">action</field>
+        <field name="sequence">220</field>
+        <field name="description">Change the credit limit on a customer, including through an approved customer change request.</field>
+    </record>
+    <record id="function_action_write_off" model="vuma.function">
+        <field name="code">action.write_off</field>
+        <field name="name">Write off cash shortages</field>
+        <field name="category">action</field>
+        <field name="sequence">230</field>
+        <field name="description">Write off a cash exception instead of collecting the shortage.</field>
+    </record>
+    <record id="function_action_close_cash" model="vuma.function">
+        <field name="code">action.close_cash</field>
+        <field name="name">Close cash sessions and trip floats</field>
+        <field name="category">action</field>
+        <field name="sequence">240</field>
+        <field name="description">Close the cash office day or reconcile and close a driver's trip float.</field>
+    </record>
+    <record id="function_action_delete" model="vuma.function">
+        <field name="code">action.delete</field>
+        <field name="name">Delete Vuma documents</field>
+        <field name="category">action</field>
+        <field name="sequence">250</field>
+        <field name="description">Delete stock counts, requests, claims, approvals, cash documents and the other records that carry an audit trail.</field>
+    </record>
+
+</odoo>

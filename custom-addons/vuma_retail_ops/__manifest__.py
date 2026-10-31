@@ -1,6 +1,6 @@
 {
     "name": "Vuma Retail Operations",
-    "version": "1.9.0",
+    "version": "2.0.0",
     "category": "Sales/Retail",
     "summary": "Complete retail operations layer: procurement control, stock counts, "
                "POD and trips, debtor management, creditor claims and rebates, "
@@ -92,6 +92,8 @@ The operational control layer that sits on top of the existing Vuma addons:
         "report/product_label_templates.xml",
         "report/product_label_actions.xml",
         "data/mail_templates.xml",
+        "data/access_functions.xml",
+        "views/access_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

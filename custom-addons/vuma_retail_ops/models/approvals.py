@@ -8,6 +8,8 @@ confirmed in the requirements blueprint.
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
+from .access_control import vuma_require
+
 
 def vuma_has_group(env, *xmlids):
     return any(env.user.has_group(xmlid) for xmlid in xmlids)
@@ -76,6 +78,8 @@ class VumaApprovalMixin(models.AbstractModel):
         return True
 
     def _vuma_check_approver(self):
+        vuma_require(self.env, 'action.approve',
+                     _('You are not allowed to approve this record.'))
         if not vuma_has_group(
                 self.env, 'vuma_retail_ops.group_vuma_ops_manager',
                 'vuma_retail_ops.group_vuma_finance_manager',
