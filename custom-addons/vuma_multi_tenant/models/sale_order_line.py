@@ -48,6 +48,21 @@ class SaleOrder(models.Model):
         'sale.order.line', 'vuma_order_untraced_line_rel', 'order_id', 'line_id',
         string='Lines Without Stock Source', compute='_compute_vuma_source_summary',
         help="Lines that have a product but no stock-source company assigned.")
+    vuma_mixed_basket_available = fields.Boolean(
+        string='Mixed Basket Available', compute='_compute_vuma_mixed_basket_available',
+        help="True only while Trade Rite and Siyaya DC are both in the active "
+             "company scope. A mixed basket spans both companies, so it cannot "
+             "be captured from a single-company scope.")
+
+    @api.depends_context('allowed_company_ids')
+    def _compute_vuma_mixed_basket_available(self):
+        available = (
+            self.env.user.has_group(
+                'vuma_multi_tenant.group_vuma_mixed_basket_user')
+            and self.env.user._vuma_has_both_trading_companies()
+        )
+        for order in self:
+            order.vuma_mixed_basket_available = available
 
     @api.depends('order_line.vuma_source_company_id',
                  'order_line.product_id')
@@ -68,18 +83,89 @@ class SaleOrder(models.Model):
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
-        # Mixed quotes are the default for Mixed Basket users: they type one
-        # quote covering both companies and never switch profile.
+        # Mixed quotes are the default for Mixed Basket users, but only while
+        # both trading companies are active. On a single-company scope the
+        # quote must stay a normal single-company quote: a Siyaya stock line
+        # cannot be captured while the user is working in Trade Rite.
         if 'vuma_is_mixed_basket' in fields_list and not res.get('vuma_is_mixed_basket'):
-            res['vuma_is_mixed_basket'] = self.env.user.has_group(
-                'vuma_multi_tenant.group_vuma_mixed_basket_user')
+            res['vuma_is_mixed_basket'] = (
+                self.env.user.has_group(
+                    'vuma_multi_tenant.group_vuma_mixed_basket_user')
+                and self.env.user._vuma_has_both_trading_companies()
+            )
         return res
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        company_to_check = self.env['res.company']
+        for vals in vals_list:
+            if vals.get('company_id'):
+                company_to_check |= self.env['res.company'].browse(
+                    vals['company_id'])
+            if vals.get('vuma_is_mixed_basket'):
+                self.env.user._vuma_require_both_trading_companies(
+                    _('capture an order across both companies'))
+        self.env.user._vuma_require_companies(
+            company_to_check, _('capture a sales order'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if vals.get('company_id'):
+            self.env.user._vuma_require_company(
+                self.env['res.company'].browse(vals['company_id']),
+                _('move this sales order to another company'))
+        if vals.get('vuma_is_mixed_basket'):
+            self.env.user._vuma_require_both_trading_companies(
+                _('capture an order across both companies'))
+        return super().write(vals)
+
     def action_confirm(self):
-        for order in self:
-            if order.vuma_is_mixed_basket:
-                return order._action_confirm_and_split()
+        mixed = self.filtered('vuma_is_mixed_basket')
+        if mixed:
+            # Splitting a basket creates one order per company. That is a
+            # cross-company capture and is only allowed with both companies
+            # active, even when the quote was prepared earlier.
+            self.env.user._vuma_require_both_trading_companies(
+                _('confirm a mixed-basket order across both companies'))
+            return mixed[0]._action_confirm_and_split()
+
+        self._vuma_validate_single_company_lines()
         return super().action_confirm()
+
+    def _vuma_validate_single_company_lines(self):
+        """A normal quote may only use its own company's stock.
+
+        ``vuma_source_company_id`` is the field that decides which company
+        invoices and delivers the line. Letting it point at the other company
+        while the order stays in this one would silently book stock and
+        revenue in the wrong company, so the confirm is refused instead.
+        """
+        for order in self:
+            lines = order.order_line.filtered('product_id')
+            lines.filtered(
+                lambda l: not l.vuma_source_company_id
+            )._vuma_apply_source_company()
+            wrong = lines.filtered(
+                lambda l: l.vuma_source_company_id
+                and l.vuma_source_company_id != order.company_id)
+            if not wrong:
+                continue
+            raise UserError(_(
+                "This order belongs to %(order_company)s, but these lines use "
+                "another company's stock:\n%(lines)s\n\n"
+                "Switch the company selector to the line's company (or to "
+                "'Trade Rite + Siyaya DC' for a mixed basket) before confirming.",
+                order_company=order.company_id.display_name,
+                lines='\n'.join(
+                    "  - %(product)s (%(qty)g) — stock source %(source)s" % {
+                        'product': line.product_id.display_name,
+                        'qty': line.product_uom_qty,
+                        'source': line.vuma_source_company_id.display_name,
+                    }
+                    for line in wrong
+                ),
+            ))
+
     # ------------------------------------------------------------------
     # Split
     # ------------------------------------------------------------------
@@ -94,6 +180,8 @@ class SaleOrder(models.Model):
 
     def _action_confirm_and_split(self):
         self.ensure_one()
+        self.env.user._vuma_require_both_trading_companies(
+            _('split this order across both companies'))
         trade, siyaya = self._vuma_mixed_basket_companies()
         if not trade or not siyaya:
             raise UserError(_('Both Trade Rite and Siyaya DC companies must exist to split a mixed quote.'))
@@ -182,6 +270,8 @@ class SaleOrder(models.Model):
 
     def _create_company_quote(self, company, lines):
         self.ensure_one()
+        self.env.user._vuma_require_company(
+            company, _('create the %s quotation', company.display_name))
         Order = self.env['sale.order'].with_company(company).with_context(
             vuma_mixed_basket=True)
         partner = self.partner_id
@@ -273,6 +363,8 @@ class SaleOrder(models.Model):
         let the form create the record once the customer is chosen.
         """
         self.ensure_one()
+        self.env.user._vuma_require_both_trading_companies(
+            _('start a mixed-basket order'))
         company = (
             self.company_id
             or self.env.user.vuma_default_mixed_basket_company_id
@@ -349,7 +441,14 @@ class SaleOrderLine(models.Model):
         refused by Odoo's company constraint with a message about a product
         they had just chosen. The group is only the fallback when no order has
         spoken yet (RPCs, imports, on a brand-new quote).
+
+        The active company scope is checked first. A user who is working in
+        Trade Rite alone must not be offered Siyaya DC products, even if the
+        context still carries a mixed-basket flag from a quote prepared while
+        both companies were active.
         """
+        if not self.env.user._vuma_has_both_trading_companies():
+            return False
         flag = self.env.context.get('vuma_mixed_basket')
         if flag is not None:
             return bool(flag)
@@ -488,6 +587,7 @@ class SaleOrderLine(models.Model):
                     line._vuma_apply_source_company()
             else:
                 line._vuma_apply_source_company()
+        lines._vuma_check_source_company_scope()
         return lines
 
     def write(self, vals):
@@ -496,7 +596,24 @@ class SaleOrderLine(models.Model):
             for line in self:
                 if line.product_id:
                     line._vuma_apply_source_company()
+            if 'vuma_source_company_id' in vals or 'product_id' in vals:
+                self._vuma_check_source_company_scope()
         return res
+
+    def _vuma_check_source_company_scope(self):
+        """The stock source must be inside the companies the user is working in.
+
+        This is the line-level half of the company switch. Saving a Trade Rite
+        order while only Trade Rite is active cannot quietly attach Siyaya DC
+        stock; the rep must switch to Siyaya DC (or to both companies for a
+        mixed basket) first.
+        """
+        for line in self:
+            if line.vuma_source_company_id:
+                line.env.user._vuma_require_company(
+                    line.vuma_source_company_id,
+                    _('use this company as the stock source on this order line'),
+                )
 
     @api.onchange('product_id')
     def _onchange_product_id_vuma_source_company(self):

@@ -29,7 +29,14 @@ class ProductTemplate(models.Model):
         ])
 
     def _vuma_cross_company_active(self):
-        """True when the current user should see products of both companies."""
+        """True when the current user should see products of both companies.
+
+        The user must also be working in both trading companies. On a single
+        company scope the picker must stay inside that company, otherwise a rep
+        can add the other company's goods to a quote that cannot be captured.
+        """
+        if not self.env.user._vuma_has_both_trading_companies():
+            return False
         if self.env.context.get('vuma_mixed_basket'):
             return True
         if self.env.user.has_group('vuma_multi_tenant.group_vuma_mixed_basket_user'):
@@ -53,6 +60,8 @@ class ProductProduct(models.Model):
         ])
 
     def _vuma_cross_company_active(self):
+        if not self.env.user._vuma_has_both_trading_companies():
+            return False
         if self.env.context.get('vuma_mixed_basket'):
             return True
         if self.env.user.has_group('vuma_multi_tenant.group_vuma_mixed_basket_user'):

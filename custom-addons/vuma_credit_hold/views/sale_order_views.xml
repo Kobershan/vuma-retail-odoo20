@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_sale_order_form_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">sale.order.form.vuma.credit.hold</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-warning" role="alert"
+                         name="vuma_credit_hold_warning"
+                         invisible="not vuma_partner_credit_hold">
+                        <strong>Credit hold.</strong>
+                        This customer has
+                        <field name="vuma_partner_overdue_invoice_count"
+                               class="d-inline"/>
+                        overdue invoice(s) totalling
+                        <field name="vuma_partner_overdue_amount"
+                               class="d-inline"/>.
+                        Only an administrator may create the one quotation
+                        allowed while the account is on hold. No other sales
+                        activity is allowed until the account is paid and up to
+                        date.
+                        <span invisible="not vuma_hold_quote_used">
+                            The one-quotation allowance has already been used.
+                        </span>
+                        <span invisible="not vuma_hold_quote_exception">
+                            This quotation is the one allowed while the account
+                            is on hold.
+                        </span>
+                    </div>
+                </xpath>
+
+                <xpath expr="//header" position="inside">
+                    <button name="action_vuma_claim_hold_quote" type="object"
+                            string="Use as Credit-Hold Quotation"
+                            groups="base.group_system"
+                            invisible="not vuma_partner_credit_hold or vuma_hold_quote_exception or vuma_hold_quote_used or state != 'draft'"/>
+                </xpath>
+
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vuma_partner_credit_hold" invisible="1"/>
+                    <field name="vuma_partner_overdue_amount" invisible="1"/>
+                    <field name="vuma_partner_overdue_invoice_count" invisible="1"/>
+                    <field name="vuma_hold_quote_used" invisible="1"/>
+                    <field name="vuma_hold_quote_exception" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_sale_order_list_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">sale.order.list.vuma.credit.hold</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vuma_partner_credit_hold" optional="hide"
+                           readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_quotation_list_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">sale.order.quotation.list.vuma.credit.hold</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id"
+                   ref="sale.view_quotation_tree_with_onboarding"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vuma_partner_credit_hold" optional="hide"
+                           readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_sale_order_search_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">sale.order.search.vuma.credit.hold</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.sale_order_view_search_inherit_sale"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                    <filter name="vuma_credit_hold" string="Credit Hold"
+                            domain="[('vuma_partner_credit_hold', '=', True)]"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

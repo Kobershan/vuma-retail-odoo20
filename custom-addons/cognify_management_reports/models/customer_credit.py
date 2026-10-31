@@ -105,9 +105,17 @@ class CustomerCredit(models.Model):
                         -- Credit limit and the "use a credit limit" switch are
                         -- company-dependent in Odoo 20: stored as jsonb keyed by
                         -- company id, so they cannot be read as plain columns.
-                        COALESCE((p.credit_limit ->>
-                                  (COALESCE(i.company_id, p.company_id, 1))::text)::float, 0)
-                                                                    AS credit_limit,
+                        -- The limit is shared by both companies. Fall back to
+                        -- any stored value when the partner has no invoices and
+                        -- no company of their own (the jsonb key would
+                        -- otherwise be NULL and the limit would read as zero).
+                        COALESCE(
+                            (p.credit_limit ->>
+                             (COALESCE(i.company_id, p.company_id, %s))::text)::float,
+                            (SELECT MAX(value::numeric)
+                               FROM jsonb_each_text(p.credit_limit)
+                              WHERE value ~ '^-?[0-9.]+$'),
+                            0)                                     AS credit_limit,
                         COALESCE(co.account_use_credit_limit, FALSE) AS credit_managed,
                         COALESCE(i.invoice_count, 0)        AS invoice_count,
                         COALESCE(i.billed, 0)               AS billed,
@@ -154,7 +162,7 @@ class CustomerCredit(models.Model):
                     END                                               AS over_limit
                 FROM balances b
             )
-        """)
+        """, (self.env.company.id,))
 
     def name_get(self):
         return [(credit.id, credit.partner_name) for credit in self]

@@ -3,9 +3,11 @@
     --vuma-paper: #0f1116;
     --vuma-panel: #181a20;
     --vuma-line: #2a2d34;
+
+    /* Keep the company-theme fallbacks neutral when no colour is configured. */
+    --vuma-company-header: none;
 }
 .o_main_navbar {
-    background: #181a20 !important;
     color: #e6e8ee !important;
     border-bottom-color: #2a2d34 !important;
 }
@@ -17,11 +19,7 @@
     background: rgba(255, 255, 255, 0.06) !important;
 }
 .o_control_panel {
-    background: #181a20 !important;
     border-bottom-color: #2a2d34 !important;
-}
-.o_web_client {
-    background: var(--vuma-paper);
 }
 .vuma-navsearch {
     background: #23262c;

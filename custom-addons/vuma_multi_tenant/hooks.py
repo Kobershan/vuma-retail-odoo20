@@ -178,16 +178,17 @@ def _seed_quant(env, company, product_tmpl, qty):
 
 
 def grant_mixed_basket_access(env, only_logins=None):
-    """Give the Mixed Basket group AND all three companies to the right users.
+    """Give the Mixed Basket group AND both trading companies to the right users.
 
     Granting only ``company_ids`` is not enough. Every cross-company menu and
     action is gated on ``group_vuma_mixed_basket_user``, so a user who can
     reach the two companies but not the group still sees a plain single-company
     Odoo and no sign that the feature exists.
 
-    "My Company" must stay in the list as well: Odoo rejects a user whose
-    ``company_id`` is not among ``company_ids`` (see ``_check_user_company``),
-    which is how the record rule resolves the current company.
+    The user's current company must stay in the list as well: Odoo rejects a
+    user whose ``company_id`` is not among ``company_ids`` (see
+    ``_check_user_company``), which is how the record rule resolves the
+    current company.
 
     :param only_logins: restrict the grant to these logins; ``None`` means
         "everyone who is meant to use it" (admins + users explicitly flagged
@@ -252,8 +253,8 @@ def seed_staff_admins(env):
     """Create the staff administrators (idempotent).
 
     Each gets the Settings group. The Mixed Basket flag is set as well, so
-    ``grant_mixed_basket_access`` gives them the Mixed Basket group and all
-    three companies on the same pass.
+    ``grant_mixed_basket_access`` gives them the Mixed Basket group and both
+    trading companies on the same pass.
 
     :returns: the users that were created or updated
     """
@@ -285,7 +286,7 @@ def seed_staff_admins(env):
             if vals:
                 user.write(vals)
             touched |= user
-    # Guarantee group + the three companies even when the flag was already
+    # Guarantee group + both trading companies even when the flag was already
     # set before this seed ran.
     touched |= grant_mixed_basket_access(
         env, only_logins=[login for login, _n, _p in STAFF_ADMINS])

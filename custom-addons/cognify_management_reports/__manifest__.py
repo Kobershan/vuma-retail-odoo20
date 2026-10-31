@@ -1,6 +1,6 @@
 {
     'name': 'Cognify Management Reports',
-    'version': '1.0.3',
+    'version': '1.0.4',
     'category': 'Sales/Reporting',
     'summary': 'Management dashboards and reports: sales by day, month, channel '
                'and category, cost of sales, salesperson performance, product '

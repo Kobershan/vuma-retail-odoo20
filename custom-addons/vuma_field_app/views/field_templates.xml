@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="field_layout" name="Vuma Field Layout">
+        <html lang="en">
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+                <meta name="theme-color" content="#0b5d3b"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+                <title t-out="title or 'Vuma Field'"/>
+                <link rel="manifest" href="/vuma/field/manifest.json"/>
+                <link rel="icon" href="/vuma_field_app/static/img/icon.svg" type="image/svg+xml"/>
+                <link rel="stylesheet" href="/vuma_field_app/static/src/css/field_app.css"/>
+            </head>
+            <body>
+                <header class="app-header">
+                    <a class="brand" href="/vuma/field">
+                        <img src="/vuma_field_app/static/img/icon.svg" alt="Vuma" width="32" height="32"/>
+                        <span>Vuma Field</span>
+                    </a>
+                    <div class="header-meta">
+                        <span class="user-name" t-out="user.name"/>
+                        <span class="online-dot" id="online-dot" title="Connection"/>
+                    </div>
+                </header>
+                <main class="app-main">
+                    <t t-out="0"/>
+                </main>
+                <nav class="bottom-nav">
+                    <a href="/vuma/field">Home</a>
+                    <a href="/vuma/field/trips">Trips</a>
+                    <a href="/vuma/field/expense">Expense</a>
+                    <a href="/vuma/field/collections">Collect</a>
+                </nav>
+                <div id="toast" class="toast" aria-live="polite"></div>
+                <div id="queue-banner" class="queue-banner" hidden="hidden">
+                    <span id="queue-count">0</span> actions waiting to sync.
+                    <button type="button" id="sync-now">Sync now</button>
+                </div>
+                <script src="/vuma_field_app/static/src/js/field_app.js"></script>
+            </body>
+        </html>
+    </template>
+
+    <template id="field_home" name="Vuma Field Home">
+        <t t-call="vuma_field_app.field_layout">
+                    <section class="hero">
+                    <h1>Good day, <span t-out="user.name.split(' ')[0]"/></h1>
+                    <p t-if="is_driver">Deliveries, PODs, returns and cash collections.</p>
+                    <p t-else="">Your customers, quotes and collections.</p>
+                    <div class="quick-actions">
+                        <a class="button" href="/vuma/field/expense">Log expense</a>
+                        <a class="button secondary" href="/vuma/field/collections">Collections</a>
+                        <a class="button secondary" t-if="is_rep" href="/vuma/field/customers">Customers</a>
+                        <a class="button secondary" t-if="is_rep" href="/vuma/field/customer/new">New customer</a>
+                    </div>
+                    <p class="notice success" t-if="submitted">Submitted for office approval.</p>
+                </section>
+
+                <section class="section">
+                    <div class="section-head">
+                        <h2>Deliveries waiting for POD</h2>
+                        <span class="pill" t-out="len(pending_pods)"/>
+                    </div>
+                    <div class="empty" t-if="not pending_pods">No deliveries waiting for POD.</div>
+                    <a class="card action-card" t-foreach="pending_pods" t-as="picking"
+                       t-att-href="'/vuma/field/pod/%s' % picking.id">
+                        <div class="card-title"><span t-out="picking.name"/></div>
+                        <div class="card-sub" t-out="picking.partner_id.name"/>
+                        <div class="card-meta">
+                            <span t-out="picking.scheduled_date"/><br/>
+                            <span t-out="picking.vuma_trip_id.name"/>
+                        </div>
+                        <span class="chev">›</span>
+                    </a>
+                </section>
+
+                <section class="section" t-if="trips">
+                    <div class="section-head">
+                        <h2>Trips</h2>
+                        <a href="/vuma/field/trips">All trips</a>
+                    </div>
+                    <a class="card action-card" t-foreach="trips" t-as="trip"
+                       t-att-href="'/vuma/field/trip/%s' % trip.id">
+                        <div class="card-title"><span t-out="trip.name"/></div>
+                        <div class="card-sub"><span t-out="trip.town"/> · <span t-out="trip.driver_id.name"/></div>
+                        <div class="card-meta">
+                            <span t-out="trip.date"/> · <span t-out="trip.picking_count"/> stops
+                        </div>
+                        <span class="badge" t-att-class="'badge-' + trip.state" t-out="trip.state"/>
+                    </a>
+                </section>
+
+                <section class="section" t-if="invoices">
+                    <div class="section-head">
+                        <h2>Collections</h2>
+                        <a href="/vuma/field/collections">Open list</a>
+                    </div>
+                    <a class="card action-card" t-foreach="invoices[:5]" t-as="invoice"
+                       t-att-href="'/vuma/field/collection/%s' % invoice.id">
+                        <div class="card-title"><span t-out="invoice.partner_id.name"/></div>
+                        <div class="card-sub"><span t-out="invoice.name"/></div>
+                        <div class="card-meta">R <span t-out="'%.2f' % invoice.amount_residual"/></div>
+                        <span class="chev">›</span>
+                    </a>
+                </section>
+
+                <section class="section" t-if="quotes">
+                    <div class="section-head"><h2>My open quotes</h2></div>
+                    <div class="card" t-foreach="quotes" t-as="quote">
+                        <div class="card-title"><span t-out="quote.name"/> · <span t-out="quote.partner_id.name"/></div>
+                        <div class="card-meta">R <span t-out="'%.2f' % quote.amount_total"/> · <span t-out="quote.state"/></div>
+                    </div>
+                </section>
+
+                <section class="section" t-if="expenses or returns">
+                    <div class="section-head"><h2>Waiting for the cash office</h2></div>
+                    <div class="card" t-foreach="expenses" t-as="expense">
+                        <div class="card-title">Expense · R <span t-out="'%.2f' % expense.amount"/></div>
+                        <div class="card-sub" t-out="expense.description"/>
+                        <div class="card-meta"><span t-out="expense.category"/> · <span t-out="expense.state"/></div>
+                    </div>
+                    <div class="card" t-foreach="returns" t-as="return_rec">
+                        <div class="card-title">Return · <span t-out="return_rec.name"/></div>
+                        <div class="card-sub" t-out="return_rec.partner_id.name"/>
+                        <div class="card-meta"><span t-out="return_rec.state"/></div>
+                    </div>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_trips" name="Vuma Field Trips">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Trips</t>
+                <section class="section">
+                    <div class="section-head"><h2>My trips</h2></div>
+                    <div class="empty" t-if="not trips">No active trips.</div>
+                    <a class="card action-card" t-foreach="trips" t-as="trip"
+                       t-att-href="'/vuma/field/trip/%s' % trip.id">
+                        <div class="card-title"><span t-out="trip.name"/></div>
+                        <div class="card-sub"><span t-out="trip.town"/> · <span t-out="trip.driver_id.name"/></div>
+                        <div class="card-meta"><span t-out="trip.date"/> · <span t-out="trip.picking_count"/> stops · <span t-out="trip.state"/></div>
+                    </a>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_trip" name="Vuma Field Trip">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Trip</t>
+                <section class="hero compact">
+                    <h1 t-out="trip.name"/>
+                    <p><span t-out="trip.date"/> · <span t-out="trip.town"/> · <span t-out="trip.driver_id.name"/></p>
+                    <div class="quick-actions">
+                        <button type="button" class="button" data-trip-action="dispatch"
+                                t-att-data-trip-id="trip.id"
+                                t-if="trip.state in ('draft','loading')">Dispatch</button>
+                        <button type="button" class="button secondary" data-trip-action="return"
+                                t-att-data-trip-id="trip.id"
+                                t-if="trip.state == 'dispatched'">Back at depot</button>
+                        <button type="button" class="button secondary" data-trip-action="close"
+                                t-att-data-trip-id="trip.id"
+                                t-if="trip.state == 'returned'">Close trip</button>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-head"><h2>Deliveries</h2><span class="pill" t-out="len(pickings)"/></div>
+                    <div class="empty" t-if="not pickings">No deliveries loaded.</div>
+                    <div class="card" t-foreach="pickings" t-as="picking">
+                        <div class="card-title"><span t-out="picking.name"/> · <span t-out="picking.partner_id.name"/></div>
+                        <div class="card-meta">POD: <span t-out="picking.vuma_pod_state"/> · <span t-out="picking.state"/></div>
+                        <div class="card-actions">
+                            <a class="button small" t-att-href="'/vuma/field/pod/%s' % picking.id"
+                               t-if="picking.vuma_pod_state == 'pending' and picking.state not in ('done','cancel')">Capture POD</a>
+                            <a class="button small secondary" t-att-href="'/vuma/field/return/%s' % picking.id">Return</a>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-head"><h2>Expenses</h2></div>
+                    <div class="empty" t-if="not expenses">No expenses on this trip.</div>
+                    <div class="card" t-foreach="expenses" t-as="expense">
+                        <div class="card-title">R <span t-out="'%.2f' % expense.amount"/> · <span t-out="expense.category"/></div>
+                        <div class="card-sub" t-out="expense.description"/>
+                        <div class="card-meta"><span t-out="expense.state"/></div>
+                    </div>
+                </section>
+
+                <section class="section">
+                    <div class="section-head"><h2>Returns</h2></div>
+                    <div class="empty" t-if="not returns">No returns on this trip.</div>
+                    <div class="card" t-foreach="returns" t-as="return_rec">
+                        <div class="card-title"><span t-out="return_rec.name"/> · <span t-out="return_rec.product_id.name"/></div>
+                        <div class="card-meta"><span t-out="return_rec.quantity"/> · <span t-out="return_rec.state"/></div>
+                    </div>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_pod" name="Vuma Field POD">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Proof of Delivery</t>
+                <section class="hero compact">
+                    <h1>Proof of Delivery</h1>
+                    <p><span t-out="picking.name"/> · <span t-out="picking.partner_id.name"/></p>
+                    <p class="muted" t-out="picking.partner_id.contact_address"/>
+                </section>
+
+                <form class="card form" data-field-form="pod"
+                      t-att-data-endpoint="'/vuma/field/pod/%s/submit' % picking.id"
+                      data-offline-type="pod">
+                    <input type="hidden" name="picking_id" t-att-value="picking.id"/>
+                    <input type="hidden" name="latitude" data-geo="latitude"/>
+                    <input type="hidden" name="longitude" data-geo="longitude"/>
+                    <input type="hidden" name="signature" data-signature-value="1"/>
+
+                    <label>Received by (full name)
+                        <input type="text" name="name" required="required" autocomplete="name"
+                               placeholder="Name of person receiving goods"/>
+                    </label>
+                    <label>Delivery result
+                        <select name="result">
+                            <option value="full">Delivered in full</option>
+                            <option value="partial">Part delivered</option>
+                            <option value="refused">Refused</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2" placeholder="Damage, shortage or refusal reason"></textarea>
+                    </label>
+                    <label>Photo (required for damage or refusal)
+                        <input type="file" name="photo" accept="image/*" capture="environment"/>
+                    </label>
+
+                    <div class="signature-wrap">
+                        <div class="label-row">
+                            <span>Customer signature</span>
+                            <button type="button" class="link" data-clear-signature="1">Clear</button>
+                        </div>
+                        <canvas class="signature-pad" width="800" height="280" data-signature-pad="1"></canvas>
+                    </div>
+
+                    <button type="submit" class="button full">Save POD</button>
+                    <p class="hint">Works offline. The POD is queued on this device and syncs when there is signal.</p>
+                </form>
+        </t>
+    </template>
+
+    <template id="field_expense" name="Vuma Field Expense">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Trip Expense</t>
+                <section class="hero compact">
+                    <h1>Log a trip expense</h1>
+                    <p>Attach the receipt now; the cash office verifies it later.</p>
+                </section>
+                <form class="card form" data-field-form="expense"
+                      data-endpoint="/vuma/field/expense/submit"
+                      data-offline-type="expense">
+                    <label>Trip
+                        <select name="trip_id" required="required">
+                            <option value="">Select a trip</option>
+                            <option t-foreach="trips" t-as="trip" t-att-value="trip.id"
+                                    t-out="'%s · %s · %s' % (trip.name, trip.date, trip.town or '')"/>
+                        </select>
+                    </label>
+                    <label>Category
+                        <select name="category">
+                            <option value="fuel">Fuel</option>
+                            <option value="toll">Toll</option>
+                            <option value="parking">Parking</option>
+                            <option value="food">Food / allowance</option>
+                            <option value="accommodation">Accommodation</option>
+                            <option value="maintenance">Vehicle maintenance</option>
+                            <option value="loading">Loading fee</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
+                    <label>Amount (R)
+                        <input type="number" name="amount" step="0.01" min="0" required="required" inputmode="decimal"/>
+                    </label>
+                    <label>Description
+                        <input type="text" name="description" required="required" placeholder="What was it for?"/>
+                    </label>
+                    <label>Receipt photo
+                        <input type="file" name="receipt" accept="image/*" capture="environment"/>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2"></textarea>
+                    </label>
+                    <button type="submit" class="button full">Submit expense</button>
+                    <p class="hint">Offline safe: it will be sent when the device reconnects.</p>
+                </form>
+        </t>
+    </template>
+
+    <template id="field_return" name="Vuma Field Return">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Delivery Return</t>
+                <section class="hero compact">
+                    <h1>Record a return</h1>
+                    <p><span t-out="picking.name"/> · <span t-out="picking.partner_id.name"/></p>
+                </section>
+                <form class="card form" data-field-form="return"
+                      t-att-data-endpoint="'/vuma/field/return/%s/submit' % picking.id"
+                      data-offline-type="return">
+                    <input type="hidden" name="picking_id" t-att-value="picking.id"/>
+                    <input type="hidden" name="trip_id" t-att-value="picking.vuma_trip_id.id or ''"/>
+                    <input type="hidden" name="partner_id" t-att-value="picking.partner_id.id"/>
+                    <label>Product
+                        <select name="product_id" required="required">
+                            <option value="">Select product</option>
+                            <option t-foreach="moves" t-as="move" t-att-value="move.product_id.id"
+                                    t-out="'%s · %s delivered' % (move.product_id.display_name, move.quantity)"/>
+                        </select>
+                    </label>
+                    <label>Quantity
+                        <input type="number" name="quantity" step="0.01" min="0.01" required="required" inputmode="decimal"/>
+                    </label>
+                    <label>Unit price (R)
+                        <input type="number" name="price_unit" step="0.01" min="0" inputmode="decimal"/>
+                    </label>
+                    <label>Reason
+                        <select name="reason">
+                            <option value="refused">Customer refused</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="wrong">Wrong product</option>
+                            <option value="short">Short</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
+                    <label>Action
+                        <select name="action">
+                            <option value="quarantine">Quarantine stock</option>
+                            <option value="credit">Credit customer</option>
+                            <option value="replace">Replace</option>
+                            <option value="scrap">Scrap</option>
+                        </select>
+                    </label>
+                    <label>Photo
+                        <input type="file" name="photo" accept="image/*" capture="environment"/>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2"></textarea>
+                    </label>
+                    <button type="submit" class="button full">Submit return</button>
+                </form>
+        </t>
+    </template>
+
+    <template id="field_collections" name="Vuma Field Collections">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Collections</t>
+                <section class="section">
+                    <div class="section-head"><h2>Outstanding invoices</h2></div>
+                    <div class="empty" t-if="not invoices">No outstanding invoices on your route.</div>
+                    <a class="card action-card" t-foreach="invoices" t-as="invoice"
+                       t-att-href="'/vuma/field/collection/%s' % invoice.id">
+                        <div class="card-title"><span t-out="invoice.partner_id.name"/></div>
+                        <div class="card-sub"><span t-out="invoice.name"/> · due <span t-out="invoice.invoice_date_due"/></div>
+                        <div class="card-meta">R <span t-out="'%.2f' % invoice.amount_residual"/></div>
+                        <span class="chev">›</span>
+                    </a>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_collection" name="Vuma Field Collection">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Collect Payment</t>
+                <section class="hero compact">
+                    <h1>Collect payment</h1>
+                    <p><span t-out="invoice.partner_id.name"/> · <span t-out="invoice.name"/></p>
+                </section>
+                <form class="card form" data-field-form="collection"
+                      t-att-data-endpoint="'/vuma/field/collection/%s/submit' % invoice.id"
+                      data-offline-type="collection">
+                    <input type="hidden" name="invoice_ids" t-att-value="invoice.id"/>
+                    <input type="hidden" name="partner_id" t-att-value="invoice.partner_id.id"/>
+                    <div class="summary-row"><span>Invoice total</span><strong>R <span t-out="'%.2f' % invoice.amount_total"/></strong></div>
+                    <div class="summary-row"><span>Outstanding</span><strong>R <span t-out="'%.2f' % invoice.amount_residual"/></strong></div>
+                    <label>Amount collected (R)
+                        <input type="number" name="amount" step="0.01" min="0.01"
+                               t-att-value="'%.2f' % invoice.amount_residual" required="required" inputmode="decimal"/>
+                    </label>
+                    <label>Reference
+                        <input type="text" name="reference" placeholder="Receipt, EFT or reference"/>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2"></textarea>
+                    </label>
+                    <button type="submit" class="button full">Record collection</button>
+                    <p class="hint">The cash office posts the receipt. Works offline.</p>
+                </form>
+        </t>
+    </template>
+
+
+    <template id="field_customers" name="Vuma Field Customers">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Customers</t>
+                <section class="hero compact">
+                    <h1>Customers</h1>
+                    <form method="get" action="/vuma/field/customers" class="search-form">
+                        <input type="search" name="q" t-att-value="q" placeholder="Name, phone, town or VAT number"/>
+                        <button type="submit" class="button">Search</button>
+                    </form>
+                    <a class="button secondary" href="/vuma/field/customer/new">Add a customer</a>
+                </section>
+                <section class="section">
+                    <div class="section-head"><h2>Customer list</h2><span class="pill" t-out="len(customers)"/></div>
+                    <div class="empty" t-if="not customers">No customers match that search.</div>
+                    <a class="card action-card" t-foreach="customers" t-as="customer"
+                       t-att-href="'/vuma/field/customer/%s' % customer.id">
+                        <div class="card-title" t-out="customer.name"/>
+                        <div class="card-sub">
+                            <span t-out="customer.city"/><span t-if="customer.phone"> · <span t-out="customer.phone"/></span>
+                        </div>
+                        <div class="card-meta">
+                            <span t-out="customer.email"/>
+                        </div>
+                        <span class="chev">›</span>
+                    </a>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_customer" name="Vuma Field Customer">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Customer</t>
+                <section class="hero compact">
+                    <h1 t-out="customer.name"/>
+                    <p><span t-out="customer.street"/>, <span t-out="customer.city"/></p>
+                    <p t-if="customer.phone" t-out="customer.phone"/>
+                    <div class="quick-actions">
+                        <a class="button" t-att-href="'/vuma/field/quote/new/%s' % customer.id">New quote</a>
+                        <a class="button secondary" t-att-href="'/vuma/field/customer/%s/statement' % customer.id">Statement</a>
+                        <a class="button secondary" t-att-href="'/vuma/field/customer/%s/update' % customer.id">Update details</a>
+                    </div>
+                </section>
+                <p class="notice success" t-if="submitted == 'uplift'">Uplift request submitted for approval.</p>
+                <p class="notice success" t-if="submitted == 'update'">Customer update submitted for approval.</p>
+                <p class="notice success" t-if="submitted == 'quote'">Quotation created and sent to the office.</p>
+                <section class="section">
+                    <div class="section-head"><h2>Balance</h2></div>
+                    <div class="summary-row"><span>Outstanding</span><strong>R <span t-out="'%.2f' % balance"/></strong></div>
+                    <div class="summary-row" t-if="customer.credit_limit"><span>Credit limit</span><strong>R <span t-out="'%.2f' % customer.credit_limit"/></strong></div>
+                    <div class="card-meta" t-if="customer.vuma_credit_hold">Credit hold: <span t-out="'%.2f' % customer.vuma_overdue_amount"/> overdue</div>
+                </section>
+                <section class="section" t-if="invoices">
+                    <div class="section-head"><h2>Invoices</h2></div>
+                    <div class="card" t-foreach="invoices" t-as="invoice">
+                        <div class="card-title"><span t-out="invoice.name"/> · R <span t-out="'%.2f' % invoice.amount_residual"/></div>
+                        <div class="card-sub"><span t-out="invoice.invoice_date"/> · <span t-out="invoice.move_type"/></div>
+                        <a class="button secondary" t-if="invoice.move_type == 'out_invoice'"
+                           t-att-href="'/vuma/field/uplift/%s' % invoice.id">Request uplift</a>
+                    </div>
+                </section>
+                <section class="section" t-if="quotes">
+                    <div class="section-head"><h2>Open quotes</h2></div>
+                    <div class="card" t-foreach="quotes" t-as="quote">
+                        <div class="card-title"><span t-out="quote.name"/> · R <span t-out="'%.2f' % quote.amount_total"/></div>
+                        <div class="card-meta"><span t-out="quote.state"/></div>
+                    </div>
+                </section>
+                <section class="section" t-if="linked">
+                    <div class="section-head"><h2>Linked customers</h2></div>
+                    <a class="card action-card" t-foreach="linked" t-as="other"
+                       t-att-href="'/vuma/field/customer/%s' % other.id">
+                        <div class="card-title" t-out="other.name"/>
+                        <div class="card-meta" t-out="other.city"/>
+                        <span class="chev">›</span>
+                    </a>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_customer_new" name="Vuma Field New Customer">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">New Customer</t>
+                <section class="hero compact">
+                    <h1>New customer</h1>
+                    <p>The office reviews and approves new accounts before trading starts.</p>
+                </section>
+                <p class="notice error" t-if="error" t-out="error"/>
+                <form class="card form" method="post" action="/vuma/field/customer/new">
+                    <label>Legal / trading name
+                        <input type="text" name="name" t-att-value="values.get('name', '')" required="required"/>
+                    </label>
+                    <label>Phone
+                        <input type="tel" name="phone" t-att-value="values.get('phone', '')"/>
+                    </label>
+                    <label>Email
+                        <input type="email" name="email" t-att-value="values.get('email', '')"/>
+                    </label>
+                    <label>Street
+                        <input type="text" name="street" t-att-value="values.get('street', '')"/>
+                    </label>
+                    <label>Town / city
+                        <input type="text" name="city" t-att-value="values.get('city', '')"/>
+                    </label>
+                    <label>Postal code
+                        <input type="text" name="zip" t-att-value="values.get('zip', '')"/>
+                    </label>
+                    <label>VAT number
+                        <input type="text" name="vat" t-att-value="values.get('vat', '')"/>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2" t-out="values.get('notes', '')"/>
+                    </label>
+                    <button type="submit" class="button full">Send for approval</button>
+                </form>
+        </t>
+    </template>
+
+
+    <template id="field_customer_update" name="Vuma Field Customer Update">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Update Customer</t>
+            <section class="hero compact">
+                <h1>Update customer</h1>
+                <p t-out="customer.name"/>
+                <p>The office approves changes to controlled customer data.</p>
+            </section>
+            <p class="notice error" t-if="error" t-out="error"/>
+            <form class="card form" method="post"
+                  t-att-action="'/vuma/field/customer/%s/update' % customer.id">
+                <label>Name
+                    <input type="text" name="name" t-att-value="customer.name or ''"/>
+                </label>
+                <label>Phone
+                    <input type="tel" name="phone" t-att-value="customer.phone or ''"/>
+                </label>
+                <label>Email
+                    <input type="email" name="email" t-att-value="customer.email or ''"/>
+                </label>
+                <label>Street
+                    <input type="text" name="street" t-att-value="customer.street or ''"/>
+                </label>
+                <label>Town / city
+                    <input type="text" name="city" t-att-value="customer.city or ''"/>
+                </label>
+                <label>Postal code
+                    <input type="text" name="zip" t-att-value="customer.zip or ''"/>
+                </label>
+                <label>VAT number
+                    <input type="text" name="vat" t-att-value="customer.vat or ''"/>
+                </label>
+                <label>Reason / notes
+                    <textarea name="notes" rows="2"></textarea>
+                </label>
+                <button type="submit" class="button full">Send for approval</button>
+            </form>
+        </t>
+    </template>
+
+    <template id="field_quote_new" name="Vuma Field New Quote">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">New Quote</t>
+            <section class="hero compact">
+                <h1>New quotation</h1>
+                <p t-out="customer.name"/>
+                <p>Prices come from the customer pricelist on the server.</p>
+            </section>
+            <p class="notice error" t-if="error" t-out="error"/>
+            <form class="card form" method="post"
+                  t-att-action="'/vuma/field/quote/new/%s' % customer.id">
+                <t t-foreach="range(1, 4)" t-as="row">
+                    <div class="card">
+                        <label>Product
+                            <select t-att-name="'product_%s' % row">
+                                <option value="">Select a product</option>
+                                <option t-foreach="products" t-as="product"
+                                        t-att-value="product.id"
+                                        t-out="product.display_name"/>
+                            </select>
+                        </label>
+                        <label>Quantity
+                            <input type="number" t-att-name="'qty_%s' % row" step="0.01" min="0" value="0" inputmode="decimal"/>
+                        </label>
+                    </div>
+                </t>
+                <label>Notes
+                    <textarea name="notes" rows="2"></textarea>
+                </label>
+                <button type="submit" class="button full">Create quotation</button>
+                <p class="hint">The office checks stock, credit and margin before confirming the order.</p>
+            </form>
+        </t>
+    </template>
+
+    <template id="field_statement" name="Vuma Field Statement">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Statement</t>
+                <section class="hero compact">
+                    <h1 t-out="customer.name"/>
+                    <p>Statement of account · balance R <span t-out="'%.2f' % balance"/></p>
+                    <a class="button secondary" t-att-href="'/vuma/field/customer/%s' % customer.id">Back to customer</a>
+                </section>
+                <section class="section">
+                    <div class="section-head"><h2>Invoices and credits</h2></div>
+                    <div class="empty" t-if="not invoices">No posted documents.</div>
+                    <div class="card" t-foreach="invoices" t-as="invoice">
+                        <div class="card-title"><span t-out="invoice.name"/> · R <span t-out="'%.2f' % invoice.amount_total"/></div>
+                        <div class="card-meta"><span t-out="invoice.invoice_date"/> · <span t-out="invoice.move_type"/> · outstanding R <span t-out="'%.2f' % invoice.amount_residual"/></div>
+                    </div>
+                </section>
+                <section class="section" t-if="payments">
+                    <div class="section-head"><h2>Payments</h2></div>
+                    <div class="card" t-foreach="payments" t-as="payment">
+                        <div class="card-title"><span t-out="payment.name"/> · R <span t-out="'%.2f' % payment.amount"/></div>
+                        <div class="card-meta"><span t-out="payment.date"/></div>
+                    </div>
+                </section>
+        </t>
+    </template>
+
+    <template id="field_uplift" name="Vuma Field Uplift">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Uplift Request</t>
+                <section class="hero compact">
+                    <h1>Request an uplift</h1>
+                    <p><span t-out="invoice.partner_id.name"/> · <span t-out="invoice.name"/></p>
+                </section>
+                <p class="notice error" t-if="error" t-out="error"/>
+                <form class="card form" method="post" enctype="multipart/form-data"
+                      t-att-action="'/vuma/field/uplift/%s' % invoice.id">
+                    <div class="card" t-foreach="lines" t-as="line">
+                        <div class="card-title" t-out="line.product_id.display_name"/>
+                        <div class="card-meta">Invoiced: <span t-out="line.quantity"/> · Unit price R <span t-out="'%.2f' % line.price_unit"/></div>
+                        <label>Quantity to collect
+                            <input type="number" t-att-name="'qty_%s' % line.id" step="0.01" min="0" value="0" inputmode="decimal"/>
+                        </label>
+                    </div>
+                    <label>Reason
+                        <select name="reason">
+                            <option value="customer_request">Customer request</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="wrong_item">Wrong item</option>
+                            <option value="not_fit">Not needed</option>
+                            <option value="quality">Quality issue</option>
+                        </select>
+                    </label>
+                    <label>Notes
+                        <textarea name="notes" rows="2"></textarea>
+                    </label>
+                    <label>Photo of the goods
+                        <input type="file" name="photo" accept="image/*" capture="environment"/>
+                    </label>
+                    <button type="submit" class="button full">Submit for approval</button>
+                </form>
+        </t>
+    </template>
+
+    <template id="field_offline" name="Vuma Field Offline">
+        <t t-call="vuma_field_app.field_layout">
+            <t t-set="title">Offline</t>
+                <section class="hero">
+                    <h1>You are offline</h1>
+                    <p>Your saved PODs, expenses, returns and collections are on this device.</p>
+                    <p>Open this app again when you have signal; it will sync automatically.</p>
+                    <a class="button" href="/vuma/field">Try again</a>
+                </section>
+        </t>
+    </template>
+
+</odoo>

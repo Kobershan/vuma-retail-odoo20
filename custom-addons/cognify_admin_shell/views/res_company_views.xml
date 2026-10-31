@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <!-- Company settings: a real colour picker for the Vuma shell. -->
+        <record id="view_company_form_vuma_colour" model="ir.ui.view">
+            <field name="name">res.company.form.vuma.colour</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='color']" position="after">
+                    <field name="vuma_background_color"
+                           widget="color"
+                           class="w-auto m-0"
+                           help="Background colour for the whole Vuma shell while this company is active. Reload the page after changing it."/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Put the colour on the General Settings > Companies block so the
+             Settings search finds it for "colour" or "background". -->
+        <record id="res_config_settings_view_form_vuma_colour" model="ir.ui.view">
+            <field name="name">res.config.settings.view.form.vuma.colour</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//block[@name='companies_setting_container']"
+                       position="inside">
+                    <setting id="vuma_background_colour_setting"
+                             string="Background Colour"
+                             help="Colour painted behind the main screen while this company is active. The sidebar always stays black.">
+                        <field name="vuma_background_color" widget="color"
+                               class="w-auto m-0 me-1"/>
+                    </setting>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Show the shell colour in the standard Companies list as well. -->
+        <record id="view_company_tree_vuma_colour" model="ir.ui.view">
+            <field name="name">res.company.list.vuma.colour</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='name']" position="after">
+                    <field name="vuma_background_color" widget="color"
+                           string="Background Colour" optional="show"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- A focused, editable list so every company colour can be changed in
+             one place. The menu name deliberately carries both "colour" and
+             "background" so menu search (sidebar and command palette) finds it
+             for either word. -->
+        <record id="view_company_colour_list" model="ir.ui.view">
+            <field name="name">res.company.list.vuma.colour.edit</field>
+            <field name="model">res.company</field>
+            <field name="arch" type="xml">
+                <list string="Company Background Colours" editable="bottom"
+                      create="false" delete="false" duplicate="0">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="vuma_background_color" widget="color"
+                           string="Background Colour"/>
+                    <field name="active" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="action_vuma_company_colours" model="ir.actions.act_window">
+            <field name="name">Company Background Colours</field>
+            <field name="res_model">res.company</field>
+            <field name="view_mode">list,form</field>
+            <field name="view_id" ref="view_company_colour_list"/>
+            <field name="domain">[('parent_id', '=', False)]</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Set the colour of each company
+                </p>
+                <p>
+                    The chosen colour is painted as the background of the main
+                    screen while that company is active. The sidebar always
+                    stays black.
+                </p>
+            </field>
+        </record>
+
+        <menuitem id="menu_vuma_company_colours"
+                  name="Company Background Colours"
+                  parent="base.menu_users"
+                  action="action_vuma_company_colours"
+                  sequence="5"/>
+
+    </data>
+</odoo>

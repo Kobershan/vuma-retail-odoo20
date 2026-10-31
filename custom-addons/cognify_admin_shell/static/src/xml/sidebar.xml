@@ -34,6 +34,39 @@
       </button>
     </div>
 
+    <!-- Company scope: every list, chart and capture form follows this. -->
+    <div class="vuma-company-switch" t-if="this.companyScopes.length > 1">
+      <Dropdown position="'bottom-start'">
+        <button class="vuma-company-button"
+                t-att-title="'Working in ' + this.companyScopeLabel"
+                aria-label="Switch company">
+          <span class="vuma-company-icon">
+            <i class="oi oi-filled" t-att-data-icon="this.companyScopeIcon"/>
+          </span>
+          <span t-if="!this.state.collapsed" class="vuma-company-label" t-out="this.companyScopeLabel"/>
+          <i t-if="!this.state.collapsed" class="oi vuma-company-caret" data-icon="expand_more"/>
+        </button>
+        <t t-set-slot="content">
+          <div class="vuma-company-menu-title">Working companies</div>
+          <t t-foreach="this.companyScopes" t-as="scope" t-key="scope.id">
+            <DropdownItem onSelected="() => this.selectCompanyScope(scope.id)">
+              <div class="vuma-company-option">
+                <span t-if="scope.dotStyle" class="vuma-company-option-dot" t-att-style="scope.dotStyle"/>
+                <i class="oi" t-att-data-icon="scope.icon"/>
+                <span class="vuma-company-option-label" t-out="scope.label"/>
+                <i t-if="scope.id === this.activeCompanyScope"
+                   class="oi oi-filled vuma-company-check" data-icon="check"/>
+              </div>
+              <div t-if="scope.hint" class="vuma-company-hint" t-out="scope.hint"/>
+            </DropdownItem>
+          </t>
+          <div class="vuma-company-foot">
+            Lists, dashboards and captures follow this scope.
+          </div>
+        </t>
+      </Dropdown>
+    </div>
+
     <!-- Search -->
     <div class="vuma-search">
       <i class="oi" data-icon="search"/>
@@ -56,15 +89,25 @@
             <div class="vuma-empty">Nothing matches "<span t-out="this.state.search"/></div>
           </t>
           <t t-foreach="this.searchResults()" t-as="r" t-key="r_index">
-            <button class="vuma-result" t-on-click="() => this.onResultClick(r)">
-              <span class="vuma-result-icon">
-                <img t-if="r.app.webIconData" t-att-src="r.app.webIconData" alt=""/>
-                <span t-else="" t-out="this.iconLetter(r.app)"/>
-              </span>
-              <span t-if="r.type === 'app'" class="vuma-result-app" t-out="r.app.name"/>
-              <span t-else="" t-out="r.menu.name"/>
-              <span t-if="r.path" class="vuma-result-path" t-out="r.path"/>
-            </button>
+            <div class="vuma-result-row">
+              <button class="vuma-result" t-on-click="() => this.onResultClick(r)">
+                <span class="vuma-result-icon">
+                  <img t-if="r.app &amp;&amp; r.app.webIconData" t-att-src="r.app.webIconData" alt=""/>
+                  <span t-elif="r.app" t-out="this.iconLetter(r.app)"/>
+                  <i t-else="" class="oi oi-filled" data-icon="star"/>
+                </span>
+                <span t-if="r.type === 'app'" class="vuma-result-app" t-out="r.label"/>
+                <span t-else="" t-out="r.label"/>
+                <span t-if="r.path" class="vuma-result-path" t-out="r.path"/>
+              </button>
+              <button t-if="r.menu || (r.app &amp;&amp; r.app.actionID)"
+                      class="vuma-star vuma-result-star"
+                      t-att-class="{ 'is-on': r.menu ? this.isFavoriteMenu(r.menu) : this.isFavoriteMenu(r.app) }"
+                      t-att-title="(r.menu ? this.isFavoriteMenu(r.menu) : this.isFavoriteMenu(r.app)) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+                      t-on-click.stop="() => this.toggleFavoriteMenu(r.menu || r.app, r.label, r.path)">
+                <i class="oi" t-att-class="{ 'oi-filled': r.menu ? this.isFavoriteMenu(r.menu) : this.isFavoriteMenu(r.app) }" data-icon="star"/>
+              </button>
+            </div>
           </t>
         </div>
       </t>
@@ -77,70 +120,137 @@
           <div class="vuma-skeleton"></div>
         </t>
 
-        <t t-foreach="this.groupedApps()" t-as="grp" t-key="grp.group.key">
-          <div class="vuma-group-label" t-out="grp.group.label"/>
-          <t t-foreach="grp.items" t-as="app" t-key="app.id">
-            <div class="vuma-app-wrapper">
-              <div class="vuma-app vuma-flyouthost"
-                   t-att-class="{
-                       'is-active': this.isCurrentApp(app),
-                       'is-expanded': (!this.state.collapsed) &amp;&amp; this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length,
-                   }"
-                   t-on-click="() => this.selectApp(app)"
-                   t-on-mouseenter="() => this.openFlyoutFor(app)">
-
-                <span class="vuma-app-icon">
-                  <img t-if="this.appIconSrc(app)" t-att-src="this.appIconSrc(app)" alt=""/>
-                  <img t-elif="app.webIcon" t-att-src="app.webIcon.split(',')[0]" alt="" style="padding: 6px;"/>
-                  <span t-else="" class="vuma-app-letter" t-out="this.iconLetter(app)"/>
-                  <t t-if="app.webIcon &amp;&amp; app.webIcon.split(',')[1]">
-                    <span style="position:absolute;inset:0" t-att-style="'background:' + app.webIcon.split(',')[1] + ';mix-blend-mode:screen;opacity:0'"/>
-                  </t>
-                </span>
-
-                <span class="vuma-app-name" t-out="app.name"/>
-                <!-- Real control, not decoration: without its own handler the
-                     current app's sections could never be collapsed again. -->
-                <button t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length"
-                        class="vuma-app-chevron-btn"
-                        t-att-title="this.isAppOpen(app) ? 'Collapse sections' : 'Expand sections'"
-                        t-att-aria-expanded="this.isAppOpen(app) ? 'true' : 'false'"
-                        t-on-click.stop="() => this.toggleAppOpen(app)">
-                  <i class="oi vuma-app-chevron" data-icon="chevron_right"/>
+        <!-- Quick Links: every menu this user starred, whatever tab it lives
+             in. Clicking the star on any menu or submenu drops it here. -->
+        <div class="vuma-quick-section">
+          <div class="vuma-group-label vuma-quick-label">
+            <i class="oi oi-filled" data-icon="star"/>
+            <span>Quick Links</span>
+          </div>
+          <t t-if="this.favoriteEntries().length === 0">
+            <div class="vuma-quick-empty">Star any menu to pin it here</div>
+          </t>
+          <t t-else="">
+            <t t-foreach="this.favoriteEntries()" t-as="fav" t-key="fav.key">
+              <div class="vuma-nav-row vuma-quick-row" t-att-class="{ 'is-active': this.isMenuActive(fav.menu) }">
+                <button class="vuma-nav-link vuma-quick-link" t-on-click="() => this.openFavorite(fav)">
+                  <span class="vuma-nav-label" t-out="fav.label"/>
+                  <span t-if="fav.path" class="vuma-nav-path" t-out="fav.path"/>
+                </button>
+                <button class="vuma-star is-on" title="Remove from Quick Links"
+                        t-on-click.stop="() => this.toggleFavoriteMenu(fav.menu, fav.label, fav.path)">
+                  <i class="oi oi-filled" data-icon="star"/>
                 </button>
               </div>
-
-              <!-- Inline folders only for the active app when expanded -->
-              <t t-if="this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length &amp;&amp; !this.state.collapsed">
-                <div class="vuma-folders">
-                  <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
-                    <t t-call="vuma.SidebarSection" item="section" activeId="this.activeMenuId()" level="0"/>
-                  </t>
-                </div>
-              </t>
-
-              <!-- Flyout shown in collapsed rail mode -->
-              <t t-if="this.state.openFlyout === app.id &amp;&amp; this.state.collapsed &amp;&amp; !this.isSmall">
-                <div class="vuma-flyout" t-on-click.stop="" t-on-mouseleave="this.closeFlyout">
-                  <div class="vuma-flyout-title" t-out="app.name"/>
-                  <div class="vuma-flyout-path">Application</div>
-                  <t t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length">
-                    <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
-                      <div class="vuma-sub" t-on-click="() => this.selectMenu(section)">
-                        <span class="vuma-sub-label" t-out="section.name"/>
-                      </div>
-                    </t>
-                  </t>
-                  <t t-else="">
-                    <div class="vuma-sub" t-on-click="() => this.selectApp(app)">Open</div>
-                  </t>
-                </div>
-              </t>
-            </div>
+            </t>
           </t>
-        </t>
+        </div>
 
-        <!-- Pinned app entries -->
+        <!-- Vuma business tabs: Products, Sales, Debtors, Creditors,
+             Accounting. Every leaf resolves to a real Odoo menu; entries for
+             modules that are not installed disappear instead of breaking. -->
+        <div class="vuma-biz-section">
+          <t t-foreach="this.businessGroups()" t-as="grp" t-key="grp.key">
+            <div class="vuma-group-label vuma-biz-label" t-on-click="() => this.toggleBusinessGroup(grp.key)">
+              <span class="vuma-biz-icon">
+                <img t-if="grp.app &amp;&amp; this.appIconSrc(grp.app)" t-att-src="this.appIconSrc(grp.app)" alt=""/>
+                <i t-else="" class="oi" t-att-data-icon="grp.icon"/>
+              </span>
+              <span t-out="grp.label"/>
+              <i class="oi vuma-biz-caret" t-att-class="{ 'is-open': this.isBusinessGroupOpen(grp.key) }" data-icon="expand_more"/>
+            </div>
+            <t t-if="this.isBusinessGroupOpen(grp.key)">
+              <t t-foreach="grp.items" t-as="item" t-key="item.key">
+                <t t-call="vuma.NavItem" item="item"/>
+              </t>
+            </t>
+          </t>
+        </div>
+
+        <!-- All apps: the grouped application list, kept so every menu the
+             curated tabs do not cover stays one click away. In the collapsed
+             rail it renders regardless, because the rail is icon-only. -->
+        <div class="vuma-allapps-section">
+          <div class="vuma-group-label vuma-toggle-label" t-on-click="this.toggleAllApps">
+            <i class="oi" data-icon="apps"/>
+            <span>All Apps</span>
+            <i class="oi vuma-biz-caret" t-att-class="{ 'is-open': this.state.showAllApps }" data-icon="expand_more"/>
+          </div>
+          <t t-if="this.state.showAllApps || this.state.collapsed">
+            <t t-foreach="this.groupedApps()" t-as="grp" t-key="grp.group.key">
+              <div class="vuma-group-label" t-out="grp.group.label"/>
+              <t t-foreach="grp.items" t-as="app" t-key="app.id">
+                <div class="vuma-app-wrapper">
+                  <div class="vuma-app vuma-flyouthost"
+                       t-att-class="{
+                           'is-active': this.isCurrentApp(app),
+                           'is-expanded': (!this.state.collapsed) &amp;&amp; this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length,
+                       }"
+                       t-on-click="() => this.selectApp(app)"
+                       t-on-mouseenter="() => this.openFlyoutFor(app)">
+
+                    <span class="vuma-app-icon">
+                      <img t-if="this.appIconSrc(app)" t-att-src="this.appIconSrc(app)" alt=""/>
+                      <img t-elif="app.webIcon" t-att-src="app.webIcon.split(',')[0]" alt="" style="padding: 6px;"/>
+                      <span t-else="" class="vuma-app-letter" t-out="this.iconLetter(app)"/>
+                      <t t-if="app.webIcon &amp;&amp; app.webIcon.split(',')[1]">
+                        <span style="position:absolute;inset:0" t-att-style="'background:' + app.webIcon.split(',')[1] + ';mix-blend-mode:screen;opacity:0'"/>
+                      </t>
+                    </span>
+
+                    <span class="vuma-app-name" t-out="app.name"/>
+                    <button t-if="app.actionID"
+                            class="vuma-star vuma-app-star"
+                            t-att-class="{ 'is-on': this.isFavoriteMenu(app) }"
+                            t-att-title="this.isFavoriteMenu(app) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+                            t-on-click.stop="() => this.toggleFavoriteMenu(app)">
+                      <i class="oi" t-att-class="{ 'oi-filled': this.isFavoriteMenu(app) }" data-icon="star"/>
+                    </button>
+                    <!-- Real control, not decoration: without its own handler the
+                         current app's sections could never be collapsed again. -->
+                    <button t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length"
+                            class="vuma-app-chevron-btn"
+                            t-att-title="this.isAppOpen(app) ? 'Collapse sections' : 'Expand sections'"
+                            t-att-aria-expanded="this.isAppOpen(app) ? 'true' : 'false'"
+                            t-on-click.stop="() => this.toggleAppOpen(app)">
+                      <i class="oi vuma-app-chevron" data-icon="chevron_right"/>
+                    </button>
+                  </div>
+
+                  <!-- Inline folders only for the active app when expanded -->
+                  <t t-if="this.isCurrentApp(app) &amp;&amp; this.isAppOpen(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length &amp;&amp; !this.state.collapsed">
+                    <div class="vuma-folders">
+                      <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
+                        <t t-call="vuma.SidebarSection" item="section" activeId="this.activeMenuId()" level="0"/>
+                      </t>
+                    </div>
+                  </t>
+
+                  <!-- Flyout shown in collapsed rail mode -->
+                  <t t-if="this.state.openFlyout === app.id &amp;&amp; this.state.collapsed &amp;&amp; !this.isSmall">
+                    <div class="vuma-flyout" t-on-click.stop="" t-on-mouseleave="this.closeFlyout">
+                      <div class="vuma-flyout-title" t-out="app.name"/>
+                      <div class="vuma-flyout-path">Application</div>
+                      <t t-if="this.isCurrentApp(app) &amp;&amp; this.currentAppTree &amp;&amp; this.currentAppTree.childrenTree &amp;&amp; this.currentAppTree.childrenTree.length">
+                        <t t-foreach="this.currentAppTree.childrenTree" t-as="section" t-key="section.id">
+                          <div class="vuma-sub" t-on-click="() => this.selectMenu(section)">
+                            <span class="vuma-sub-label" t-out="section.name"/>
+                          </div>
+                        </t>
+                      </t>
+                      <t t-else="">
+                        <div class="vuma-sub" t-on-click="() => this.selectApp(app)">Open</div>
+                      </t>
+                    </div>
+                  </t>
+                </div>
+              </t>
+            </t>
+          </t>
+        </div>
+
+        <!-- Pinned app entries: Settings must stay reachable even while the
+             All Apps list is collapsed. -->
         <t t-if="this.pinnedApps().length">
           <div class="vuma-group-label">System</div>
           <t t-foreach="this.pinnedApps()" t-as="pa" t-key="pa.app.id">
@@ -152,6 +262,13 @@
                 <span t-else="" class="vuma-app-letter" t-out="this.iconLetter(pa.app)"/>
               </span>
               <span class="vuma-app-name" t-out="pa.label"/>
+              <button t-if="pa.app.actionID"
+                      class="vuma-star vuma-app-star"
+                      t-att-class="{ 'is-on': this.isFavoriteMenu(pa.app) }"
+                      t-att-title="this.isFavoriteMenu(pa.app) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+                      t-on-click.stop="() => this.toggleFavoriteMenu(pa.app, pa.label)">
+                <i class="oi" t-att-class="{ 'oi-filled': this.isFavoriteMenu(pa.app) }" data-icon="star"/>
+              </button>
             </div>
           </t>
         </t>
@@ -215,18 +332,70 @@
               t-on-click="() => this.selectMenu(item)">
         <span class="vuma-sub-label" t-out="item.name"/>
       </button>
+      <button t-if="item.actionID" class="vuma-star vuma-sub-star"
+              t-att-class="{ 'is-on': this.isFavoriteMenu(item) }"
+              t-att-title="this.isFavoriteMenu(item) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+              t-on-click.stop="() => this.toggleFavoriteMenu(item)">
+        <i class="oi" t-att-class="{ 'oi-filled': this.isFavoriteMenu(item) }" data-icon="star"/>
+      </button>
     </div>
   </t>
 
   <t t-else="">
     <div class="vuma-folder" t-att-class="{ 'is-open': open }">
-      <button class="vuma-sub" t-on-click="() => this.onFolderClick(item)">
-        <span class="vuma-sub-label" t-out="item.name"/>
-      </button>
+      <div class="vuma-subrow">
+        <button class="vuma-sub" t-on-click="() => this.onFolderClick(item)">
+          <span class="vuma-sub-label" t-out="item.name"/>
+        </button>
+        <button t-if="item.actionID" class="vuma-star vuma-sub-star"
+                t-att-class="{ 'is-on': this.isFavoriteMenu(item) }"
+                t-att-title="this.isFavoriteMenu(item) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+                t-on-click.stop="() => this.toggleFavoriteMenu(item)">
+          <i class="oi" t-att-class="{ 'oi-filled': this.isFavoriteMenu(item) }" data-icon="star"/>
+        </button>
+      </div>
       <t t-if="open">
         <div class="vuma-folder-children">
           <t t-foreach="item.childrenTree" t-as="child" t-key="child.id">
             <t t-call="vuma.SidebarSection" item="child" activeId="activeId" level="level + 1"/>
+          </t>
+        </div>
+      </t>
+    </div>
+  </t>
+</t>
+
+<!-- One entry of a Vuma business tab. Leaf rows navigate; folder rows open to
+     their children. Leaves carry the star that feeds Quick Links. -->
+<t t-name="vuma.NavItem">
+  <t t-set="hasKids" t-value="item.children &amp;&amp; item.children.length"/>
+
+  <t t-if="!hasKids">
+    <div class="vuma-nav-row" t-att-class="{ 'is-active': item.menu &amp;&amp; this.isMenuActive(item.menu) }">
+      <button class="vuma-nav-link" t-on-click="() => this.selectMenu(item.menu)">
+        <span class="vuma-nav-label" t-out="item.label"/>
+      </button>
+      <button t-if="item.menu" class="vuma-star"
+              t-att-class="{ 'is-on': this.isFavoriteItem(item) }"
+              t-att-title="this.isFavoriteItem(item) ? 'Remove from Quick Links' : 'Add to Quick Links'"
+              t-on-click.stop="() => this.toggleFavoriteItem(item)">
+        <i class="oi" t-att-class="{ 'oi-filled': this.isFavoriteItem(item) }" data-icon="star"/>
+      </button>
+    </div>
+  </t>
+
+  <t t-else="">
+    <div class="vuma-nav-folder" t-att-class="{ 'is-open': this.isNavItemOpen(item) }">
+      <div class="vuma-nav-row">
+        <button class="vuma-nav-link vuma-nav-folder-link" t-on-click="() => this.toggleNavItem(item)">
+          <span class="vuma-nav-label" t-out="item.label"/>
+          <i class="oi vuma-nav-caret" data-icon="expand_more"/>
+        </button>
+      </div>
+      <t t-if="this.isNavItemOpen(item)">
+        <div class="vuma-nav-children">
+          <t t-foreach="item.children" t-as="child" t-key="child.key">
+            <t t-call="vuma.NavItem" item="child"/>
           </t>
         </div>
       </t>

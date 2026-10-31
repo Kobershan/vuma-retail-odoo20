@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Vuma Multi-Tenant Retail',
-    'version': '2.1.0',
+    'version': '2.2.3',
     'category': 'Sales/Retail',
     'summary': 'Trade Rite + Siyaya DC from ONE screen: mixed-basket quotes, '
                'cross-company cash collection and crediting.',

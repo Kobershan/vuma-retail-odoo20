@@ -66,9 +66,14 @@ class VumaPartnerCreditWizard(models.TransientModel):
             ('move_type', '=', 'out_invoice'),
             ('state', '=', 'posted'),
             ('payment_state', 'in', ['not_paid', 'partial']),
+            # Only the companies the user is currently working in. With both
+            # trading companies active this is the cross-company view; with
+            # one active it is that company alone, so Siyaya DC invoices never
+            # appear while the user is in Trade Rite.
+            ('company_id', 'in', self.env.companies.ids),
         ], order='invoice_date asc')
         self.invoice_ids = invoices.ids
-        return {'warning': _('%s open invoices found across both companies.') % len(invoices)}
+        return {'warning': _('%s open invoices found in the active company scope.') % len(invoices)}
 
     @api.depends('invoice_ids')
     def _compute_totals(self):
@@ -90,6 +95,13 @@ class VumaPartnerCreditWizard(models.TransientModel):
         invoices = self.invoice_ids.sorted(key=lambda i: (i.invoice_date or fields.Date.today(), i.id))
         if not invoices:
             raise UserError(_('Select at least one invoice to credit.'))
+        # A wizard opened while both companies were active may still hold
+        # Siyaya DC invoices after the user switched to Trade Rite. Re-check
+        # the scope at the moment the notes are created.
+        self.env.user._vuma_require_companies(
+            invoices.mapped('company_id'),
+            _('credit these invoices'),
+        )
 
         cap = 0.0 if self.full_credit else self.amount_limit
         if not self.full_credit and cap <= 0:

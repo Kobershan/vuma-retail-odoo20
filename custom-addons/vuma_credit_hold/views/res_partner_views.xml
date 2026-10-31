@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_partner_form_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">res.partner.form.vuma.credit.hold</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='warning_tax']" position="after">
+                    <div class="alert alert-danger" role="alert"
+                         name="vuma_credit_hold_warning"
+                         invisible="not vuma_credit_hold">
+                        <strong>Credit hold.</strong>
+                        This account has
+                        <field name="vuma_overdue_invoice_count" class="d-inline"/>
+                        overdue invoice(s) totalling
+                        <field name="vuma_overdue_amount" class="d-inline"/>
+                        (oldest due
+                        <field name="vuma_oldest_due_date" class="d-inline"/>).
+                        Only an administrator may create the one quotation
+                        allowed while the account is on hold. Nobody else may
+                        quote or process this account.
+                        <span invisible="not vuma_hold_quote_used">
+                            The one-quotation allowance has already been used.
+                        </span>
+                    </div>
+                </xpath>
+
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_vuma_overdue_invoices"
+                            type="object" class="oe_stat_button"
+                            icon="fa-exclamation-triangle"
+                            string="Overdue"
+                            invisible="not vuma_credit_hold"/>
+                </xpath>
+
+                <xpath expr="//notebook" position="inside">
+                    <page string="Credit Control" name="vuma_credit_control">
+                        <group>
+                            <group string="Account Status">
+                                <field name="vuma_credit_hold" readonly="1"/>
+                                <field name="vuma_overdue_amount" readonly="1"/>
+                                <field name="vuma_overdue_invoice_count" readonly="1"/>
+                                <field name="vuma_oldest_due_date" readonly="1"/>
+                            </group>
+                            <group string="One-Quotation Allowance">
+                                <field name="vuma_hold_quote_id" readonly="1"/>
+                                <field name="vuma_hold_quote_used" readonly="1"/>
+                            </group>
+                        </group>
+                        <div class="text-muted mt-3">
+                            An account is on credit hold while its posted
+                            customer invoices have a positive overdue balance.
+                            Payments and posted credit notes release the hold
+                            automatically. While the account is on hold only an
+                            administrator may create one quotation; after that
+                            quotation exists no further sales activity is
+                            allowed until the account is up to date.
+                        </div>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_partner_tree_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">res.partner.list.vuma.credit.hold</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='display_name']" position="after">
+                    <field name="vuma_credit_hold" optional="hide"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_res_partner_filter_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">res.partner.search.vuma.credit.hold</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <filter name="vuma_credit_hold" string="Credit Hold"
+                            domain="[('vuma_credit_hold', '=', True)]"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

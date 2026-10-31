@@ -1,5 +1,18 @@
 /** Import paths in Odoo bundles resolve relative to module root. */
 .o_vuma_company_switch_button {
+    display: inline-flex;
+    align-items: center;
+
+    .o_vuma_company_dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--vuma-company-stripe, #ffe500);
+        box-shadow: 0 0 0 1px rgba(15, 17, 22, 0.12);
+        flex-shrink: 0;
+        margin-right: 6px;
+    }
+
     .fa + span {
         white-space: nowrap;
     }

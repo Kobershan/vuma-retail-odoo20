@@ -61,6 +61,13 @@ class VumaPaymentSession(models.Model):
                 continue
             if not session.line_ids or session.amount_total <= 0:
                 raise UserError(_('Add at least one company row with an amount collected.'))
+            # The active company scope is the boundary: a Siyaya DC amount may
+            # only be posted while Siyaya DC is active, and a collection that
+            # spans both companies needs both companies active.
+            session.env.user._vuma_require_companies(
+                session.line_ids.mapped('company_id'),
+                _('post this cash collection'),
+            )
             for line in session.line_ids:
                 if line.amount <= 0:
                     continue
@@ -94,6 +101,8 @@ class VumaPaymentSession(models.Model):
     def action_open_credit_wizard(self):
         """From the same collection screen, jump to the crediting wizard."""
         self.ensure_one()
+        self.env.user._vuma_require_both_trading_companies(
+            _('credit invoices across both companies'))
         return {
             'name': _('Credit Invoices (Both Companies)'),
             'type': 'ir.actions.act_window',
@@ -113,7 +122,11 @@ class VumaPaymentSessionLine(models.Model):
     session_id = fields.Many2one(
         'vuma.payment.session', string='Session', required=True, ondelete='cascade')
     company_id = fields.Many2one(
-        'res.company', string='Company', required=True)
+        'res.company', string='Company', required=True,
+        default=lambda self: self.env.company,
+        help="Company this amount is collected for. It must be in the active "
+             "company scope: switch to Siyaya DC to take a Siyaya DC payment, "
+             "or to both companies to take a cross-company collection.")
     journal_id = fields.Many2one(
         'account.journal', string='Cash / Bank Journal',
         compute='_compute_journal', store=True, readonly=False)
@@ -149,6 +162,28 @@ class VumaPaymentSessionLine(models.Model):
                     ('type', '=', 'bank'),
                 ], order='id asc', limit=1)
             line.journal_id = journals
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._vuma_check_company_scope()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if {'company_id', 'amount', 'session_id'} & set(vals):
+            self._vuma_check_company_scope()
+        return res
+
+    def _vuma_check_company_scope(self):
+        """A row may only name a company the user is currently working in."""
+        for line in self:
+            if line.company_id:
+                line.env.user._vuma_require_company(
+                    line.company_id,
+                    _('capture a payment for %(company)s',
+                      company=line.company_id.display_name),
+                )
 
     @api.depends('invoice_ids')
     def _compute_invoice_info(self):

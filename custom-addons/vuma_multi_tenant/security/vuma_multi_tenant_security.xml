@@ -28,4 +28,42 @@
         <field name="user_ids" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
     </record>
 
+    <!-- Testing only. Members may capture, post and edit documents in either
+         trading company without first switching the company selector. Remove
+         the group from users when the system goes into production. -->
+    <record id="group_vuma_testing_access" model="res.groups">
+        <field name="name">Testing Access (all companies)</field>
+        <field name="sequence">90</field>
+        <field name="privilege_id" ref="vuma_groups_privilege"/>
+        <field name="comment">Testing only: bypasses the active-company capture guards so a document can be captured in Trade Rite or Siyaya DC without switching the company selector.</field>
+    </record>
+
+    <!-- ==============================================================
+         Odoo's built-in multi-company record rule for res.users.
+
+         The copy stored in the database had been narrowed to
+             [('company_id', 'in', company_ids)]
+         i.e. "you may only read a user whose HOME company is inside your
+         currently selected companies".  With two trading companies that
+         breaks constantly: the moment the company selector sits on
+         Siyaya DC, every user whose home company is Trade Rite (the
+         administrator's own user record included, and the salesperson
+         user_id / invoice_user_id shown on quotations, sale orders and
+         invoices) becomes unreadable, and the web client raises
+             "Sorry, ... doesn't have 'read' access to: User (res.users)"
+         as soon as one of those lists is opened.
+
+         Restore the domain Odoo ships (see
+         odoo/addons/base/security/ir.access.csv, "res_users_rule"):
+         internal users are readable from any selected company; only
+         portal/public users are restricted to companies they share with
+         you.  Multi-company isolation of the business records is
+         enforced elsewhere (company_id domains on documents and on
+         ir.access for the document models), so nothing leaks by letting
+         staff see each other's user records.
+         ============================================================== -->
+    <record id="base.res_users_rule" model="ir.access">
+        <field name="domain">['|', ('share', '=', False), ('company_ids', 'in', company_ids)]</field>
+    </record>
+
 </odoo>

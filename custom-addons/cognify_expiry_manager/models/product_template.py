@@ -123,3 +123,25 @@ class ProductTemplate(models.Model):
             ],
             'context': {'create': False},
         }
+
+
+class ProductProduct(models.Model):
+    """Variant-side entry points for the expiry buttons.
+
+    ``product.product`` inherits the template's *fields* through
+    ``_inherits`` but not its methods.  The expiry form is inherited onto the
+    product variant form as well, so the buttons must exist here or Odoo
+    rejects the view with "action_apply_fefo is not a valid action on
+    product.product".  Both actions are category- or template-level, so they
+    delegate to the template.
+    """
+
+    _inherit = 'product.product'
+
+    def action_apply_fefo(self):
+        self.ensure_one()
+        return self.product_tmpl_id.action_apply_fefo()
+
+    def action_view_expiry_lots(self):
+        self.ensure_one()
+        return self.product_tmpl_id.action_view_expiry_lots()

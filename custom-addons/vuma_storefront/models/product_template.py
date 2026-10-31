@@ -43,7 +43,7 @@ class ProductTemplate(models.Model):
         for a receipt or delivery made by the owning company's own session,
         but wrong for the store front's promise the moment the change is
         made from a session where the owning company is not active: a Trade
-        Rite product touched from a "My Company"-only session would read as
+        Rite product touched from a Siyaya-only session would read as
         empty and vanish from the shop while the warehouse is full.
 
         The shop fronts the whole business, so the decision is always made

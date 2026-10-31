@@ -95,6 +95,7 @@
                                     <list editable="bottom">
                                         <field name="company_id"
                                                widget="badge"
+                                               domain="[('id', 'in', context.get('allowed_company_ids', []))]"
                                                decoration-info="company_id.name == 'Trade Rite'"
                                                decoration-warning="company_id.name == 'Siyaya DC'"/>
                                         <field name="journal_id"

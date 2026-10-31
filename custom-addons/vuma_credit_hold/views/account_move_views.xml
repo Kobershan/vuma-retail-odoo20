@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <record id="view_move_form_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">account.move.form.vuma.credit.hold</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-warning" role="alert"
+                         name="vuma_credit_hold_warning"
+                         invisible="not vuma_partner_credit_hold or move_type not in ('out_invoice', 'out_refund')">
+                        <strong>Credit hold.</strong>
+                        This customer's account is on hold for an overdue
+                        balance. Only an administrator may create, post, cancel
+                        or reset a customer invoice or credit note. Payments
+                        can still be recorded.
+                    </div>
+                </xpath>
+                <xpath expr="//sheet" position="inside">
+                    <field name="vuma_partner_credit_hold" invisible="1"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_invoice_tree_vuma_credit_hold" model="ir.ui.view">
+            <field name="name">account.move.invoice.list.vuma.credit.hold</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_invoice_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="vuma_partner_credit_hold" optional="hide"
+                           readonly="1"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

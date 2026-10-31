@@ -23,6 +23,255 @@ const PINNED = [
 // Apps that must never surface on the dashboards.
 const HIDDEN_APPS = new Set(["mail.menu_root_discuss"]);
 
+// The five business tabs. Labels and hierarchy are Vuma's; every leaf points
+// at a real Odoo menu through its xmlid, so the tab is a curated view over the
+// same actions the rest of Odoo runs. A leaf whose menu is missing (module not
+// installed, or hidden for this user) is dropped at render time instead of
+// showing a dead link. Folders (entries with `children`) mirror the business
+// task, e.g. "Goods Receiving" holds receipts, store receiving and returns.
+// `appXmlid` picks the application whose brand icon heads the tab; the `icon`
+// glyph is only the fallback when that app is not visible to the user.
+const BUSINESS_GROUPS = [
+    {
+        key: "products",
+        label: "Products",
+        icon: "inventory_2",
+        appXmlid: "stock.menu_stock_root",
+        items: [
+            {
+                label: "Products Dashboard",
+                children: [
+                    { label: "Stock Health and Value", xmlid: "cognify_management_reports.menu_cognify_stock_health" },
+                    { label: "Low and Out of Stock", xmlid: "cognify_management_reports.menu_cognify_stock_low" },
+                    { label: "Dead and Slow Moving Stock", xmlid: "cognify_management_reports.menu_cognify_stock_dead" },
+                    { label: "Product Turnover", xmlid: "cognify_management_reports.menu_cognify_turnover" },
+                    { label: "Slowest Moving", xmlid: "cognify_management_reports.menu_cognify_turnover_lowest" },
+                ],
+            },
+            { label: "Product Profiles", xmlid: "stock.menu_product_variant_config_stock" },
+            {
+                label: "Stock Take",
+                children: [
+                    { label: "Physical Inventory", xmlid: "stock.menu_action_inventory_tree" },
+                    { label: "Replenishment", xmlid: "stock.menu_reordering_rules_replenish" },
+                    { label: "Scrap", xmlid: "stock.menu_stock_scrap" },
+                    { label: "Lots / Serial Numbers", xmlid: "stock.menu_action_production_lot_form" },
+                ],
+            },
+            {
+                label: "Purchase Orders",
+                children: [
+                    { label: "Requests for Quotation", xmlid: "purchase.menu_purchase_rfq" },
+                    { label: "Purchase Orders", xmlid: "purchase.menu_purchase_form_action" },
+                    { label: "Vendors", xmlid: "purchase.menu_procurement_management_supplier_name" },
+                ],
+            },
+            {
+                label: "Goods Receiving",
+                children: [
+                    { label: "Receipts", xmlid: "stock.in_picking" },
+                    { label: "Store Receiving", xmlid: "customer_goods_pickup.menu_customer_goods_pickup_store_receiving" },
+                    { label: "Returns", xmlid: "customer_goods_pickup.menu_customer_goods_pickup_returns" },
+                    { label: "Quarantine / Claims", xmlid: "customer_goods_pickup.menu_customer_goods_quarantine" },
+                ],
+            },
+            {
+                label: "Product Reports",
+                children: [
+                    { label: "Stock on Hand", xmlid: "stock.menu_product_stock" },
+                    { label: "Stock Moves Analysis", xmlid: "stock.stock_move_menu" },
+                    { label: "Purchases", xmlid: "purchase.purchase_report" },
+                    { label: "Sales by Product", xmlid: "sale.menu_reporting_product" },
+                    { label: "Cost of Sales", xmlid: "cognify_management_reports.menu_cognify_cost_of_sales" },
+                    { label: "Expiry Report", xmlid: "cognify_expiry_manager.menu_expiry_report" },
+                ],
+            },
+        ],
+    },
+    {
+        key: "sales",
+        label: "Sales",
+        icon: "point_of_sale",
+        appXmlid: "sale.sale_menu_root",
+        items: [
+            {
+                label: "Sales Dashboard",
+                children: [
+                    { label: "Sales Overview", xmlid: "cognify_management_reports.menu_cognify_sales_overview" },
+                    { label: "Pipeline (Quotations)", xmlid: "cognify_management_reports.menu_cognify_sales_pipeline" },
+                    { label: "Sales by Day", xmlid: "cognify_management_reports.menu_cognify_sales_day" },
+                    { label: "Sales by Month", xmlid: "cognify_management_reports.menu_cognify_sales_month" },
+                    { label: "Sales by Channel", xmlid: "cognify_management_reports.menu_cognify_sales_channel" },
+                    { label: "Sales by Category", xmlid: "cognify_management_reports.menu_cognify_sales_category" },
+                ],
+            },
+            { label: "Quotations", xmlid: "vuma_multi_tenant.menu_vuma_link_quote" },
+            { label: "Sales Orders", xmlid: "vuma_multi_tenant.menu_vuma_link_orders" },
+            {
+                label: "Order Picking",
+                children: [
+                    { label: "Batch Transfers", xmlid: "stock.stock_picking_batch_menu" },
+                ],
+            },
+            {
+                label: "Invoicing",
+                children: [
+                    { label: "Customer Invoices", xmlid: "vuma_multi_tenant.menu_vuma_link_invoices" },
+                    { label: "Customer Payments", xmlid: "account.menu_action_account_payments_receivable" },
+                    { label: "Awaiting Signature", xmlid: "cognify_invoice_signature.menu_invoices_awaiting_signature" },
+                ],
+            },
+            {
+                label: "Deliveries",
+                children: [
+                    { label: "Delivery Orders", xmlid: "stock.out_picking" },
+                    { label: "Returns", xmlid: "sale_stock.menu_stock_picking_return_report" },
+                    { label: "Operation Types", xmlid: "stock.stock_picking_type_menu" },
+                    { label: "Delivery Methods", xmlid: "stock_delivery.menu_action_delivery_carrier_form" },
+                ],
+            },
+        ],
+    },
+    {
+        key: "debtors",
+        label: "Debtors",
+        icon: "person",
+        appXmlid: "contacts.menu_contacts",
+        items: [
+            {
+                label: "Debtors Dashboard",
+                children: [
+                    { label: "Outstanding Balances", xmlid: "cognify_management_reports.menu_cognify_customer_balances" },
+                    { label: "Credit Available", xmlid: "cognify_management_reports.menu_cognify_credit_available" },
+                    { label: "Debt Ageing", xmlid: "cognify_management_reports.menu_cognify_ageing" },
+                    { label: "Sales by Customer", xmlid: "cognify_management_reports.menu_cognify_sales_by_customer" },
+                    { label: "Invoicing Dashboard", xmlid: "account.menu_board_journal_1" },
+                ],
+            },
+            { label: "Customer Profiles", xmlid: "account.menu_account_customer" },
+            { label: "Credit Limits", xmlid: "vuma_retail_ops.menu_vuma_credit_limits" },
+            {
+                label: "Age Analysis",
+                children: [
+                    { label: "Debt Ageing", xmlid: "cognify_management_reports.menu_cognify_ageing" },
+                    { label: "Outstanding Balances", xmlid: "cognify_management_reports.menu_cognify_customer_balances" },
+                    { label: "Credit Available", xmlid: "cognify_management_reports.menu_cognify_credit_available" },
+                ],
+            },
+            { label: "Receive Payments Manually", xmlid: "account.menu_action_account_payments_receivable" },
+            {
+                label: "Allocate Payments per Company",
+                children: [
+                    { label: "Payments", xmlid: "vuma_multi_tenant.menu_vuma_link_payments" },
+                    { label: "Cash Collections", xmlid: "vuma_multi_tenant.menu_vuma_collect" },
+                    { label: "Credit Customer Invoices", xmlid: "vuma_multi_tenant.menu_vuma_credit" },
+                ],
+            },
+            {
+                label: "Allocate Discounts Post Invoice",
+                children: [
+                    { label: "Credit Notes", xmlid: "account.menu_action_move_out_refund_type" },
+                    { label: "Discount & Loyalty", xmlid: "sale_loyalty.menu_discount_loyalty_type_config" },
+                ],
+            },
+            {
+                label: "Returns and Credits",
+                children: [
+                    { label: "Returns by Customer and Invoice", xmlid: "customer_goods_pickup.menu_customer_goods_pickup_returns" },
+                    { label: "Credit Notes", xmlid: "account.menu_action_move_out_refund_type" },
+                    { label: "Goods in Returns Area", xmlid: "customer_goods_pickup.menu_customer_goods_quarantine" },
+                ],
+            },
+            {
+                label: "Debtor Documents",
+                children: [
+                    { label: "Awaiting Signature", xmlid: "cognify_invoice_signature.menu_invoices_awaiting_signature" },
+                    { label: "Customer Contacts", xmlid: "vuma_retail_ops.menu_vuma_contacts_customers" },
+                ],
+            },
+        ],
+    },
+    {
+        key: "creditors",
+        label: "Creditors",
+        icon: "receipt_long",
+        appXmlid: "purchase.menu_purchase_root",
+        items: [
+            {
+                label: "Creditors Dashboard",
+                children: [
+                    { label: "Invoice Analysis", xmlid: "account.menu_action_account_invoice_report_all" },
+                    { label: "Purchase Analysis", xmlid: "purchase.purchase_report" },
+                    { label: "Cash and Bank Position", xmlid: "cognify_management_reports.menu_cognify_cash" },
+                    { label: "Invoicing Dashboard", xmlid: "account.menu_board_journal_1" },
+                ],
+            },
+            { label: "Creditor Profiles", xmlid: "account.menu_account_supplier" },
+            {
+                label: "Creditors Age Analysis",
+                children: [
+                    { label: "Invoice Analysis", xmlid: "account.menu_action_account_invoice_report_all" },
+                    { label: "Purchase Analysis", xmlid: "purchase.purchase_report" },
+                    { label: "Payment Terms", xmlid: "account.menu_action_payment_term_form" },
+                ],
+            },
+            { label: "Unpaid Invoices", xmlid: "account.menu_action_move_in_invoice_type" },
+            { label: "Expected Deliveries", xmlid: "purchase.menu_purchase_form_action" },
+            { label: "Pay Creditors", xmlid: "account.menu_action_account_payments_payable" },
+            {
+                label: "Reports on Creditors",
+                children: [
+                    { label: "Purchase Analysis", xmlid: "purchase.purchase_report" },
+                    { label: "Invoice Analysis", xmlid: "account.menu_action_account_invoice_report_all" },
+                    { label: "Vendor Bills", xmlid: "vuma_multi_tenant.menu_vuma_all_vendor_bills" },
+                ],
+            },
+            {
+                label: "Creditors Documents",
+                children: [
+                    { label: "Supplier Contacts", xmlid: "vuma_retail_ops.menu_vuma_contacts_suppliers" },
+                    { label: "Payment Terms", xmlid: "account.menu_action_payment_term_form" },
+                ],
+            },
+        ],
+    },
+    {
+        key: "accounting",
+        label: "Accounting",
+        icon: "account_balance",
+        appXmlid: "account.menu_finance",
+        items: [
+            { label: "Accounting Dashboard", xmlid: "account.menu_board_journal_1" },
+            { label: "Journal Entries", xmlid: "vuma_multi_tenant.menu_vuma_all_journal_entries" },
+            { label: "Journal Items", xmlid: "vuma_multi_tenant.menu_vuma_all_journal_items" },
+            {
+                label: "Tax Reporting",
+                children: [
+                    { label: "Invoice Analysis", xmlid: "account.menu_action_account_invoice_report_all" },
+                    { label: "Taxes", xmlid: "account.menu_action_tax_form" },
+                    { label: "Tax Groups", xmlid: "account.menu_action_tax_group" },
+                ],
+            },
+            {
+                label: "Expense Logging",
+                children: [
+                    { label: "My Expenses", xmlid: "hr_expense.menu_hr_expense_my_expenses_all" },
+                    { label: "Expenses to Process", xmlid: "hr_expense.menu_hr_expense_expenses_to_process" },
+                    { label: "Expenses Analysis", xmlid: "hr_expense.menu_hr_expense_all_expenses" },
+                ],
+            },
+            {
+                label: "Remittances & Cash",
+                children: [
+                    { label: "Remittances to Verify", xmlid: "cognify_remittance.menu_cognify_remittance_office" },
+                    { label: "Cash and Bank Position", xmlid: "cognify_management_reports.menu_cognify_cash" },
+                ],
+            },
+            { label: "Management Reports", xmlid: "cognify_management_reports.menu_cognify_all_reports" },
+        ],
+    },
+];
+
 const APP_GROUP = {
     // Marketing (the "sell" key is historical; the label reads Marketing)
     "sale_management.sale_menu_root": "sell", "crm.crm_menu_root": "sell",
@@ -78,6 +327,17 @@ export class VumaSidebar extends Component {
             focusSearch: 0,
             isFullscreen: false,
             mobileOpen: false,
+            // Quick Links: menu shortcuts starred by this user, newest first in
+            // the panel. Persisted per user in localStorage (see favoritesKey).
+            favorites: this.loadFavorites(),
+            // Business-tab folder expansion, keyed by the synthetic nav keys
+            // built in buildNavItem.
+            navFolders: {},
+            // Business-tab visibility, keyed by group key. All groups start open.
+            bizGroups: {},
+            // The legacy grouped app list is kept as a fallback for menus the
+            // curated business tabs do not cover; it is revealed on demand.
+            showAllApps: false,
         });
 
         // Optional website editor menus. Read from service registry without hooks.
@@ -273,6 +533,258 @@ export class VumaSidebar extends Component {
         return list;
     }
 
+    // ---------- Quick Links (favorites) ----------
+
+    // Favorites are a per-user browser preference: starring is instant and
+    // needs no server round-trip, and a user's phone does not have to agree
+    // with their desk. The key carries the user id so two people sharing a
+    // till never see each other's shortcuts.
+    favoritesKey() {
+        return `vuma.sidebar.favorites.v1.${(this.user && this.user.userId) || 0}`;
+    }
+
+    loadFavorites() {
+        try {
+            const raw = localStorage.getItem(this.favoritesKey());
+            if (!raw) {
+                return [];
+            }
+            const list = JSON.parse(raw);
+            if (!Array.isArray(list)) {
+                return [];
+            }
+            return list.filter((f) => f && typeof f === "object" && (f.xmlid || f.id));
+        } catch (e) {
+            return [];
+        }
+    }
+
+    saveFavorites() {
+        try {
+            localStorage.setItem(this.favoritesKey(), JSON.stringify(this.state.favorites));
+        } catch (e) {
+            /* private browsing / quota: favorites stay in memory for this tab */
+        }
+    }
+
+    // A stable storage key for a menu. xmlid survives menu re-creation; the id
+    // fallback covers menus created from the UI that have no module data.
+    favoriteKeyFor(menu) {
+        if (!menu) {
+            return "";
+        }
+        return menu.xmlid || `id:${menu.id}`;
+    }
+
+    isFavoriteMenu(menu) {
+        const key = this.favoriteKeyFor(menu);
+        return !!key && this.state.favorites.some((f) => (f.xmlid || `id:${f.id}`) === key);
+    }
+
+    isFavoriteItem(item) {
+        return !!(item && item.menu && this.isFavoriteMenu(item.menu));
+    }
+
+    toggleFavoriteMenu(menu, label, path) {
+        if (!menu || !menu.actionID) {
+            return;
+        }
+        const key = this.favoriteKeyFor(menu);
+        if (!key) {
+            return;
+        }
+        const list = this.state.favorites.slice();
+        const index = list.findIndex((f) => (f.xmlid || `id:${f.id}`) === key);
+        if (index >= 0) {
+            list.splice(index, 1);
+        } else {
+            list.push({
+                xmlid: menu.xmlid || "",
+                id: menu.id,
+                label: label || menu.name,
+                path: path !== undefined && path !== null ? path : this.menuPath(menu),
+            });
+        }
+        this.state.favorites = list;
+        this.saveFavorites();
+    }
+
+    toggleFavoriteItem(item) {
+        if (item && item.menu) {
+            this.toggleFavoriteMenu(item.menu, item.label, item.path);
+        }
+    }
+
+    // Resolve stored favorites against the live menu tree. Entries whose menu
+    // was removed, or that the current user may no longer see, are skipped
+    // rather than rendered as dead rows.
+    favoriteEntries() {
+        const { byId, byXmlid } = this._menuMaps();
+        const entries = [];
+        const seen = new Set();
+        for (const fav of this.state.favorites) {
+            const menu = (fav.xmlid && byXmlid[fav.xmlid]) || byId[fav.id];
+            if (!menu || !menu.actionID) {
+                continue;
+            }
+            const key = this.favoriteKeyFor(menu);
+            if (seen.has(key)) {
+                continue;
+            }
+            seen.add(key);
+            entries.push({
+                key,
+                menu,
+                label: fav.label || menu.name,
+                path: fav.path || "",
+            });
+        }
+        return entries;
+    }
+
+    openFavorite(fav) {
+        this.selectMenu(fav.menu);
+    }
+
+    // ---------- Business tabs ----------
+
+    _menuMaps() {
+        const byId = {};
+        const byXmlid = {};
+        const parentOf = {};
+        for (const menu of this.menuService.getAll()) {
+            byId[menu.id] = menu;
+            if (menu.xmlid) {
+                byXmlid[menu.xmlid] = menu;
+            }
+            for (const childId of menu.children || []) {
+                parentOf[childId] = menu.id;
+            }
+        }
+        return { byId, byXmlid, parentOf };
+    }
+
+    _menuPath(menu, maps) {
+        if (!menu) {
+            return "";
+        }
+        // A root application is its own path: showing "Settings / Settings" in
+        // Quick Links adds nothing. Only descendants get a breadcrumb.
+        const parentId = maps.parentOf[menu.id];
+        if (!parentId || parentId === "root") {
+            return "";
+        }
+        const parts = [];
+        let current = menu;
+        let guard = 0;
+        while (current && current.id !== "root" && guard < 12) {
+            parts.unshift(current.name);
+            current = maps.parentOf[current.id] ? maps.byId[maps.parentOf[current.id]] : null;
+            guard += 1;
+        }
+        return parts.join(" / ");
+    }
+
+    menuPath(menu) {
+        try {
+            return this._menuPath(menu, this._menuMaps());
+        } catch (e) {
+            return "";
+        }
+    }
+
+    // Turn the declarative BUSINESS_GROUPS config into render data, resolving
+    // each leaf against the user's visible menus. Folders with no resolvable
+    // children disappear so a missing module cannot leave an empty tab.
+    buildNavItem(item, baseKey, maps, parentPath) {
+        // Curated breadcrumb: "Debtors Dashboard / Outstanding Balances". It is
+        // what a person sees in the sidebar, so it is also what search must
+        // match — several leaves have menu names that came from the accounting
+        // module and never say "debtors" anywhere.
+        const curatedPath = parentPath ? `${parentPath} / ${item.label}` : item.label;
+        if (item.children) {
+            const children = item.children
+                .map((child, index) => this.buildNavItem(child, `${baseKey}-${index}`, maps, curatedPath))
+                .filter(Boolean);
+            if (!children.length) {
+                return null;
+            }
+            return {
+                key: baseKey,
+                label: item.label,
+                icon: item.icon || "",
+                menu: null,
+                path: curatedPath,
+                children,
+            };
+        }
+        const menu = maps.byXmlid[item.xmlid];
+        if (!menu || !menu.actionID) {
+            return null;
+        }
+        const odooPath = this._menuPath(menu, maps);
+        return {
+            key: baseKey,
+            label: item.label,
+            icon: item.icon || "",
+            menu,
+            // The Odoo path is what Quick Links shows, because it says where
+            // the menu actually lives in the webclient.
+            path: odooPath,
+            // Search haystack: curated label, the tab it sits under, the real
+            // menu name and the Odoo path, lowercased once here instead of on
+            // every keystroke.
+            searchText: `${curatedPath} ${menu.name} ${odooPath}`.toLowerCase(),
+            // Where the item sits in the Vuma tabs; search results show this as
+            // the caption because "Debtors Dashboard" means more to the user
+            // than "Management / Customer Balances".
+            context: parentPath,
+            children: null,
+        };
+    }
+
+    businessGroups() {
+        const maps = this._menuMaps();
+        const appsByXmlid = {};
+        for (const app of this.allApps) {
+            if (app.xmlid) {
+                appsByXmlid[app.xmlid] = app;
+            }
+        }
+        return BUSINESS_GROUPS.map((group) => ({
+            key: group.key,
+            label: group.label,
+            icon: group.icon,
+            // Same brand icon as this app wears in the All Apps list, so the
+            // two views read as one product.
+            app: appsByXmlid[group.appXmlid] || null,
+            items: group.items
+                .map((item, index) => this.buildNavItem(item, `${group.key}-${index}`, maps, ""))
+                .filter(Boolean),
+        })).filter((group) => group.items.length > 0);
+    }
+
+    isBusinessGroupOpen(key) {
+        const value = this.state.bizGroups[key];
+        return value === undefined ? true : value;
+    }
+
+    toggleBusinessGroup(key) {
+        this.state.bizGroups[key] = !this.isBusinessGroupOpen(key);
+    }
+
+    isNavItemOpen(item) {
+        return !!this.state.navFolders[item.key];
+    }
+
+    toggleNavItem(item) {
+        this.state.navFolders[item.key] = !this.isNavItemOpen(item);
+    }
+
+    toggleAllApps() {
+        this.state.showAllApps = !this.state.showAllApps;
+    }
+
     // ---------- Behavior ----------
 
     isCurrentApp(app) {
@@ -447,9 +959,43 @@ export class VumaSidebar extends Component {
             return [];
         }
         const out = [];
+        const seen = new Set();
+        const push = (entry) => {
+            const id = entry.menu ? `m${entry.menu.id}` : `a${entry.app.id}`;
+            const key = `${id}::${entry.label || ""}`;
+            if (seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            out.push(entry);
+        };
+        // Curated business-tab labels first, so "Debtors Dashboard" and the
+        // like are findable even though they are not Odoo menu names. The
+        // folder itself has no action to navigate to, so a folder hit surfaces
+        // its children instead — each carries the folder name in searchText.
+        const walkNav = (items) => {
+            for (const item of items) {
+                if (item.children) {
+                    walkNav(item.children);
+                    continue;
+                }
+                if (item.searchText.includes(q)) {
+                    push({
+                        type: "nav",
+                        app: null,
+                        menu: item.menu,
+                        label: item.label,
+                        path: item.context || item.path,
+                    });
+                }
+            }
+        };
+        for (const group of this.businessGroups()) {
+            walkNav(group.items);
+        }
         for (const app of this.allApps) {
             if (app.name.toLowerCase().includes(q)) {
-                out.push({ type: "app", app, menu: null, path: "" });
+                push({ type: "app", app, menu: null, label: app.name, path: "" });
             }
             // traverse submenus
             let tree = null;
@@ -466,10 +1012,11 @@ export class VumaSidebar extends Component {
                             continue;
                         }
                         if ((child.name || "").toLowerCase().includes(q)) {
-                            out.push({
+                            push({
                                 type: "menu",
                                 app,
                                 menu: child,
+                                label: child.name,
                                 path: parents.join(" / "),
                             });
                         }
@@ -495,6 +1042,145 @@ export class VumaSidebar extends Component {
         } catch (e) {
             return "";
         }
+    }
+
+    // ---------- Company scope ----------
+
+    // The same scopes as the navbar company switcher. Living in the sidebar
+    // as well makes the current company impossible to miss: every list, chart
+    // and capture form follows it.
+    get companyScopes() {
+        try {
+            const allowed = this.user.allowedCompanies || [];
+            const trade = allowed.find((company) => company.name === "Trade Rite");
+            const siyaya = allowed.find((company) => company.name === "Siyaya DC");
+            const scopes = [];
+            if (trade) {
+                scopes.push({
+                    id: "tr",
+                    label: trade.name,
+                    icon: "business",
+                    dotStyle: this.companyDotStyle([trade]),
+                });
+            }
+            if (siyaya) {
+                scopes.push({
+                    id: "sy",
+                    label: siyaya.name,
+                    icon: "local_shipping",
+                    dotStyle: this.companyDotStyle([siyaya]),
+                });
+            }
+            if (trade && siyaya) {
+                scopes.push({
+                    id: "both",
+                    label: "Both Companies",
+                    icon: "apps",
+                    hint: "Trade Rite + Siyaya DC — for cross-company orders and payments",
+                    dotStyle: this.companyDotStyle([trade, siyaya]),
+                });
+            }
+            if (allowed.length > 1) {
+                scopes.push({
+                    id: "all",
+                    label: "All Companies",
+                    icon: "public",
+                    dotStyle: this.companyDotStyle(allowed),
+                });
+            }
+            return scopes;
+        } catch (e) {
+            return [];
+        }
+    }
+
+    companyDotStyle(companies) {
+        const colours = [];
+        for (const company of companies || []) {
+            const colour = (company && company.vuma_background_color) || "";
+            if (/^#[0-9a-f]{6}$/i.test(colour) && !colours.includes(colour.toLowerCase())) {
+                colours.push(colour.toLowerCase());
+            }
+        }
+        if (!colours.length) {
+            return "";
+        }
+        if (colours.length === 1) {
+            return `background: ${colours[0]}`;
+        }
+        const step = 100 / colours.length;
+        const stops = colours.map((colour, index) => {
+            const start = (step * index).toFixed(4);
+            const end = (step * (index + 1)).toFixed(4);
+            return `${colour} ${start}% ${end}%`;
+        });
+        return `background: linear-gradient(90deg, ${stops.join(", ")})`;
+    }
+
+    get activeCompanyScope() {
+        try {
+            const active = this.user.activeCompanies.map((company) => company.id);
+            const allowed = this.user.allowedCompanies.map((company) => company.id);
+            const trade = this.user.allowedCompanies.find((c) => c.name === "Trade Rite");
+            const siyaya = this.user.allowedCompanies.find((c) => c.name === "Siyaya DC");
+            const bothActive =
+                trade && siyaya && active.includes(trade.id) && active.includes(siyaya.id);
+            const onlyTradingActive =
+                bothActive &&
+                active.every((id) => id === trade.id || id === siyaya.id);
+            if (onlyTradingActive) {
+                return "both";
+            }
+            if (allowed.length && allowed.every((id) => active.includes(id))) {
+                return "all";
+            }
+            if (trade && active.length === 1 && active[0] === trade.id) {
+                return "tr";
+            }
+            if (siyaya && active.length === 1 && active[0] === siyaya.id) {
+                return "sy";
+            }
+        } catch (e) {
+            /* fall through */
+        }
+        return "custom";
+    }
+
+    get companyScopeLabel() {
+        const scope = this.companyScopes.find((s) => s.id === this.activeCompanyScope);
+        if (scope) {
+            return scope.label;
+        }
+        return this.user.activeCompany ? this.user.activeCompany.name : "Select company";
+    }
+
+    get companyScopeIcon() {
+        const scope = this.companyScopes.find((s) => s.id === this.activeCompanyScope);
+        return scope ? scope.icon : "business";
+    }
+
+    selectCompanyScope(scopeId) {
+        const trade = this.user.allowedCompanies.find((c) => c.name === "Trade Rite");
+        const siyaya = this.user.allowedCompanies.find((c) => c.name === "Siyaya DC");
+        const allIds = this.user.allowedCompanies.map((company) => company.id);
+        const targetIds = {
+            all: allIds,
+            both: trade && siyaya ? [trade.id, siyaya.id] : null,
+            tr: trade ? [trade.id] : null,
+            sy: siyaya ? [siyaya.id] : null,
+        }[scopeId];
+        if (!targetIds || !targetIds.length) {
+            return;
+        }
+        this.closeMobile();
+        Promise.resolve(
+            this.user.activateCompanies(targetIds, {
+                includeChildCompanies: false,
+                reload: true,
+            })
+        ).catch(() => {
+            // A failed scope change must never take the sidebar down.
+        });
     }
 
     // ---------- Account menu (footer) ----------
