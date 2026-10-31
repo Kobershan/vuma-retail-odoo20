@@ -97,11 +97,12 @@ class VumaFunction(models.Model):
         if 'vuma.function' not in self.env:
             return set()
         # ``env.user`` is sudoed, so this reads the user record rather than
-        # the environment; testing ``env.su`` would block nothing.
+        # the environment; testing ``env.su`` would block nothing. Only the
+        # built-in superuser bypasses the table unconditionally so explicit
+        # revocations still take effect for users who also hold Settings
+        # access.
         user = self.env.user
-        if not user or not user._is_internal():
-            return set()
-        if user._is_system():
+        if not user or user._is_superuser() or not user._is_internal():
             return set()
         # The query below goes around the ORM, so it cannot see writes still
         # sitting in the write buffer. Ticking a box and reloading the menus
@@ -281,8 +282,6 @@ class ResUsers(models.Model):
         """
         self.ensure_one()
         if self._is_superuser():
-            return True
-        if self._is_system():
             return True
         if not self._is_internal():
             return False
