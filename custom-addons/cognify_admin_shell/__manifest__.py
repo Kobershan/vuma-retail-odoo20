@@ -1,6 +1,6 @@
 {
     'name': 'Cognify Admin Shell',
-    'version': '1.3.7',
+    'version': '1.3.8',
     'category': 'Hidden',
     'summary': 'Charcoal administration dashboard shell: collapsible sidebar, redesigned admin chrome, no chat facility.',
     'description': """

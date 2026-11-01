@@ -104,3 +104,27 @@ WHERE group_id IS NULL AND active
   AND domain NOT ILIKE '%False%'
   AND domain NOT ILIKE '%466%';
 ```
+
+## Settings app-list sidebar (fixed 2026-11-01)
+
+**Symptom:** on *Costing & Pricing Settings* (and any Settings page) a second
+navigation column (General Settings, CRM, Sales, …) appeared between the black
+Vuma sidebar and the form.
+
+**Cause:** Odoo's settings form renders its own app list
+(`.o_setting_container > .position-sticky`) next to the form. The Vuma sidebar
+already navigates apps, so the column is duplicate navigation.
+
+**Fix:** `cognify_admin_shell` 1.3.8 adds
+
+```scss
+body.o_vuma_has_sidebar .o_setting_container > .position-sticky {
+    display: none !important;
+}
+```
+
+Until the code update is deployed, the same rule is injected on the live
+database by an `ir.ui.view` named **"Vuma: hide Settings app sidebar"**
+(inherits `web.layout`, id 4281 on live / 4285 locally). It can be removed once
+the module is upgraded on the server.
+

@@ -223,6 +223,16 @@ body.o_vuma_has_sidebar .o_component_with_search_panel {
     padding-left: 0 !important;
 }
 
+/* The Settings app list (`.o_setting_container > .position-sticky`) is the
+   same duplication problem: a second navigation column wedged between the Vuma
+   sidebar and the settings form. The Vuma sidebar already navigates apps and
+   every app carries its own "Settings" menu, so drop the column here too. The
+   mobile variant (`.settings_tab.w-100`) is not wrapped in `.position-sticky`
+   and stays available. */
+body.o_vuma_has_sidebar .o_setting_container > .position-sticky {
+    display: none !important;
+}
+
 /* Small-screen drawer mode */
 @media (max-width: 991.98px) {
     /* Keep the drawer inside narrow phones while the desktop sidebar is
