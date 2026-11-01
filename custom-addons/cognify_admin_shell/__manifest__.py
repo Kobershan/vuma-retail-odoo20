@@ -1,6 +1,6 @@
 {
     'name': 'Cognify Admin Shell',
-    'version': '1.3.6',
+    'version': '1.3.7',
     'category': 'Hidden',
     'summary': 'Charcoal administration dashboard shell: collapsible sidebar, redesigned admin chrome, no chat facility.',
     'description': """
@@ -69,6 +69,8 @@ Core features:
             'cognify_admin_shell/static/src/js/company_theme.js',
             'cognify_admin_shell/static/src/js/sidebar.js',
             'cognify_admin_shell/static/src/js/navbar.js',
+            'cognify_admin_shell/static/src/xml/company_scope_menu.xml',
+            'cognify_admin_shell/static/src/js/company_scope_menu.js',
             'cognify_admin_shell/static/src/scss/backend.scss',
         ],
         'web.assets_frontend': [

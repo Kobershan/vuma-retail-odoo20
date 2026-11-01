@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="cognify_admin_shell.CompanyScopeMenu">
+    <DropdownGroup group="'web-navbar-group'">
+        <Dropdown
+            position="'bottom-end'"
+            state="this.dropdown"
+            menuClass="'o_switch_company_menu_dropdown'"
+            disabled="this.isSingleCompany"
+        >
+            <button
+                t-att-disabled="this.isSingleCompany"
+                t-att-title="this.activeScopeLabel"
+                class="o_switch_company_menu d-none d-md-flex"
+            >
+                <i class="oi d-lg-none" data-icon="business"/>
+                <span
+                    t-if="this.activeDotStyle"
+                    class="vuma-company-option-dot me-1"
+                    t-att-style="this.activeDotStyle"
+                />
+                <span class="oe_topbar_name d-none d-lg-block text-truncate"
+                      t-out="this.activeScopeLabel"/>
+            </button>
+
+            <t t-set-slot="content">
+                <div class="o_switch_company_menu_items d-flex flex-column gap-1 py-1">
+                    <t t-foreach="this.scopes" t-as="scope" t-key="scope.id">
+                        <DropdownItem onSelected="() => this.selectScope(scope)">
+                            <div class="d-flex align-items-center gap-2 py-1 px-2 w-100"
+                                 t-att-title="scope.hint">
+                                <span t-if="scope.dotStyle"
+                                      class="vuma-company-option-dot"
+                                      t-att-style="scope.dotStyle"/>
+                                <i class="oi" t-att-data-icon="scope.icon"/>
+                                <span t-out="scope.label"/>
+                                <i t-if="scope.id === this.activeScopeId"
+                                   class="oi ms-auto" data-icon="check"/>
+                            </div>
+                        </DropdownItem>
+                    </t>
+                </div>
+            </t>
+        </Dropdown>
+    </DropdownGroup>
+</t>
+
+</templates>
