@@ -5,11 +5,11 @@
     <template id="report_delivery_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-set="company" t-value="o.company_id"/>
-                <t t-set="hide_recipient_address" t-value="True"/>
-                <t t-set="layout_document_title" t-value="'Delivery Document'"/>
-
-                <style>
+                <div class="article"
+                     t-att-data-oe-model="o._name"
+                     t-att-data-oe-id="o.id"
+                     t-att-data-oe-lang="o.env.context.get('lang')">
+                    <style>
                     .dd { font-size: 9pt; color: #111827; }
                     .dd .doc-kicker { font-size: 8pt; font-weight: 700;
                                       color: #1d4ed8; text-transform: uppercase;
@@ -18,10 +18,12 @@
                                    color: #111827; line-height: 1.2; }
                     .dd .doc-sub { font-size: 8.5pt; color: #6b7280;
                                    line-height: 1.5; }
-                    .dd .doc-header td { vertical-align: top; }
-                    .dd table.meta { width: 100%; border-collapse: collapse; }
+                    .dd .doc-header td { vertical-align: top; border-top: 0; }
+                    .dd table.meta { width: 100%; border-collapse: collapse;
+                                     border-top: 0; }
                     .dd table.meta td { padding: 3px 6px; font-size: 8.5pt;
-                                        border-bottom: 1px solid #e5e7eb; }
+                                        border-bottom: 1px solid #e5e7eb;
+                                        border-top: 0; }
                     .dd table.meta td.m-lbl { width: 42%; font-size: 7.5pt;
                                               font-weight: 700; color: #6b7280;
                                               text-transform: uppercase;
@@ -108,8 +110,6 @@
                                     padding-top: 3px; font-size: 7.5pt; color: #6b7280; }
                     .dd .sig-title { font-size: 9pt; font-weight: 700; color: #111827; }
                 </style>
-
-                <t t-call="web.external_layout">
                     <div class="page dd">
                         <!-- ======================= HEADER ======================= -->
                         <table class="doc-header" width="100%" cellspacing="0"
@@ -218,11 +218,6 @@
                         <div class="panel">
                             <div class="panel-title">
                                 Invoices on Account
-                                <span class="panel-total">
-                                    Total Rand Value:
-                                    <span t-field="o.on_account_amount"
-                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
-                                </span>
                             </div>
                             <table class="grid" cellspacing="0" cellpadding="0">
                                 <thead>
@@ -279,11 +274,6 @@
                         <div class="panel">
                             <div class="panel-title">
                                 Cash Invoices
-                                <span class="panel-total">
-                                    Total Rand Value:
-                                    <span t-field="o.paid_upfront_amount"
-                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
-                                </span>
                             </div>
                             <table class="grid" cellspacing="0" cellpadding="0">
                                 <thead>
@@ -544,10 +534,22 @@
                             </tr>
                         </table>
                     </div>
-                </t>
+                </div>
             </t>
         </t>
     </template>
+
+    <record id="paperformat_delivery_document" model="report.paperformat">
+        <field name="name">Delivery Document A4</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
 
     <record id="action_report_delivery_document" model="ir.actions.report">
         <field name="name">Delivery Document</field>
@@ -555,6 +557,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">vuma_picking_slip.report_delivery_document</field>
         <field name="print_report_name">'Delivery Document - %s' % (object.name or '')</field>
+        <field name="paperformat_id" ref="paperformat_delivery_document"/>
         <field name="binding_model_id" ref="model_vuma_delivery_document"/>
         <field name="binding_type">report</field>
     </record>
