@@ -47,6 +47,7 @@ odoo.conf
 .dbpass
 .picturetesterpass
 .adminlogin
+.sshrootpass
 
 # Git
 .git/

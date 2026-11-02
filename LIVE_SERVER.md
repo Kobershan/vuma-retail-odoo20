@@ -8,8 +8,11 @@ https://102-68-97-93.sslip.io/vuma/
 
 - Public IP: `102.68.97.93` (the `102-68-97-93.sslip.io` name just resolves to it)
 - Odoo 20 is served behind Caddy under the **`/vuma/` path prefix**
-- Deploy/runbook details live in `deploy/README.md` (Afrihost layout:
-  code at `/srv/vuma/app`, systemd unit `odoo.service`).
+- Code lives at **`/root/vuma-deploy`** (a plain directory, not a git clone)
+  and Odoo runs in Docker Compose: containers **`vuma-odoo`** and **`vuma-db`**
+- Deploy steps are in the *Code deploy* section below (older notes mentioning
+  `/srv/vuma/app` and a systemd `odoo.service` describe a layout this host
+  never used)
 
 Everything tested against "the live server" means **this host**, not the
 local machine served through a Cloudflare tunnel.
@@ -27,27 +30,49 @@ The deployment admin login is the one printed by `deploy/bundle/start.sh`
 
 ### SSH
 
-```bash
-ssh kob@102.68.97.93      # password auth is enabled; the local key is not authorised
-```
-
-As of 2026-11-01 the local `~/.ssh/id_ed25519` is **rejected** for
-`kob@` (server offers `publickey,password`). Code changes cannot be deployed
-without working SSH credentials (or authorising the key on the host).
-
-**Code deploy** (once SSH works):
+Login as **`root`** with password auth (the password is in the gitignored
+`.sshrootpass` file at the repo root). The local `~/.ssh/id_ed25519` key is
+**not** authorised for `kob@`, so use root:
 
 ```bash
-cd /srv/vuma/app
-git pull
-# upgrade changed addons, e.g.
-sudo -u odoo /srv/vuma/venv/bin/python odoo/odoo-bin -c /etc/vuma/odoo.conf \
-    -d vuma_retail -u cognify_admin_shell --stop-after-init
-sudo systemctl restart odoo
+export SSHPASS="$(cat .sshrootpass)"
+sshpass -e ssh -o StrictHostKeyChecking=no \
+    -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+    root@102.68.97.93 'hostname; docker ps'
 ```
 
-Current live code: `cognify_admin_shell` **1.3.6** (the 1.3.7 company-scope
-navbar switcher is pushed to git but not yet deployed to this host).
+**Code deploy** — the server directory is *not* a git clone, so files are
+copied over SSH, then the module is upgraded inside the container:
+
+```bash
+export SSHPASS="$(cat .sshrootpass)"
+
+# 1. copy the changed addon(s)
+tar czf - --exclude='__pycache__' --exclude='*.pyc' \
+    -C custom-addons vuma_picking_slip \
+  | sshpass -e ssh -o StrictHostKeyChecking=no \
+      -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+      root@102.68.97.93 'tar xzf - -C /root/vuma-deploy/custom-addons/'
+
+# 2. upgrade the module (and restart)
+sshpass -e ssh -o StrictHostKeyChecking=no \
+    -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+    root@102.68.97.93 \
+    'cd /root/vuma-deploy && docker compose --env-file deploy/bundle/.env \
+        exec -T odoo odoo -c /var/lib/odoo/odoo.conf -d vuma_retail \
+        -u vuma_picking_slip --stop-after-init --workers=0'
+
+sshpass -e ssh -o StrictHostKeyChecking=no \
+    -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+    root@102.68.97.93 \
+    'cd /root/vuma-deploy && docker compose --env-file deploy/bundle/.env \
+        restart odoo'
+```
+
+Verify afterwards: container `vuma-odoo` healthy, `https://102-68-97-93.sslip.io/vuma/`
+returns 200, and `ir.module.module` shows the new version for the addon.
+
+Live code state: `vuma_picking_slip` **1.7.0** deployed 2026-11-02.
 
 ## Database fixes over HTTP (no SSH required)
 
