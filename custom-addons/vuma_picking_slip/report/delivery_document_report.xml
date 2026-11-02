@@ -11,28 +11,51 @@
 
                 <style>
                     .dd { font-size: 9pt; color: #111827; }
-                    .dd .doc-ref { font-size: 14pt; font-weight: 700; color: #111827;
-                                   line-height: 1.2; }
-                    .dd .doc-sub { font-size: 8.5pt; color: #6b7280; line-height: 1.5; }
-                    .dd .doc-meta { background: #f8fafc; border: 1px solid #e5e7eb;
-                                    border-left: 3px solid #1d4ed8; padding: 8px 12px; }
-                    .dd .doc-meta p { margin: 0 0 2px 0; font-size: 8.5pt; }
-                    .dd .doc-meta .m-lbl { font-size: 7.5pt; font-weight: 700; color: #6b7280;
-                                           text-transform: uppercase; letter-spacing: 1px; }
+                    .dd .doc-kicker { font-size: 8pt; font-weight: 700;
+                                      color: #1d4ed8; text-transform: uppercase;
+                                      letter-spacing: 1.5px; }
+                    .dd .doc-ref { font-size: 18pt; font-weight: 700;
+                                   color: #111827; line-height: 1.2; }
+                    .dd .doc-sub { font-size: 8.5pt; color: #6b7280;
+                                   line-height: 1.5; }
+                    .dd .doc-header td { vertical-align: top; }
+                    .dd table.meta { width: 100%; border-collapse: collapse; }
+                    .dd table.meta td { padding: 3px 6px; font-size: 8.5pt;
+                                        border-bottom: 1px solid #e5e7eb; }
+                    .dd table.meta td.m-lbl { width: 42%; font-size: 7.5pt;
+                                              font-weight: 700; color: #6b7280;
+                                              text-transform: uppercase;
+                                              letter-spacing: 1px; }
+                    .dd .company-banner { background: #eff6ff; border: 1px solid #bfdbfe;
+                                          padding: 7px 10px; font-size: 8.5pt;
+                                          color: #1e3a8a; margin-top: 10px; }
 
-                    .dd .kpi td { background: #f8fafc; border: 1px solid #e5e7eb;
-                                  padding: 8px 12px; width: 25%; }
-                    /* One extra cell makes a fifth, two make a sixth, so
-                       every cell has to give up some width. */
-                    .dd .kpi.has-pallets td, .dd .kpi.has-boxes td { width: 20%; }
-                    .dd .kpi.has-both td { width: 16.66%; }
-                    .dd .kpi .k-lbl { font-size: 7pt; font-weight: 700; color: #6b7280;
-                                      text-transform: uppercase; letter-spacing: 1px; }
-                    .dd .kpi .k-val { font-size: 12pt; font-weight: 700; color: #111827; }
-                    .dd .kpi .k-val.pos { color: #15803d; }
-                    .dd .kpi .k-val.neg { color: #b45309; }
-                    .dd .kpi .k-sub { font-size: 7.5pt; color: #6b7280;
-                                      line-height: 1.4; }
+                    .dd .panel { border: 1px solid #e5e7eb; margin-top: 12px;
+                                 page-break-inside: avoid; }
+                    .dd .panel-title { background: #111827; color: #ffffff;
+                                       padding: 7px 10px; font-size: 8pt;
+                                       font-weight: 700; text-transform: uppercase;
+                                       letter-spacing: 1px; }
+                    .dd .panel-title .panel-total { float: right;
+                                                    text-transform: none;
+                                                    letter-spacing: 0; }
+
+                    .dd table.weight-table { width: 100%; border-collapse: collapse; }
+                    .dd table.weight-table td { padding: 8px 10px;
+                                                border-bottom: 1px solid #e5e7eb; }
+                    .dd table.weight-table tr:last-child td { border-bottom: 0; }
+                    .dd .weight-table .w-label { width: 36%; font-weight: 700;
+                                                 font-size: 9.5pt; }
+                    .dd .weight-table .w-note { width: 34%; color: #6b7280;
+                                                font-size: 8pt; }
+                    .dd .weight-table .w-value { width: 30%; text-align: right;
+                                                 font-weight: 700; font-size: 11pt; }
+                    .dd .weight-table tr.w-total td { background: #f0f9ff;
+                                                      border-top: 2px solid #1d4ed8;
+                                                      border-bottom: 2px solid #1d4ed8;
+                                                      font-size: 13pt; }
+                    .dd .weight-table tr.w-total .w-label { font-size: 12pt; }
+                    .dd .weight-table tr.w-total .w-value { color: #1d4ed8; }
 
                     .dd .crew td { background: #f8fafc; border: 1px solid #e5e7eb;
                                    padding: 8px 12px; vertical-align: top; }
@@ -42,17 +65,39 @@
                                        color: #111827; line-height: 1.35; }
 
                     .dd table.grid { width: 100%; border-collapse: collapse; }
-                    .dd table.grid thead th { background: #111827; color: #ffffff;
+                    .dd table.grid thead th { background: #374151; color: #ffffff;
                                               font-size: 7.5pt; font-weight: 700;
-                                              text-transform: uppercase; letter-spacing: 0.5px;
+                                              text-transform: uppercase;
+                                              letter-spacing: 0.5px;
                                               padding: 6px 8px; text-align: left; }
-                    .dd table.grid tbody td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb;
+                    .dd table.grid tbody td { padding: 6px 8px;
+                                              border-bottom: 1px solid #e5e7eb;
                                               font-size: 9pt; }
                     .dd table.grid tbody tr:nth-child(even) td { background: #f9fafb; }
                     .dd .num { text-align: right; }
                     .dd .sec-title { font-size: 8pt; font-weight: 700; color: #374151;
                                      text-transform: uppercase; letter-spacing: 1px;
                                      margin: 14px 0 5px 0; }
+                    .dd .pos { color: #15803d; }
+                    .dd .neg { color: #b45309; }
+                    .dd tr.section-total td { background: #f3f4f6;
+                                              border-top: 2px solid #111827;
+                                              border-bottom: 2px solid #111827;
+                                              font-size: 9.5pt; }
+                    .dd tr.empty-row td { color: #9ca3af; font-style: italic;
+                                          text-align: center; padding: 9px; }
+
+                    .dd table.grand-total { width: 100%; border-collapse: collapse;
+                                            border: 2px solid #111827;
+                                            margin-top: 14px;
+                                            page-break-inside: avoid; }
+                    .dd table.grand-total td { padding: 10px 12px;
+                                               vertical-align: middle; }
+                    .dd .gt-label { font-size: 10pt; font-weight: 700;
+                                    text-transform: uppercase; letter-spacing: 1px; }
+                    .dd .gt-sub { font-size: 8pt; color: #6b7280; }
+                    .dd .gt-value { text-align: right; font-size: 16pt;
+                                    font-weight: 700; }
 
                     .dd .note-box { background: #fffbeb; border: 1px solid #fde68a;
                                     padding: 8px 12px; font-size: 8.5pt; color: #78350f;
@@ -66,169 +111,281 @@
 
                 <t t-call="web.external_layout">
                     <div class="page dd">
-                        <div class="row mb-4">
-                            <div class="col-7">
-                                <div class="doc-ref">
-                                    <span t-out="o.name"/>
-                                </div>
-                                <div class="doc-sub">
-                                    Goods loaded on this document are dispatched to the
-                                    customers listed below.
-                                </div>
+                        <!-- ======================= HEADER ======================= -->
+                        <table class="doc-header" width="100%" cellspacing="0"
+                               cellpadding="0">
+                            <tr>
+                                <td width="58%">
+                                    <div class="doc-kicker">Delivery Document</div>
+                                    <div class="doc-ref" t-out="o.name"/>
+                                    <div class="doc-sub">
+                                        Goods loaded on this document are dispatched
+                                        to the customers listed below.
+                                    </div>
+                                </td>
+                                <td width="42%">
+                                    <table class="meta" cellspacing="0" cellpadding="0">
+                                        <tr>
+                                            <td class="m-lbl">Generated on</td>
+                                            <td>
+                                                <span t-out="o.generated_at"
+                                                      t-options="{'widget': 'datetime', 'date_only': True}"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="m-lbl">Time Generated</td>
+                                            <td>
+                                                <span t-out="o.generated_at"
+                                                      t-options="{'widget': 'datetime', 'time_only': True, 'hide_seconds': True}"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="m-lbl">Generated by</td>
+                                            <td t-out="o.generated_by_id.name"/>
+                                        </tr>
+                                        <tr>
+                                            <td class="m-lbl">Invoices</td>
+                                            <td t-out="o.invoice_count"/>
+                                        </tr>
+                                        <tr>
+                                            <td class="m-lbl">Company</td>
+                                            <td t-out="o.get_company_names()"/>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div t-if="o.multi_company" class="company-banner">
+                            <strong>Both companies on this load.</strong>
+                            This truck carries invoices from
+                            <span t-out="o.get_company_names()"/>. The company is
+                            shown on every invoice and product line.
+                        </div>
+
+                        <!-- =================== WEIGHT SUMMARY =================== -->
+                        <div class="panel">
+                            <div class="panel-title">Load Weight</div>
+                            <table class="weight-table" cellspacing="0"
+                                   cellpadding="0">
+                                <tr>
+                                    <td class="w-label">Total Product Weight</td>
+                                    <td class="w-note">
+                                        Invoiced goods only
+                                    </td>
+                                    <td class="w-value">
+                                        <span t-field="o.total_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="w-label">Pallets</td>
+                                    <td class="w-note">
+                                        <span t-field="o.total_pallet_quantity"/>
+                                        pallet(s)
+                                    </td>
+                                    <td class="w-value">
+                                        <span t-field="o.total_pallet_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="w-label">Boxes</td>
+                                    <td class="w-note">
+                                        <span t-field="o.total_box_quantity"/>
+                                        box(es)
+                                    </td>
+                                    <td class="w-value">
+                                        <span t-field="o.total_box_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                    </td>
+                                </tr>
+                                <tr class="w-total">
+                                    <td class="w-label">Total Weight</td>
+                                    <td class="w-note">
+                                        Product + pallets + boxes
+                                    </td>
+                                    <td class="w-value">
+                                        <span t-field="o.total_load_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- ================ INVOICES ON ACCOUNT ================= -->
+                        <t t-set="account_lines" t-value="o.get_on_account_invoice_lines()"/>
+                        <div class="panel">
+                            <div class="panel-title">
+                                Invoices on Account
+                                <span class="panel-total">
+                                    Total Rand Value:
+                                    <span t-field="o.on_account_amount"
+                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                </span>
                             </div>
-                            <div class="col-5">
-                                <div class="doc-meta">
-                                    <p>
-                                        <span class="m-lbl">Generated by</span><br/>
-                                        <strong t-out="o.generated_by_id.name"/>
-                                    </p>
-                                    <p>
-                                        <span class="m-lbl">Generated on</span><br/>
-                                        <span t-field="o.generated_at"/>
-                                    </p>
-                                    <p>
-                                        <span class="m-lbl">Invoices on the truck</span><br/>
-                                        <strong t-out="o.invoice_count"/>
-                                    </p>
-                                </div>
+                            <table class="grid" cellspacing="0" cellpadding="0">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Customer</th>
+                                        <th t-if="o.multi_company">Company</th>
+                                        <th>Date</th>
+                                        <th class="num">Invoice Value</th>
+                                        <th class="num">On Account</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="account_lines" t-as="line">
+                                        <td><strong t-out="line.name"/></td>
+                                        <td t-out="line.customer"/>
+                                        <td t-if="o.multi_company"
+                                            t-out="line.company.name"/>
+                                        <td>
+                                            <span t-out="line.invoice_date" t-options="{'widget': 'date'}"/>
+                                        </td>
+                                        <td class="num">
+                                            <span t-out="line.total_amount"
+                                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                        <td class="num neg">
+                                            <strong t-out="line.section_amount"
+                                                    t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not account_lines" class="empty-row">
+                                        <td t-att-colspan="6 if o.multi_company else 5">
+                                            No invoices on account.
+                                        </td>
+                                    </tr>
+                                    <tr class="section-total">
+                                        <td colspan="2">
+                                            <strong>Total Rand Value on Account</strong>
+                                        </td>
+                                        <td t-if="o.multi_company"/>
+                                        <td/>
+                                        <td/>
+                                        <td class="num">
+                                            <strong t-field="o.on_account_amount"
+                                                    t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- ==================== CASH INVOICES =================== -->
+                        <t t-set="cash_lines" t-value="o.get_cash_invoice_lines()"/>
+                        <div class="panel">
+                            <div class="panel-title">
+                                Cash Invoices
+                                <span class="panel-total">
+                                    Total Rand Value:
+                                    <span t-field="o.paid_upfront_amount"
+                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                </span>
+                            </div>
+                            <table class="grid" cellspacing="0" cellpadding="0">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Customer</th>
+                                        <th t-if="o.multi_company">Company</th>
+                                        <th>Date</th>
+                                        <th class="num">Invoice Value</th>
+                                        <th class="num">Cash Received</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="cash_lines" t-as="line">
+                                        <td><strong t-out="line.name"/></td>
+                                        <td t-out="line.customer"/>
+                                        <td t-if="o.multi_company"
+                                            t-out="line.company.name"/>
+                                        <td>
+                                            <span t-out="line.invoice_date" t-options="{'widget': 'date'}"/>
+                                        </td>
+                                        <td class="num">
+                                            <span t-out="line.total_amount"
+                                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                        <td class="num pos">
+                                            <strong t-out="line.section_amount"
+                                                    t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                    <tr t-if="not cash_lines" class="empty-row">
+                                        <td t-att-colspan="6 if o.multi_company else 5">
+                                            No cash invoices on this load.
+                                        </td>
+                                    </tr>
+                                    <tr class="section-total">
+                                        <td colspan="2">
+                                            <strong>Total Rand Value Cash</strong>
+                                        </td>
+                                        <td t-if="o.multi_company"/>
+                                        <td/>
+                                        <td/>
+                                        <td class="num">
+                                            <strong t-field="o.paid_upfront_amount"
+                                                    t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="footnote" style="padding: 7px 10px;">
+                                A part-paid invoice appears in both sections: the
+                                amount already paid under Cash and the balance
+                                still owing under On Account.
                             </div>
                         </div>
 
-                        <!-- t-att-class replaces the static class entirely in
-                             server-side QWeb (ir_qweb assigns attrs[name] with
-                             no class merging), so the whole class string lives
-                             in the expression. -->
-                        <table t-att-class="'kpi has-both' if (o.pallet_ids and o.box_ids) else ('kpi has-pallets' if o.pallet_ids else ('kpi has-boxes' if o.box_ids else 'kpi'))"
-                               cellspacing="0" cellpadding="0" style="width: 100%;">
+                        <!-- =================== COMBINED TOTAL =================== -->
+                        <table class="grand-total" cellspacing="0" cellpadding="0">
                             <tr>
-                                <td>
-                                    <div class="k-lbl">Load Weight</div>
-                                    <div class="k-val">
-                                        <span t-field="o.total_load_weight"/>
-                                        <span t-out="o.weight_uom_name"/>
+                                <td width="52%">
+                                    <div class="gt-label">
+                                        Total Rand Value (Both)
                                     </div>
-                                    <!-- Catalogue weights are often blank, so
-                                         show how the figure is made up. -->
-                                    <div class="k-sub" t-if="o.pallet_ids or o.box_ids">
-                                        goods <span t-field="o.total_weight"/>
-                                        <t t-if="o.box_ids">
-                                            + boxes
-                                            <span t-field="o.total_box_weight"/>
-                                        </t>
-                                        <t t-if="o.pallet_ids">
-                                            + pallets
-                                            <span t-field="o.total_pallet_weight"/>
-                                        </t>
+                                    <div class="gt-sub">
+                                        Cash received plus invoices on account
                                     </div>
                                 </td>
-                                <td t-if="o.box_ids">
-                                    <div class="k-lbl">Boxes</div>
-                                    <div class="k-val">
-                                        <span t-field="o.total_box_quantity"/>
-                                    </div>
-                                    <div class="k-sub">
-                                        <span t-field="o.total_box_weight"/>
-                                        <span t-out="o.weight_uom_name"/>
-                                    </div>
-                                </td>
-                                <td t-if="o.pallet_ids">
-                                    <div class="k-lbl">Pallets</div>
-                                    <div class="k-val">
-                                        <span t-field="o.total_pallet_quantity"/>
-                                    </div>
-                                    <div class="k-sub">
-                                        <span t-field="o.total_pallet_weight"/>
-                                        <span t-out="o.weight_uom_name"/>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="k-lbl">Total Value</div>
-                                    <div class="k-val">
-                                        <span t-field="o.total_value"
-                                              t-options="{'widget': 'monetary',
-                                                          'display_currency': o.currency_id}"/>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="k-lbl">Paid Upfront</div>
-                                    <div class="k-val pos">
-                                        <span t-field="o.paid_upfront_amount"
-                                              t-options="{'widget': 'monetary',
-                                                          'display_currency': o.currency_id}"/>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="k-lbl">On Account</div>
-                                    <div class="k-val neg">
-                                        <span t-field="o.on_account_amount"
-                                              t-options="{'widget': 'monetary',
-                                                          'display_currency': o.currency_id}"/>
-                                    </div>
+                                <td width="48%" class="gt-value">
+                                    <span t-field="o.total_value"
+                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
                                 </td>
                             </tr>
                         </table>
 
-                        <div class="sec-title">Truck and crew</div>
-                        <t t-set="crew_slots" t-value="o.get_crew_slots()"/>
-                        <table class="crew" cellspacing="0" cellpadding="0"
-                               style="width: 100%;">
-                            <tr>
-                                <!-- Vehicle, Driver, then one cell per helper
-                                     actually assigned. The width comes from
-                                     the model: formatting a percentage here
-                                     would hit QWeb's mangling of "%%". -->
-                                <td t-foreach="crew_slots" t-as="slot"
-                                    t-att-style="slot.style">
-                                    <div class="c-lbl" t-out="slot.label"/>
-                                    <div class="c-val" t-out="slot.value"/>
-                                </td>
-                            </tr>
-                        </table>
-
-                        <div class="sec-title">Invoices on this truck</div>
-                        <table class="grid" cellspacing="0" cellpadding="0">
-                            <thead>
+                        <!-- ==================== TRUCK AND CREW ================== -->
+                        <div class="panel">
+                            <div class="panel-title">Truck and Crew</div>
+                            <t t-set="crew_slots" t-value="o.get_crew_slots()"/>
+                            <table class="crew" cellspacing="0" cellpadding="0"
+                                   style="width: 100%;">
                                 <tr>
-                                    <th>Invoice</th>
-                                    <th>Customer</th>
-                                    <th>Date</th>
-                                    <th class="num">Invoice Value</th>
-                                    <th class="num">Paid Upfront</th>
-                                    <th class="num">On Account</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="o._get_delivery_invoices()" t-as="invoice">
-                                    <td>
-                                        <strong t-out="invoice.name if invoice.name and invoice.name != '/' else 'Draft'"/>
-                                    </td>
-                                    <td t-out="invoice.partner_id.display_name"/>
-                                    <td>
-                                        <span t-field="invoice.invoice_date"/>
-                                    </td>
-                                    <td class="num">
-                                        <span t-field="invoice.amount_total"
-                                              t-options="{'widget': 'monetary',
-                                                          'display_currency': invoice.currency_id}"/>
-                                    </td>
-                                    <td class="num">
-                                        <span t-out="'%.2f' % (invoice.amount_total - invoice.amount_residual)"/>
-                                    </td>
-                                    <td class="num">
-                                        <span t-field="invoice.amount_residual"
-                                              t-options="{'widget': 'monetary',
-                                                          'display_currency': invoice.currency_id}"/>
+                                    <!-- Vehicle, Driver, then one cell per helper
+                                         actually assigned. The width comes from
+                                         the model: formatting a percentage here
+                                         would hit QWeb's mangling of "%%". -->
+                                    <td t-foreach="crew_slots" t-as="slot"
+                                        t-att-style="slot.style">
+                                        <div class="c-lbl" t-out="slot.label"/>
+                                        <div class="c-val" t-out="slot.value"/>
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
+                            </table>
+                        </div>
 
-                        <div class="sec-title">Load by product</div>
+                        <!-- =================== LOAD BY PRODUCT ================== -->
+                        <div class="sec-title">Load by Product</div>
                         <table class="grid" cellspacing="0" cellpadding="0">
                             <thead>
                                 <tr>
                                     <th>Product</th>
                                     <th>Code</th>
+                                    <th t-if="o.multi_company">Company</th>
                                     <th class="num">Quantity</th>
                                     <th>Unit</th>
                                     <th class="num">Unit Weight</th>
@@ -239,17 +396,36 @@
                                 <tr t-foreach="o.get_weight_lines()" t-as="line">
                                     <td t-out="line.product.display_name"/>
                                     <td t-out="line.product.default_code or ''"/>
+                                    <td t-if="o.multi_company" t-out="line.company.name"/>
                                     <td class="num" t-out="line.quantity_display"/>
                                     <td t-out="line.uom.name"/>
-                                    <td class="num" t-out="'%s %s / unit' % (line.unit_weight, o.weight_uom_name)"/>
+                                    <td class="num">
+                                        <span t-out="line.unit_weight"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                        / unit
+                                    </td>
                                     <td class="num">
                                         <strong t-out="line.weight_display"/>
+                                        <span t-out="o.weight_uom_name"/>
+                                    </td>
+                                </tr>
+                                <tr class="section-total">
+                                    <td colspan="2">
+                                        <strong>Total Product Weight</strong>
+                                    </td>
+                                    <td t-if="o.multi_company"/>
+                                    <td/>
+                                    <td/>
+                                    <td/>
+                                    <td class="num">
+                                        <strong t-field="o.total_weight"/>
                                         <span t-out="o.weight_uom_name"/>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
 
+                        <!-- ===================== PALLET DETAILS ================= -->
                         <t t-if="o.pallet_ids">
                             <div class="sec-title">Pallets</div>
                             <table class="grid" cellspacing="0" cellpadding="0">
@@ -275,8 +451,8 @@
                                             <span t-out="o.weight_uom_name"/>
                                         </td>
                                     </tr>
-                                    <tr style="border-top: 2px solid #111827;">
-                                        <td><strong>Total</strong></td>
+                                    <tr class="section-total">
+                                        <td><strong>Total Pallets</strong></td>
                                         <td class="num">
                                             <strong t-field="o.total_pallet_quantity"/>
                                         </td>
@@ -290,6 +466,7 @@
                             </table>
                         </t>
 
+                        <!-- ====================== BOX DETAILS =================== -->
                         <t t-if="o.box_ids">
                             <div class="sec-title">Cardboard Boxes</div>
                             <table class="grid" cellspacing="0" cellpadding="0">
@@ -315,8 +492,8 @@
                                             <span t-out="o.weight_uom_name"/>
                                         </td>
                                     </tr>
-                                    <tr style="border-top: 2px solid #111827;">
-                                        <td><strong>Total</strong></td>
+                                    <tr class="section-total">
+                                        <td><strong>Total Boxes</strong></td>
                                         <td class="num">
                                             <strong t-field="o.total_box_quantity"/>
                                         </td>
@@ -336,20 +513,19 @@
                         </div>
 
                         <p class="footnote">
-                            Quantities and weights are consolidated across every invoice
-                            on this document. This document records what was loaded onto
-                            the truck: it reserves, moves and posts nothing.
-                            <t t-if="o.pallet_ids or o.box_ids">
-                                <strong>Load Weight</strong> is the goods weight plus the
-                                box weight plus the pallet weight, each counted exactly
-                                once. Product weights in the catalogue are often blank,
-                                which is why dispatch weighs the boxes and the pallets in
-                                the sections above: that is what the scale gives, and it
-                                is what the truck actually carries.
-                            </t>
+                            Quantities and weights are consolidated across every
+                            invoice on this document. This document records what
+                            was loaded onto the truck: it reserves, moves and posts
+                            nothing. <strong>Total Weight</strong> is the product
+                            weight plus the pallet weight plus the box weight, each
+                            counted exactly once. Product weights in the catalogue
+                            are often blank, which is why dispatch weighs the boxes
+                            and the pallets: that is what the scale gives, and it is
+                            what the truck actually carries.
                         </p>
 
-                        <table style="width: 100%; margin-top: 10px;" cellspacing="0" cellpadding="0">
+                        <table style="width: 100%; margin-top: 10px;"
+                               cellspacing="0" cellpadding="0">
                             <tr>
                                 <td width="32%">
                                     <div class="sig-title">Loaded by</div>

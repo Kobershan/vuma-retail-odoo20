@@ -380,30 +380,27 @@ class TestDeliveryDocument(TransactionCase):
         self.assertIn('Pallets', html)
         self.assertIn('Cola 2L -- Shoprite', html)
         self.assertIn('155.0', html)
-        # The pallet total: 4 x 155 = 620 kg, shown on its own row and in
-        # the KPI strip.
+        # The pallet total: 4 x 155 = 620 kg, shown in the weight summary
+        # and on the pallet detail total row.
         self.assertIn('620', html)
-        # Load Weight is the headline figure: 10.5 goods + 620 pallets.
+        # Total Weight is the headline figure: 10.5 goods + 620 pallets.
         self.assertIn('630.50', html)
         self.assertIn('Load Weight', html)
+        self.assertIn('Total Product Weight', html)
         # The goods weight is still shown as its own component.
         self.assertIn('10.50', html)
-        # The KPI strip widens to five cells once pallets are present.
-        self.assertIn('kpi has-pallets', html)
 
     def test_report_has_no_pallet_section_when_none_are_entered(self):
         document = self._document(self.invoice_one)
 
         html = self._render(document)
 
-        # The section, its column heading and the KPI cell all stay hidden.
+        # The detail columns and table stay hidden; the summary row still
+        # shows zero so the sheet always has the same weight layout.
         self.assertNotIn('Weight per Pallet', html)
-        # Match the rendered label, not the bare word: the word also occurs
-        # in the stylesheet's class names and comments.
-        self.assertNotIn('>Pallets<', html)
-        # The CSS rule for the widened KPI strip is always in the stylesheet,
-        # so assert the class is not actually applied to the table.
-        self.assertNotIn('kpi has-pallets', html)
+        self.assertNotIn('>Total Pallets<', html)
+        self.assertIn('Total Product Weight', html)
+        self.assertIn('Total Weight', html)
 
     # ---------------------------------------------------------------- boxes
     def test_box_line_weight_is_quantity_times_weight_per_box(self):
@@ -505,14 +502,12 @@ class TestDeliveryDocument(TransactionCase):
         self.assertIn('Cardboard Boxes', html)
         self.assertIn('Soap -- 12 per carton', html)
         self.assertIn('15.0', html)
-        # 8 boxes x 15 kg = 120 kg, shown on its own total row and in the
-        # KPI strip.
+        # 8 boxes x 15 kg = 120 kg, shown in the weight summary and on the
+        # box detail total row.
         self.assertIn('120', html)
-        # Load Weight adds that once to the 10.5 kg of goods.
+        # Total Weight adds that once to the 10.5 kg of goods.
         self.assertIn('130.50', html)
         self.assertIn('Load Weight', html)
-        self.assertIn('kpi has-boxes', html)
-        self.assertNotIn('kpi has-pallets', html)
 
     def test_report_has_no_box_section_when_none_are_entered(self):
         document = self._document(self.invoice_one)
@@ -521,9 +516,9 @@ class TestDeliveryDocument(TransactionCase):
 
         self.assertNotIn('Weight per Box', html)
         self.assertNotIn('>Cardboard Boxes<', html)
-        self.assertNotIn('kpi has-boxes', html)
+        self.assertNotIn('>Total Boxes<', html)
 
-    def test_report_kpi_fits_every_cell_when_boxes_and_pallets_both_exist(self):
+    def test_report_weight_summary_has_product_pallets_boxes_then_total(self):
         document = self._document(self.invoice_one | self.invoice_two)
         document.write({
             'box_ids': [Command.create({
@@ -537,18 +532,18 @@ class TestDeliveryDocument(TransactionCase):
 
         html = self._render(document)
 
-        # Six KPI cells need the layout class that shrinks each of them; the
-        # narrower two-cell classes must not be applied instead.
-        self.assertIn('kpi has-both', html)
-        self.assertNotIn('kpi has-pallets', html)
-        self.assertNotIn('kpi has-boxes', html)
-        # 10.5 goods + 400 boxes + 400 pallets.
+        # 10.5 goods + 400 pallets + 400 boxes.
         self.assertIn('810.50', html)
-        # The breakdown stays on the sheet, so a reader can reconcile it.
         text = self._text(html)
-        self.assertIn('goods 10.5', text)
-        self.assertIn('+ boxes 400.0', text)
-        self.assertIn('+ pallets 400.0', text)
+        # The summary reads in the order dispatch asked for: product weight,
+        # then pallets, then boxes, then the total.
+        product_pos = text.index('Total Product Weight')
+        pallet_pos = text.index('Pallets')
+        box_pos = text.index('Boxes')
+        total_pos = text.index('Total Weight')
+        self.assertLess(product_pos, pallet_pos)
+        self.assertLess(pallet_pos, box_pos)
+        self.assertLess(box_pos, total_pos)
 
     # ----------------------------------------------------------------- crew
     def test_crew_count_is_the_driver_plus_every_helper(self):
@@ -631,7 +626,7 @@ class TestDeliveryDocument(TransactionCase):
 
         html = self._render(document)
 
-        self.assertIn('Truck and crew', html)
+        self.assertIn('Truck and Crew', html)
         self.assertIn(self.vehicle.display_name, html)
         self.assertIn(self.driver.name, html)
         self.assertIn(self.helper_one.name, html)
@@ -652,7 +647,7 @@ class TestDeliveryDocument(TransactionCase):
 
         # Printed even when empty: a blank slot is a prompt to fill it in
         # before the truck leaves, not something to hide.
-        self.assertIn('Truck and crew', html)
+        self.assertIn('Truck and Crew', html)
         self.assertIn('Driver', html)
         self.assertEqual(
             [(slot.label, slot.value) for slot in document.get_crew_slots()],
@@ -734,9 +729,119 @@ class TestDeliveryDocument(TransactionCase):
         self.assertIn(self.widget.name, html)
         self.assertIn('Load Weight', html)
         self.assertIn('10.50', html)
-        self.assertIn('Paid Upfront', html)
+        self.assertIn('Cash Invoices', html)
+        self.assertIn('Invoices on Account', html)
+        self.assertIn('Cash Received', html)
         self.assertIn('On Account', html)
+        self.assertIn('Total Rand Value (Both)', html)
         self.assertIn(self.env.user.name, html)
+
+    def test_report_shows_the_time_generated(self):
+        document = self._document(self.invoice_one)
+        html = self._render(document)
+
+        self.assertIn('Generated on', html)
+        self.assertIn('Time Generated', html)
+        # A time, not just a date: HH:MM (the seconds are hidden).
+        self.assertRegex(self._text(html),
+                         r'Time Generated\s+\d{1,2}[:.]\d{2}')
+
+    def test_report_puts_on_account_before_cash_then_the_combined_total(self):
+        self._pay(self.invoice_one)
+        document = self._document(self.invoice_one | self.invoice_two)
+        text = self._text(self._render(document))
+
+        on_account = text.index('Invoices on Account')
+        cash = text.index('Cash Invoices')
+        combined = text.index('Total Rand Value (Both)')
+        self.assertLess(on_account, cash)
+        self.assertLess(cash, combined)
+        self.assertIn('Total Rand Value on Account', text)
+        self.assertIn('Total Rand Value Cash', text)
+
+    def test_cash_and_on_account_invoice_lists_reconcile_with_the_totals(self):
+        self._pay(self.invoice_two, amount=30.0)
+        document = self._document(self.invoice_one | self.invoice_two)
+
+        cash_lines = document.get_cash_invoice_lines()
+        account_lines = document.get_on_account_invoice_lines()
+
+        # Only the part-paid invoice received money; the other is on account.
+        self.assertEqual([line.invoice for line in cash_lines],
+                         [self.invoice_two])
+        self.assertAlmostEqual(
+            sum(line.section_amount for line in cash_lines), 30.0)
+        self.assertAlmostEqual(document.paid_upfront_amount, 30.0)
+        # Both invoices still owe something, so both are on account.
+        self.assertEqual({line.invoice for line in account_lines},
+                         {self.invoice_one, self.invoice_two})
+        self.assertAlmostEqual(
+            sum(line.section_amount for line in account_lines),
+            document.on_account_amount)
+        self.assertAlmostEqual(
+            document.paid_upfront_amount + document.on_account_amount,
+            document.total_value)
+
+    def test_cash_and_on_account_counts_include_part_payments(self):
+        document = self._document(self.invoice_one | self.invoice_two)
+        self.assertEqual(document.cash_invoice_count, 0)
+        self.assertEqual(document.on_account_invoice_count, 2)
+
+        self._pay(self.invoice_one)
+        document.invalidate_recordset()
+        self.assertEqual(document.cash_invoice_count, 1)
+        self.assertEqual(document.on_account_invoice_count, 1)
+
+    def test_document_company_is_kept_on_a_mixed_company_selection(self):
+        document = self._document(self.invoice_one)
+        self.assertEqual(document.company_id, self.company)
+        self.assertEqual(document.source_company_ids, self.company)
+        self.assertFalse(document.multi_company)
+
+    def test_report_company_column_and_banner_for_both_companies(self):
+        """A mixed load names and tags both companies on the sheet."""
+        other_company = self.env['res.company'].search(
+            [('id', '!=', self.company.id)], limit=1)
+        if not other_company:
+            self.skipTest('a second company is needed for this test')
+        other_journal = self.env['account.journal'].search(
+            [('type', '=', 'sale'), ('company_id', '=', other_company.id)],
+            limit=1)
+        if not other_journal:
+            self.skipTest('the second company has no sales journal')
+
+        env = self.env(context=dict(
+            self.env.context,
+            allowed_company_ids=[self.company.id, other_company.id]))
+        other_invoice = env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.other_customer.id,
+            'invoice_date': fields.Date.context_today(self.env.company),
+            'journal_id': other_journal.id,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.widget.id,
+                'quantity': 1,
+                'price_unit': self.widget.list_price,
+                'tax_ids': [Command.clear()],
+            })],
+        })
+        other_invoice.action_post()
+
+        document = env['vuma.delivery.document'].create({
+            'invoice_ids': [Command.set(
+                (self.invoice_one | other_invoice).ids)],
+            'company_id': self.company.id,
+        })
+        self.assertTrue(document.multi_company)
+        self.assertEqual(set(document.source_company_ids.ids),
+                         {self.company.id, other_company.id})
+
+        report = self.env['ir.actions.report'].with_context(
+            allowed_company_ids=[self.company.id, other_company.id])
+        html = report._render_qweb_html(REPORT, document.ids)[0].decode()
+        self.assertIn('Both companies on this load.', html)
+        self.assertIn(other_company.name, html)
+        self.assertIn('Company', html)
 
     # ---------------------------------------------------------------- views
     def test_customer_invoice_list_has_the_delivery_button(self):

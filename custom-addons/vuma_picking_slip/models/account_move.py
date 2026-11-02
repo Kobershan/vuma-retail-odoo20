@@ -144,16 +144,22 @@ class AccountMove(models.Model):
         """Create a delivery document for the goods loaded onto one truck.
 
         The document is a snapshot-style record: it keeps the selected
-        invoices and calculates their combined weight and value. The user can
-        still add or remove invoices on the document form before printing it.
+        invoices and calculates their combined weight and value. A selection
+        may mix Trade Rite and Siyaya DC invoices: the document belongs to
+        the active company when that company is on the load (otherwise the
+        first invoice's company) and prints both company names.
         """
         invoices = self._get_picking_slip_invoices()
         if not invoices:
             raise UserError(_(
                 'Select at least one customer invoice to create a delivery '
                 'document.'))
+        companies = invoices.company_id
+        company = self.env.company if self.env.company in companies \
+            else companies[:1]
         document = self.env['vuma.delivery.document'].create({
             'invoice_ids': [Command.set(invoices.ids)],
+            'company_id': company.id,
         })
         return {
             'type': 'ir.actions.act_window',

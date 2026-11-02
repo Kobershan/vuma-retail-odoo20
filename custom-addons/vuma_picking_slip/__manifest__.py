@@ -1,6 +1,6 @@
 {
     'name': 'Vuma Consolidated Picking Slip',
-    'version': '1.6.0',
+    'version': '1.7.0',
     'category': 'Sales/Sales',
     'summary': 'Turn selected customer invoices into one consolidated picking '
                'slip or a delivery document for the truck.',
@@ -45,23 +45,28 @@ Delivery Documents
 The same invoice selection can also become a **Delivery Document** for one
 truck load. It records:
 
-* every invoice loaded on the truck;
-* the total weight of all products on those invoices;
+* every invoice loaded on the truck, from Trade Rite, Siyaya DC or both;
+* a clear weight summary in the order dispatch reads it: **Total Product
+  Weight**, then **Pallets**, then **Boxes**, then **Total Weight** (product
+  weight + pallet weight + box weight, each counted exactly once);
 * the pallets on the truck -- how many, and how much each weighs -- typed
   in by dispatch on the document's **Pallets** tab;
 * the cardboard boxes on the truck -- how many, and how much each weighs --
   typed in on the document's **Boxes** tab;
-* **Load Weight**, the headline figure on the printed sheet: goods weight +
-  box weight + pallet weight, each counted exactly once. Product weights in
-  the catalogue are often blank, so most of that figure comes from the box
-  and pallet lines dispatch weighed at the scale;
+* a separate **Invoices on Account** section, with its own total rand value;
+* a separate **Cash Invoices** section, with its own total rand value;
+* the **Total Rand Value (Both)** of the cash and on-account sections
+  together;
+* the date and time the document was generated and the user who generated
+  it;
 * which vehicle from the fleet carries the load, and who is on the truck: a
   driver plus at most two helpers, all three picked from employees, so one
-  truck never carries more than three people;
-* the date/time the document was generated and the user who generated it;
-* the invoice value already paid upfront (cash) and the value still on
-  account;
-* the total selling value of the goods on the truck.
+  truck never carries more than three people.
+
+Part-paid invoices appear in both invoice sections: the amount already paid
+under **Cash** and the balance still owing under **On Account**. On a mixed
+load the company is printed on every invoice and product line, and the
+header names both companies.
 
 A delivery document is printable and remains available under
 **Sales > Delivery Documents**. Invoices can still be added to or removed from

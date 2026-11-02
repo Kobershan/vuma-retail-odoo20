@@ -12,14 +12,20 @@ presents the load in the terms dispatch and the cash office care about:
 * which vehicle from the fleet carries the load, and who is on the truck: a
   driver plus at most two helpers, all picked from employees;
 * when the document was generated and by whom;
-* how much of the selected invoice value was paid upfront and how much is
-  still on account;
+* the invoices still on account and their total rand value;
+* the invoices already paid in cash and their total rand value;
+* the total rand value of both sections together;
 * the total selling value of the goods on the truck.
+
+One truck load may contain invoices from both trading companies (Trade Rite
+and Siyaya DC). ``source_company_ids`` lists every company on the load,
+``multi_company`` flags a mixed load and the printed invoice and product
+tables show the company of each line.
 
 The three weight components are kept apart so they can always be read side
 by side: ``total_weight`` is the invoiced products alone, ``total_box_weight``
 is the cardboard boxes and ``total_pallet_weight`` is the pallets.
-``total_load_weight`` adds the three once -- goods + boxes + pallets -- and is
+``total_load_weight`` adds the three once -- goods + pallets + boxes -- and is
 the headline figure on the printed sheet, because that is what the truck
 actually weighs at the scale. Product weights in the catalogue are often
 blank, so in practice most of the load weight comes from the box and pallet
@@ -69,29 +75,47 @@ class VumaDeliveryDocument(models.Model):
         help='Customer invoices whose goods are loaded on this truck.')
     invoice_count = fields.Integer(
         string='Invoices', compute='_compute_invoice_count')
+    cash_invoice_count = fields.Integer(
+        string='Cash Invoices', compute='_compute_cash_on_account_counts',
+        help='Invoices with money already received, including part payments.')
+    on_account_invoice_count = fields.Integer(
+        string='On Account Invoices', compute='_compute_cash_on_account_counts',
+        help='Invoices with an amount still owing.')
+    source_company_ids = fields.Many2many(
+        'res.company', 'vuma_delivery_document_source_company_rel',
+        'document_id', 'company_id', string='Companies on the Load',
+        compute='_compute_company_info',
+        help='Every company whose invoices are loaded on this truck. A load '
+             'may mix Trade Rite and Siyaya DC invoices.')
+    multi_company = fields.Boolean(
+        string='Multiple Companies', compute='_compute_company_info',
+        help='This load contains invoices from more than one company.')
 
     total_weight = fields.Float(
-        string='Total Weight', compute='_compute_totals', store=True,
+        string='Total Product Weight', compute='_compute_totals', store=True,
         digits='Stock Weight',
         help='Weight of every product on every selected invoice, in the '
              'weight unit configured for products.')
     weight_uom_name = fields.Char(
         string='Weight Unit', compute='_compute_weight_uom_name')
     paid_upfront_amount = fields.Monetary(
-        string='Paid Upfront', compute='_compute_totals', store=True,
+        string='Cash Received', compute='_compute_totals', store=True,
         currency_field='currency_id',
-        help='Invoice value already paid when the document was generated. A '
-             'fully paid invoice counts in full; a part-paid invoice counts '
-             'only the part that has been paid.')
+        help='Invoice value already paid in cash (or otherwise settled) when '
+             'the document was generated. A fully paid invoice counts in '
+             'full; a part-paid invoice counts only the part that has been '
+             'paid.')
     on_account_amount = fields.Monetary(
         string='On Account', compute='_compute_totals', store=True,
         currency_field='currency_id',
-        help='Invoice value still owing on the selected invoices.')
+        help='Invoice value still owing on the selected invoices. This is '
+             'the total rand value of the Invoices on Account section.')
     total_value = fields.Monetary(
         string='Total Invoice Value', compute='_compute_totals', store=True,
         currency_field='currency_id',
         help='Selling value of the goods on the truck: the total of the '
-             'selected customer invoices, including tax.')
+             'selected customer invoices, including tax. This is the total '
+             'rand value of the cash and on-account sections together.')
     pallet_ids = fields.One2many(
         'vuma.delivery.pallet', 'document_id', string='Pallets',
         help='Pallets loaded on this truck, typed in by dispatch: how many '
@@ -126,12 +150,12 @@ class VumaDeliveryDocument(models.Model):
         help='Total weight of the cardboard boxes entered on this document, '
              'in the weight unit configured for products.')
     total_load_weight = fields.Float(
-        string='Load Weight', compute='_compute_load_weight', store=True,
+        string='Total Weight', compute='_compute_load_weight', store=True,
         digits='Stock Weight',
-        help='What the truck weighs: invoiced-goods weight + box weight + '
-             'pallet weight, each counted exactly once. Product weights in '
-             'the catalogue are often blank, so in practice most of this '
-             'figure comes from the box and pallet lines dispatch weighed.')
+        help='What the truck weighs: product weight + pallet weight + box '
+             'weight, each counted exactly once. Product weights in the '
+             'catalogue are often blank, so in practice most of this figure '
+             'comes from the box and pallet lines dispatch weighed.')
     vehicle_id = fields.Many2one(
         'fleet.vehicle', string='Vehicle',
         help='The vehicle from the fleet that carries this load.')
@@ -152,6 +176,150 @@ class VumaDeliveryDocument(models.Model):
     def _compute_invoice_count(self):
         for document in self:
             document.invoice_count = len(document._get_delivery_invoices())
+
+    @api.depends(
+        'invoice_ids',
+        'invoice_ids.state',
+        'invoice_ids.amount_total',
+        'invoice_ids.amount_residual',
+    )
+    def _compute_cash_on_account_counts(self):
+        """How many invoices appear in each printed section.
+
+        A part-paid invoice deliberately appears in both: its paid portion is
+        cash and its balance is still on account.
+        """
+        for document in self:
+            document.cash_invoice_count = len(document._get_cash_invoices())
+            document.on_account_invoice_count = len(
+                document._get_on_account_invoices())
+
+    @api.depends('invoice_ids', 'invoice_ids.state', 'invoice_ids.company_id')
+    def _compute_company_info(self):
+        """Every trading company represented on the load."""
+        for document in self:
+            companies = document._get_delivery_invoices().company_id
+            document.source_company_ids = companies
+            document.multi_company = len(companies) > 1
+
+    @api.depends()
+    def _compute_weight_uom_name(self):
+        uom_name = self.env['product.template'] \
+            ._get_weight_uom_name_from_ir_config_parameter()
+        for document in self:
+            document.weight_uom_name = uom_name
+
+    @api.depends(
+        'pallet_ids',
+        'pallet_ids.quantity',
+        'pallet_ids.weight_per_pallet',
+        'pallet_ids.line_weight',
+    )
+    def _compute_pallet_totals(self):
+        """Sum the manual pallet lines: count and weight of the pallets."""
+        for document in self:
+            document.total_pallet_quantity = sum(
+                document.pallet_ids.mapped('quantity'))
+            document.total_pallet_weight = sum(
+                document.pallet_ids.mapped('line_weight'))
+
+    @api.depends(
+        'box_ids',
+        'box_ids.quantity',
+        'box_ids.weight_per_box',
+        'box_ids.line_weight',
+    )
+    def _compute_box_totals(self):
+        """Sum the manual box lines: count and weight of the boxes."""
+        for document in self:
+            document.total_box_quantity = sum(
+                document.box_ids.mapped('quantity'))
+            document.total_box_weight = sum(
+                document.box_ids.mapped('line_weight'))
+
+    @api.depends(
+        'total_weight',
+        'total_box_weight',
+        'total_pallet_weight',
+    )
+    def _compute_load_weight(self):
+        """The weight on the truck: goods + pallets + boxes, each once.
+
+        The three components are summed exactly once and never merged into
+        one another, so the printed sheet can always show how the figure was
+        built. With no box or pallet lines this equals ``total_weight``.
+        """
+        for document in self:
+            document.total_load_weight = \
+                (document.total_weight or 0.0) + \
+                (document.total_pallet_weight or 0.0) + \
+                (document.total_box_weight or 0.0)
+
+    @api.depends('driver_id', 'helper_ids')
+    def _compute_crew_count(self):
+        for document in self:
+            document.crew_count = (1 if document.driver_id else 0) + \
+                len(document.helper_ids)
+
+    @api.constrains('helper_ids')
+    def _check_helper_count(self):
+        """One driver and at most two helpers: three people per truck."""
+        for document in self:
+            if len(document.helper_ids) > self.MAX_HELPERS:
+                raise ValidationError(_(
+                    'A truck carries at most three people: the driver plus '
+                    '%(max)s helpers. Document %(document)s has %(found)s '
+                    'helpers.',
+                    max=self.MAX_HELPERS,
+                    document=document.name or _('New'),
+                    found=len(document.helper_ids),
+                ))
+
+    @api.constrains('driver_id', 'helper_ids')
+    def _check_driver_not_also_helper(self):
+        """The same employee must not be counted twice on one truck."""
+        for document in self:
+            if document.driver_id and document.driver_id in document.helper_ids:
+                raise ValidationError(_(
+                    '%(employee)s is the driver of document %(document)s and '
+                    'cannot also be listed as a helper: that would count the '
+                    'same person twice.',
+                    employee=document.driver_id.name,
+                    document=document.name or _('New'),
+                ))
+
+    def _get_delivery_invoices(self):
+        """The selected records that belong on a delivery document."""
+        return self.invoice_ids.filtered(
+            lambda invoice: invoice.move_type == 'out_invoice'
+            and invoice.state != 'cancel')
+
+    def _get_cash_invoices(self):
+        """Invoices with money already received (fully or partly paid)."""
+        return self._get_delivery_invoices().filtered(
+            lambda invoice: (invoice.amount_total
+                             - invoice.amount_residual) > 0.005)
+
+    def _get_on_account_invoices(self):
+        """Invoices with an amount still owing."""
+        return self._get_delivery_invoices().filtered(
+            lambda invoice: invoice.amount_residual > 0.005)
+
+    def _convert_invoice_amount(self, invoice, amount):
+        """Convert an invoice amount into the document currency."""
+        self.ensure_one()
+        currency = self.currency_id or self.company_id.currency_id \
+            or self.env.company.currency_id
+        invoice_currency = invoice.currency_id \
+            or invoice.company_id.currency_id
+        conversion_date = invoice.invoice_date or invoice.date \
+            or fields.Date.context_today(self)
+        return invoice_currency._convert(
+            amount, currency, self.company_id, conversion_date)
+
+    def _invoice_display_name(self, invoice):
+        return invoice.name if invoice.name and invoice.name != '/' \
+            else _('Draft')
 
     @api.depends(
         'invoice_ids',
@@ -206,100 +374,61 @@ class VumaDeliveryDocument(models.Model):
             document.paid_upfront_amount = paid_upfront
             document.on_account_amount = on_account
 
-    @api.depends()
-    def _compute_weight_uom_name(self):
-        uom_name = self.env['product.template'] \
-            ._get_weight_uom_name_from_ir_config_parameter()
-        for document in self:
-            document.weight_uom_name = uom_name
+    def get_company_names(self):
+        """The companies on the load as one printable string."""
+        self.ensure_one()
+        return ', '.join(self.source_company_ids.mapped('name'))
 
-    @api.depends(
-        'pallet_ids',
-        'pallet_ids.quantity',
-        'pallet_ids.weight_per_pallet',
-        'pallet_ids.line_weight',
-    )
-    def _compute_pallet_totals(self):
-        """Sum the manual pallet lines: count and weight of the pallets."""
-        for document in self:
-            document.total_pallet_quantity = sum(
-                document.pallet_ids.mapped('quantity'))
-            document.total_pallet_weight = sum(
-                document.pallet_ids.mapped('line_weight'))
+    def get_cash_invoice_lines(self):
+        """Invoices in the Cash section, with converted displayed amounts."""
+        self.ensure_one()
+        lines = []
+        for invoice in self._get_cash_invoices():
+            total = self._convert_invoice_amount(
+                invoice, invoice.amount_total)
+            residual = self._convert_invoice_amount(
+                invoice, invoice.amount_residual)
+            lines.append(SimpleNamespace(
+                invoice=invoice,
+                name=self._invoice_display_name(invoice),
+                customer=invoice.partner_id.display_name,
+                company=invoice.company_id,
+                invoice_date=invoice.invoice_date or invoice.date,
+                total_amount=total,
+                section_amount=total - residual,
+            ))
+        lines.sort(key=lambda line: (
+            line.invoice_date or fields.Date.context_today(self), line.name))
+        return lines
 
-    @api.depends(
-        'box_ids',
-        'box_ids.quantity',
-        'box_ids.weight_per_box',
-        'box_ids.line_weight',
-    )
-    def _compute_box_totals(self):
-        """Sum the manual box lines: count and weight of the boxes."""
-        for document in self:
-            document.total_box_quantity = sum(
-                document.box_ids.mapped('quantity'))
-            document.total_box_weight = sum(
-                document.box_ids.mapped('line_weight'))
-
-    @api.depends(
-        'total_weight',
-        'total_box_weight',
-        'total_pallet_weight',
-    )
-    def _compute_load_weight(self):
-        """The weight on the truck: goods + boxes + pallets, each once.
-
-        The three components are summed exactly once and never merged into
-        one another, so the printed sheet can always show how the figure was
-        built. With no box or pallet lines this equals ``total_weight``.
-        """
-        for document in self:
-            document.total_load_weight = \
-                (document.total_weight or 0.0) + \
-                (document.total_box_weight or 0.0) + \
-                (document.total_pallet_weight or 0.0)
-
-    @api.depends('driver_id', 'helper_ids')
-    def _compute_crew_count(self):
-        for document in self:
-            document.crew_count = (1 if document.driver_id else 0) + \
-                len(document.helper_ids)
-
-    @api.constrains('helper_ids')
-    def _check_helper_count(self):
-        """One driver and at most two helpers: three people per truck."""
-        for document in self:
-            if len(document.helper_ids) > self.MAX_HELPERS:
-                raise ValidationError(_(
-                    'A truck carries at most three people: the driver plus '
-                    '%(max)s helpers. Document %(document)s has %(found)s '
-                    'helpers.',
-                    max=self.MAX_HELPERS,
-                    document=document.name or _('New'),
-                    found=len(document.helper_ids),
-                ))
-
-    @api.constrains('driver_id', 'helper_ids')
-    def _check_driver_not_also_helper(self):
-        """The same employee must not be counted twice on one truck."""
-        for document in self:
-            if document.driver_id and document.driver_id in document.helper_ids:
-                raise ValidationError(_(
-                    '%(employee)s is the driver of document %(document)s and '
-                    'cannot also be listed as a helper: that would count the '
-                    'same person twice.',
-                    employee=document.driver_id.name,
-                    document=document.name or _('New'),
-                ))
-
-    def _get_delivery_invoices(self):
-        """The selected records that belong on a delivery document."""
-        return self.invoice_ids.filtered(
-            lambda invoice: invoice.move_type == 'out_invoice'
-            and invoice.state != 'cancel')
+    def get_on_account_invoice_lines(self):
+        """Invoices in the On Account section, with converted amounts."""
+        self.ensure_one()
+        lines = []
+        for invoice in self._get_on_account_invoices():
+            lines.append(SimpleNamespace(
+                invoice=invoice,
+                name=self._invoice_display_name(invoice),
+                customer=invoice.partner_id.display_name,
+                company=invoice.company_id,
+                invoice_date=invoice.invoice_date or invoice.date,
+                total_amount=self._convert_invoice_amount(
+                    invoice, invoice.amount_total),
+                section_amount=self._convert_invoice_amount(
+                    invoice, invoice.amount_residual),
+            ))
+        lines.sort(key=lambda line: (
+            line.invoice_date or fields.Date.context_today(self), line.name))
+        return lines
 
     def get_weight_lines(self):
-        """Consolidated product quantities and weights for the printed sheet."""
+        """Consolidated product quantities and weights for the printed sheet.
+
+        Lines are grouped per product and per source company, so a mixed load
+        never silently adds two companies' goods together. When the optional
+        multi-tenant source fields exist, the stock-source company wins;
+        otherwise the invoice's own company is used.
+        """
         groups = OrderedDict()
         for invoice in self._get_delivery_invoices():
             for line in invoice.invoice_line_ids:
@@ -310,11 +439,15 @@ class VumaDeliveryDocument(models.Model):
                 line_uom = line.product_uom_id or product.uom_id
                 quantity = line_uom._compute_quantity(
                     line.quantity, product.uom_id)
-                group = groups.get(product.id)
+                company = getattr(line, 'vuma_source_company_id', False) \
+                    or invoice.company_id
+                key = (company.id, product.id)
+                group = groups.get(key)
                 if group is None:
-                    group = groups[product.id] = {
+                    group = groups[key] = {
                         'product': product,
                         'uom': product.uom_id,
+                        'company': company,
                         'quantity': 0.0,
                         'weight': 0.0,
                     }
@@ -325,6 +458,7 @@ class VumaDeliveryDocument(models.Model):
             SimpleNamespace(
                 product=group['product'],
                 uom=group['uom'],
+                company=group['company'],
                 quantity=group['quantity'],
                 quantity_display=_format_quantity(group['quantity']),
                 unit_weight=group['product'].weight or 0.0,
@@ -333,7 +467,8 @@ class VumaDeliveryDocument(models.Model):
             )
             for group in groups.values()
         ]
-        lines.sort(key=lambda line: line.product.display_name or '')
+        lines.sort(key=lambda line: (
+            line.company.name or '', line.product.display_name or ''))
         return lines
 
     def get_crew_slots(self):
@@ -386,6 +521,27 @@ class VumaDeliveryDocument(models.Model):
             'domain': [('id', 'in', self.invoice_ids.ids)],
         }
 
+    def action_view_cash_invoices(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Cash Invoices on %(document)s', document=self.name),
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self._get_cash_invoices().ids)],
+        }
+
+    def action_view_on_account_invoices(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('On Account Invoices on %(document)s',
+                      document=self.name),
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self._get_on_account_invoices().ids)],
+        }
+
 
 class VumaDeliveryPallet(models.Model):
     """One pallet line on a delivery document.
@@ -434,7 +590,7 @@ class VumaDeliveryPallet(models.Model):
 
     def get_pallet_lines(self):
         """Pallet lines in print order, with quantities pre-formatted."""
-        lines = [
+        return [
             SimpleNamespace(
                 name=pallet.name,
                 quantity=pallet.quantity,
@@ -445,7 +601,6 @@ class VumaDeliveryPallet(models.Model):
             )
             for pallet in self
         ]
-        return lines
 
 
 class VumaDeliveryBox(models.Model):
@@ -496,7 +651,7 @@ class VumaDeliveryBox(models.Model):
 
     def get_box_lines(self):
         """Box lines in print order, with quantities pre-formatted."""
-        lines = [
+        return [
             SimpleNamespace(
                 name=box.name,
                 quantity=box.quantity,
@@ -507,4 +662,3 @@ class VumaDeliveryBox(models.Model):
             )
             for box in self
         ]
-        return lines
