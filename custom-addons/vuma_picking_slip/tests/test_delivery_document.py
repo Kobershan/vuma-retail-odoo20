@@ -7,6 +7,8 @@ therefore fails here rather than at the loading bay.
 """
 import re
 
+from lxml import html as lxml_html
+
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
@@ -545,6 +547,42 @@ class TestDeliveryDocument(TransactionCase):
         self.assertLess(pallet_pos, box_pos)
         self.assertLess(box_pos, total_pos)
 
+    def test_printed_weight_summary_adds_up_to_the_printed_total(self):
+        document = self._document(self.invoice_one | self.invoice_two)
+        document.write({
+            'pallet_ids': [Command.create({
+                'name': 'Pallets', 'quantity': 4.0,
+                'weight_per_pallet': 100.0,
+            })],
+            'box_ids': [Command.create({
+                'name': 'Cartons', 'quantity': 2.0, 'weight_per_box': 50.0,
+            })],
+        })
+
+        printed = self._panel(self._render(document), 'Load Weight')
+        amounts = {}
+        for row in printed.xpath('.//tr'):
+            cells = [re.sub(r'\s+', ' ', cell.text_content()).strip()
+                     for cell in row.xpath('./td')]
+            if len(cells) >= 3:
+                amounts[cells[0]] = self._money(cells[-1])
+
+        self.assertEqual(
+            set(amounts),
+            {'Total Product Weight', 'Pallets', 'Boxes', 'Total Weight'})
+        # 10.5 goods + 400 pallets + 100 boxes.
+        self.assertAlmostEqual(amounts['Total Product Weight'], 10.5)
+        self.assertAlmostEqual(amounts['Pallets'], 400.0)
+        self.assertAlmostEqual(amounts['Boxes'], 100.0)
+        # The sheet adds up the way the model does: the three components
+        # are exactly what the printed total claims.
+        self.assertAlmostEqual(
+            amounts['Total Product Weight'] + amounts['Pallets']
+            + amounts['Boxes'],
+            amounts['Total Weight'])
+        self.assertAlmostEqual(amounts['Total Weight'],
+                               document.total_load_weight)
+
     # ----------------------------------------------------------------- crew
     def test_crew_count_is_the_driver_plus_every_helper(self):
         document = self._document(self.invoice_one)
@@ -791,6 +829,287 @@ class TestDeliveryDocument(TransactionCase):
         document.invalidate_recordset()
         self.assertEqual(document.cash_invoice_count, 1)
         self.assertEqual(document.on_account_invoice_count, 1)
+
+    # ------------------------------------------------- costing guarantees
+    @staticmethod
+    def _money(text):
+        """Parse a printed money/weight cell ('R 1,234.56') as a float."""
+        digits = re.sub(r'[^\d.,-]', '', text or '')
+        if not any(character.isdigit() for character in digits):
+            return 0.0
+        return float(digits.replace(',', ''))
+
+    @classmethod
+    def _panel(cls, html, title):
+        """The printed panel whose heading reads `title`."""
+        root = lxml_html.fromstring(html)
+        for panel in root.xpath(
+                "//div[contains(concat(' ', normalize-space(@class), ' ')"
+                ", ' panel ')]"):
+            headings = panel.xpath(
+                ".//div[contains(concat(' ', normalize-space(@class), ' ')"
+                ", ' panel-title ')]")
+            if headings and title in headings[0].text_content():
+                return panel
+        raise AssertionError('the printed report has no %r panel' % title)
+
+    @classmethod
+    def _money_panel(cls, html, title):
+        """(row amounts, printed section total) of a money panel."""
+        amounts, total = [], None
+        for row in cls._panel(html, title).xpath('.//tbody/tr'):
+            classes = row.get('class') or ''
+            cells = [re.sub(r'\s+', ' ', cell.text_content()).strip()
+                     for cell in row.xpath('./td')]
+            if 'section-total' in classes:
+                total = cls._money(cells[-1])
+            elif 'empty-row' not in classes and cells:
+                amounts.append(cls._money(cells[-1]))
+        if total is None:
+            raise AssertionError('%r panel has no total row' % title)
+        return amounts, total
+
+    @classmethod
+    def _grand_total(cls, html):
+        """The combined figure printed under both money sections."""
+        root = lxml_html.fromstring(html)
+        cells = root.xpath(
+            "//table[contains(concat(' ', normalize-space(@class), ' ')"
+            ", ' grand-total ')]//td[contains(concat(' ',"
+            " normalize-space(@class), ' '), ' gt-value ')]")
+        if not cells:
+            raise AssertionError('the printed report has no grand total')
+        return cls._money(cells[0].text_content())
+
+    @classmethod
+    def _printed_invoice_values(cls, html):
+        """Every 'Invoice Value' cell printed in the two money panels."""
+        values = []
+        for title in ('Invoices on Account', 'Cash Invoices'):
+            for row in cls._panel(html, title).xpath('.//tbody/tr'):
+                classes = row.get('class') or ''
+                if 'section-total' in classes or 'empty-row' in classes:
+                    continue
+                cells = [re.sub(r'\s+', ' ', cell.text_content()).strip()
+                         for cell in row.xpath('./td')]
+                if len(cells) >= 2:
+                    values.append(cls._money(cells[-2]))
+        return values
+
+    def test_printed_money_sections_balance_into_the_grand_total(self):
+        """The sheet balances: rows feed sections, sections feed the total."""
+        self._pay(self.invoice_one)               # 30.00 settled in full
+        self._pay(self.invoice_two, amount=30.0)  # 130.00 -> 30 paid, 100 owed
+        document = self._document(self.invoice_one | self.invoice_two)
+        html = self._render(document)
+
+        account_rows, account_total = self._money_panel(
+            html, 'Invoices on Account')
+        cash_rows, cash_total = self._money_panel(html, 'Cash Invoices')
+
+        # Every printed row feeds its own section total...
+        self.assertEqual(len(account_rows), 1)
+        self.assertAlmostEqual(account_rows[0], 100.0)
+        self.assertAlmostEqual(account_total, 100.0)
+        self.assertEqual(len(cash_rows), 2)
+        self.assertAlmostEqual(sum(cash_rows), 60.0)
+        self.assertAlmostEqual(cash_total, 60.0)
+        # ...and the two section totals feed the grand total.
+        self.assertAlmostEqual(cash_total + account_total,
+                               self._grand_total(html))
+        self.assertAlmostEqual(self._grand_total(html),
+                               document.total_value)
+        self.assertAlmostEqual(document.paid_upfront_amount
+                               + document.on_account_amount,
+                               document.total_value)
+
+    def test_paid_invoice_is_printed_only_in_the_cash_section(self):
+        self._pay(self.invoice_one)
+        document = self._document(self.invoice_one | self.invoice_two)
+
+        html = self._render(document)
+        account = self._panel(html, 'Invoices on Account').text_content()
+        cash = self._panel(html, 'Cash Invoices').text_content()
+
+        # Settled in full: listed as money received, never as money owing.
+        self.assertIn(self.invoice_one.name, cash)
+        self.assertNotIn(self.invoice_one.name, account)
+        # Not a cent paid: still on account, never listed as cash.
+        self.assertIn(self.invoice_two.name, account)
+        self.assertNotIn(self.invoice_two.name, cash)
+
+    def test_part_paid_invoice_is_printed_in_both_sections_with_its_split(self):
+        self._pay(self.invoice_two, amount=30.0)
+        document = self._document(self.invoice_two)
+
+        html = self._render(document)
+        self.assertIn(
+            self.invoice_two.name,
+            self._panel(html, 'Invoices on Account').text_content())
+        self.assertIn(
+            self.invoice_two.name,
+            self._panel(html, 'Cash Invoices').text_content())
+
+        account_rows, account_total = self._money_panel(
+            html, 'Invoices on Account')
+        cash_rows, cash_total = self._money_panel(html, 'Cash Invoices')
+        # 30.00 received sits under Cash, the 100.00 balance under On Account.
+        self.assertAlmostEqual(sum(cash_rows), 30.0)
+        self.assertAlmostEqual(sum(account_rows), 100.0)
+        self.assertAlmostEqual(cash_total + account_total,
+                               document.total_value)
+
+    def test_paying_an_invoice_moves_value_without_changing_the_load(self):
+        document = self._document(self.invoice_one | self.invoice_two)
+        self.assertAlmostEqual(document.on_account_amount, 160.0)
+        self.assertAlmostEqual(document.paid_upfront_amount, 0.0)
+
+        self._pay(self.invoice_one)
+        document.invalidate_recordset()
+
+        self.assertAlmostEqual(document.paid_upfront_amount, 30.0)
+        self.assertAlmostEqual(document.on_account_amount, 130.0)
+        # The load keeps its value: only where the money sits changes.
+        self.assertAlmostEqual(document.total_value, 160.0)
+        self.assertEqual(document.cash_invoice_count, 1)
+        self.assertEqual(document.on_account_invoice_count, 1)
+
+        html = self._render(document)
+        self.assertAlmostEqual(
+            self._money_panel(html, 'Cash Invoices')[1], 30.0)
+        self.assertAlmostEqual(
+            self._money_panel(html, 'Invoices on Account')[1], 130.0)
+
+    def test_credit_note_never_reaches_the_money_sections(self):
+        refund = self.env['account.move'].create({
+            'move_type': 'out_refund',
+            'partner_id': self.customer.id,
+            'invoice_date': fields.Date.context_today(self.env.company),
+            'journal_id': self.journal.id,
+            # This database only posts credit notes that name their source.
+            'invoice_origin': self.invoice_one.name,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.widget.id,
+                'quantity': 1,
+                'price_unit': 10.0,
+                'tax_ids': [Command.clear()],
+            })],
+        })
+        refund.action_post()
+        document = self._document(self.invoice_one | refund)
+
+        # Only the customer invoice carries value onto the truck.
+        self.assertAlmostEqual(document.total_value, 30.0)
+        self.assertAlmostEqual(document.on_account_amount, 30.0)
+        self.assertAlmostEqual(document.paid_upfront_amount, 0.0)
+
+        html = self._render(document)
+        account = self._panel(html, 'Invoices on Account').text_content()
+        cash = self._panel(html, 'Cash Invoices').text_content()
+        self.assertNotIn(refund.name, account)
+        self.assertNotIn(refund.name, cash)
+        self.assertIn(self.invoice_one.name, account)
+
+    def test_free_invoice_is_printed_nowhere_and_costs_nothing(self):
+        free = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.customer.id,
+            'invoice_date': fields.Date.context_today(self.env.company),
+            'journal_id': self.journal.id,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.widget.id,
+                'quantity': 1,
+                'price_unit': 0.0,
+                'tax_ids': [Command.clear()],
+            })],
+        })
+        free.action_post()
+        document = self._document(self.invoice_one | free)
+
+        # Nothing to collect and nothing received, so it prints nowhere.
+        self.assertAlmostEqual(document.total_value, 30.0)
+        self.assertAlmostEqual(document.on_account_amount, 30.0)
+        self.assertAlmostEqual(document.paid_upfront_amount, 0.0)
+
+        html = self._render(document)
+        self.assertNotIn(
+            free.name,
+            self._panel(html, 'Invoices on Account').text_content())
+        self.assertNotIn(
+            free.name, self._panel(html, 'Cash Invoices').text_content())
+        cash_rows, cash_total = self._money_panel(html, 'Cash Invoices')
+        self.assertEqual(cash_rows, [])
+        self.assertAlmostEqual(cash_total, 0.0)
+
+    def test_grand_total_is_cash_plus_balances_not_the_doubled_column(self):
+        # A part-paid invoice prints its full invoice value in both
+        # sections; adding those printed cells would double count it.
+        self._pay(self.invoice_two, amount=30.0)
+        document = self._document(self.invoice_two)
+
+        html = self._render(document)
+        printed_values = self._printed_invoice_values(html)
+        self.assertAlmostEqual(sum(printed_values), 260.0)
+
+        grand = self._grand_total(html)
+        self.assertAlmostEqual(grand, document.total_value)
+        self.assertAlmostEqual(grand, 130.0)
+        self.assertNotAlmostEqual(grand, sum(printed_values))
+
+    def test_foreign_currency_invoice_converts_the_same_way_everywhere(self):
+        currency = self.env['res.currency'].with_context(
+            active_test=False).search([('name', '=', 'USD')], limit=1)
+        self.assertTrue(currency, 'the test database has no USD currency')
+        if currency == self.company.currency_id:
+            self.skipTest('the company already works in USD')
+        currency.active = True
+        today = fields.Date.context_today(self.env.company)
+        rate = self.env['res.currency.rate'].search(
+            [('currency_id', '=', currency.id),
+             ('company_id', 'in', [False, self.company.id]),
+             ('name', '<=', today)],
+            order='name desc', limit=1)
+        if rate:
+            rate.rate = 0.05
+        else:
+            self.env['res.currency.rate'].create({
+                'currency_id': currency.id,
+                'rate': 0.05,
+                'name': today,
+                'company_id': self.company.id,
+            })
+
+        invoice = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.customer.id,
+            'currency_id': currency.id,
+            'invoice_date': today,
+            'journal_id': self.journal.id,
+            'invoice_line_ids': [Command.create({
+                'product_id': self.widget.id,
+                'quantity': 2,
+                'price_unit': 100.0,
+                'tax_ids': [Command.clear()],
+            })],
+        })
+        invoice.action_post()
+        self.assertAlmostEqual(invoice.amount_total, 200.0)
+
+        document = self._document(invoice)
+
+        # The document works in the company currency, converted once...
+        self.assertNotAlmostEqual(document.total_value, 200.0)
+        self.assertAlmostEqual(document.on_account_amount,
+                               document.total_value)
+        self.assertAlmostEqual(document.paid_upfront_amount, 0.0)
+
+        # ...and the printed row uses exactly the same conversion.
+        html = self._render(document)
+        rows, total = self._money_panel(html, 'Invoices on Account')
+        self.assertAlmostEqual(sum(rows), document.on_account_amount)
+        self.assertAlmostEqual(total, document.on_account_amount)
+        self.assertAlmostEqual(self._grand_total(html),
+                               document.total_value)
 
     def test_document_company_is_kept_on_a_mixed_company_selection(self):
         document = self._document(self.invoice_one)
